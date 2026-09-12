@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Case Study — Research Project Creation Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Texturina:opsz,wght@12..72,400;12..72,600&family=Vollkorn+SC:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #EFE9E8;
+      --ink: #6C5D5A;
+      --ink-strong: #574a48;
+      --placeholder: #D6CDCC;
+      --placeholder-edge: #cabfbd;
+      --page-max: 1440px;
+      --gutter: 80px;
+      --col-text: 460px;
+      --col-gap: 96px;
+      --img-h: 82vh;
+      --hold: 92vh;
+      --font-display: "Texturina", Georgia, serif;
+      --font-label: "Vollkorn SC", Georgia, serif;
+      --font-body: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .page {
+      max-width: var(--page-max);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+    }
+
+    /* ---------- HERO (static) ---------- */
+    .hero { padding-top: 72px; padding-bottom: 120px; }
+    .hero__top {
+      display: grid;
+      grid-template-columns: 1fr 448px;
+      gap: 64px;
+      align-items: start;
+      margin-bottom: 56px;
+    }
+    .hero__title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 48px;
+      line-height: 58px;
+      margin: 0 0 8px;
+    }
+    .hero__subtitle { font-weight: 400; font-size: 32px; line-height: 40px; margin: 0; }
+    .hero__intro { font-size: 18px; line-height: 28px; margin: 6px 0 0; }
+    .hero__intro p { margin: 0 0 14px; }
+    .hero__intro p:last-child { margin-bottom: 0; }
+    .hero__media { width: 100%; aspect-ratio: 1360 / 661; }
+
+    /* ---------- PLACEHOLDER ---------- */
+    .ph {
+      background: var(--placeholder);
+      border: 1px solid var(--placeholder-edge);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .ph__label {
+      font-family: var(--font-display);
+      font-weight: 600; font-size: 24px;
+      color: var(--ink); opacity: 0.6;
+    }
+
+    /* ---------- DECK OF PINNED PANELS ---------- */
+    .deck { position: relative; }
+    .panel {
+      position: sticky; top: 0; height: 100vh;
+      overflow: hidden; background: var(--bg);
+    }
+    .panel__inner {
+      max-width: var(--page-max); margin: 0 auto;
+      padding: 0 var(--gutter); height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--col-text);
+      gap: var(--col-gap);
+      align-items: center;
+    }
+    .panel__media { height: var(--img-h); }
+    .panel__media .ph { width: 100%; height: 100%; border-radius: 2px; will-change: transform; }
+    .panel__viewport { position: relative; height: 100vh; overflow: hidden; }
+    .panel__text {
+      position: absolute; left: 0; right: 0; top: 50%;
+      transform: translateY(-50%);
+      will-change: transform, opacity;
+    }
+    .spacer { height: var(--hold); }
+    .spacer--end { height: 130vh; } /* last panel: settle + a comfortable rest before the page ends */
+
+    /* ---------- CLOSING (last-panel exit) ---------- */
+    .closing {
+      max-width: var(--page-max); margin: 0 auto;
+      padding: 20vh var(--gutter) 16vh;
+      border-top: 1px solid var(--placeholder-edge);
+    }
+    .closing__label {
+      font-family: var(--font-label); font-weight: 400;
+      font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase;
+      opacity: 0.75; margin: 0 0 18px;
+    }
+    .closing__line {
+      font-family: var(--font-display); font-weight: 600;
+      font-size: 32px; line-height: 42px; margin: 0 0 30px; max-width: 22ch;
+    }
+    .closing__top {
+      font-size: 15px; color: var(--ink); text-decoration: none;
+      border-bottom: 1px solid currentColor; padding-bottom: 2px; opacity: 0.8;
+    }
+    .closing__top:hover { opacity: 1; }
+
+    .label {
+      font-family: var(--font-label); font-weight: 400;
+      font-size: 16px; line-height: 22px; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--ink); opacity: 0.75; margin: 0 0 16px;
+    }
+    .statement {
+      font-family: var(--font-display); font-weight: 600;
+      font-size: 36px; line-height: 46px; margin: 0;
+    }
+    .statement + .statement { margin-top: 24px; }
+    .heading {
+      font-family: var(--font-display); font-weight: 600;
+      font-size: 36px; line-height: 46px; margin: 0 0 24px;
+    }
+    .body { font-size: 18px; line-height: 30px; margin: 0 0 18px; max-width: 42ch; }
+    .body:last-child { margin-bottom: 0; }
+    .body--em { font-weight: 600; color: var(--ink-strong); }
+
+    /* ---------- TUNER (dev-only control panel) ---------- */
+    .tuner {
+      position: fixed; top: 16px; right: 16px; z-index: 9999;
+      width: 250px; max-height: calc(100vh - 32px);
+      display: flex; flex-direction: column;
+      background: rgba(30, 26, 25, 0.92);
+      color: #f4efee; border-radius: 12px;
+      font-family: var(--font-body); font-size: 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      overflow: hidden;
+    }
+    .tuner__head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; cursor: pointer; user-select: none;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .tuner__title { font-weight: 600; letter-spacing: 0.04em; font-size: 11px; text-transform: uppercase; opacity: 0.9; }
+    .tuner__caret { opacity: 0.6; transition: transform 0.2s; }
+    .tuner.is-collapsed .tuner__caret { transform: rotate(-90deg); }
+    .tuner.is-collapsed .tuner__body,
+    .tuner.is-collapsed .tuner__foot { display: none; }
+    .tuner__body { padding: 6px 12px 10px; overflow-y: auto; }
+    .tuner__row { padding: 8px 0; }
+    .tuner__rowhead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+    .tuner__label { opacity: 0.85; }
+    .tuner__val { font-variant-numeric: tabular-nums; opacity: 0.65; font-size: 11px; }
+    .tuner input[type="range"] { width: 100%; margin: 0; accent-color: #d9a679; height: 16px; }
+    .tuner__toggle {
+      display: inline-flex; border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 6px; overflow: hidden;
+    }
+    .tuner__toggle button {
+      background: transparent; color: #f4efee; border: 0;
+      padding: 3px 10px; font-size: 11px; cursor: pointer; opacity: 0.5;
+    }
+    .tuner__toggle button.is-on { background: #d9a679; color: #241f1e; opacity: 1; }
+    .tuner__foot {
+      display: flex; gap: 8px; padding: 10px 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .tuner__btn {
+      flex: 1; background: rgba(255,255,255,0.1); color: #f4efee;
+      border: 0; border-radius: 7px; padding: 7px 8px; font-size: 11px;
+      cursor: pointer; font-family: inherit;
+    }
+    .tuner__btn:hover { background: rgba(255,255,255,0.18); }
+    .tuner__btn--primary { background: #d9a679; color: #241f1e; font-weight: 600; }
+    .tuner__readout {
+      padding: 6px 12px; font-size: 11px; opacity: 0.6;
+      font-variant-numeric: tabular-nums; border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .tuner__hint { padding: 0 12px 10px; font-size: 10px; opacity: 0.4; line-height: 1.4; }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 1000px) {
+      :root { --gutter: 32px; --col-text: 1fr; --col-gap: 32px; --img-h: 42vh; }
+      .hero__top { grid-template-columns: 1fr; gap: 32px; }
+      .panel__inner { grid-template-columns: 1fr; align-content: center; gap: 24px; }
+      .panel__viewport { height: auto; }
+      .panel__text { position: static; top: auto; transform: none !important; opacity: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= HERO (static) ================= -->
+  <header class="hero page" id="top">
+    <div class="hero__top">
+      <div>
+        <h1 class="hero__title">One line impactful title</h1>
+        <p class="hero__subtitle">A sentence about the project</p>
+      </div>
+      <div class="hero__intro">
+        <p>User Interviews helps teams run participant research, and the Research Project Creation Agent replaces its multi-page setup with a conversational AI experience.</p>
+        <p>I was the sole product designer on this project, working alongside a PM and 5 engineers from research and discovery in late 2025 through general availability in June 2026.</p>
+      </div>
+    </div>
+    <div class="hero__media ph"><span class="ph__label">App screenshot</span></div>
+  </header>
+
+  <!-- ================= PINNED DECK ================= -->
+  <div class="deck">
+
+    <section class="panel" data-panel>
+      <div class="panel__inner">
+        <div class="panel__media"><div class="ph" data-parallax><span class="ph__label">Gif preview of the app</span></div></div>
+        <div class="panel__viewport">
+          <div class="panel__text" data-paneltext>
+            <p class="statement">The agent turns a plain-language study description into a live draft, built tool call by tool call as the conversation happens.</p>
+            <p class="statement">Chat on the left panel, the draft visibly assembling on the right.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="spacer"></div>
+
+    <section class="panel" data-panel>
+      <div class="panel__inner">
+        <div class="panel__media"><div class="ph" data-parallax><span class="ph__label">Image</span></div></div>
+        <div class="panel__viewport">
+          <div class="panel__text" data-paneltext>
+            <p class="label">Problem</p>
+            <h2 class="heading">Setting up a research project requires expertise that non-researchers often didn't have</h2>
+            <p class="body">Setting up a research project meant working through multiple pages of decisions that non-formally trained researchers often couldn't make on their own. We wanted a way to help this group create research projects more confidently and quickly.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="spacer"></div>
+
+    <section class="panel" data-panel>
+      <div class="panel__inner">
+        <div class="panel__media"><div class="ph" data-parallax><span class="ph__label">Image</span></div></div>
+        <div class="panel__viewport">
+          <div class="panel__text" data-paneltext>
+            <p class="label">Insight</p>
+            <h2 class="heading">Early discovery research established a two-phase model&hellip;</h2>
+            <p class="body">Earlier research had established that researchers think in two phases: draft quickly, then review before launch. Early prototypes built that as two discrete steps. Testing showed a problem: people felt abandoned when the collaborative chat cut over into a separate review mode. The two-phase model described what researchers wanted to accomplish, not how the product needed to be structured — what they actually wanted was a continuous loop, draft and review interleaved in one experience. We rebuilt around that instead.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="spacer"></div>
+
+    <section class="panel" data-panel>
+      <div class="panel__inner">
+        <div class="panel__media"><div class="ph" data-parallax><span class="ph__label">Image</span></div></div>
+        <div class="panel__viewport">
+          <div class="panel__text" data-paneltext>
+            <p class="label">Insight</p>
+            <h2 class="heading">&hellip;testing revealed it wasn't that clean; researchers wanted the product to support a continuous draft &amp; review loop</h2>
+            <p class="body">People felt abandoned when the collaborative chat cut over into a separate review mode.</p>
+            <p class="body body--em">The two-phase model described what researchers wanted to accomplish, not how the product needed to be structured.</p>
+            <p class="body">What researchers actually wanted was a continuous loop, draft and review interleaved in one experience. We rebuilt around that instead.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="spacer spacer--end"></div>
+
+  </div>
+
+  <!-- ================= CLOSING ================= -->
+  <footer class="closing">
+    <p class="closing__label">Outcome</p>
+    <p class="closing__line">Shipped from discovery to general availability in June 2026.</p>
+    <a class="closing__top" href="#top">Back to top ↑</a>
+  </footer>
+
+  <!-- ================= TUNER (remove before shipping) ================= -->
+  <aside class="tuner" id="tuner" aria-label="Scroll tuning controls">
+    <div class="tuner__head" id="tunerHead">
+      <span class="tuner__title">Scroll Tuner</span>
+      <span class="tuner__caret">▾</span>
+    </div>
+    <div class="tuner__body" id="tunerBody"></div>
+    <div class="tuner__readout" id="tunerReadout">panel — · p —</div>
+    <div class="tuner__foot">
+      <button class="tuner__btn" id="tunerReset">Reset</button>
+      <button class="tuner__btn tuner__btn--primary" id="tunerCopy">Copy settings</button>
+    </div>
+    <div class="tuner__hint">Tip: press <b>H</b> to hide the panel · settings are saved in this browser.</div>
+  </aside>
+
+  <script>
+    (function () {
+      var panels = Array.prototype.slice.call(document.querySelectorAll('[data-panel]'));
+      var spacers = Array.prototype.slice.call(document.querySelectorAll('.spacer'));
+      if (!panels.length) return;
+
+      var STORE_KEY = 'rpca-tuner-v1';
+
+      var DEFAULTS = {
+        hold:       92,   // vh — how long a panel holds before the next scrolls up ("when next scrolls up")
+        textTravel: 0.85, // fraction of the empty room around the text that it drifts through (content-aware, never clips)
+        textEase:   1,    // 0 = linear, 1 = ease-out
+        imgHeight:  82,   // vh — placeholder / image height
+        imgDrift:   70,   // px — parallax vertical drift
+        imgScale:   1.06, // × — parallax zoom (hides drifting edges)
+        parallax:   1,    // 0/1 — parallax on/off
+        coverFade:  1,    // 0/1 — fade a panel's text out as the next covers it (kills the seam peek)
+        colText:    460,  // px — text column width
+        colGap:     96    // px — gap between image and text
+      };
+
+      var SCHEMA = [
+        { key: 'hold',       label: 'When next scrolls up', min: 20, max: 200, step: 1,    unit: 'vh', fmt: function(v){return v+'vh';} },
+        { key: 'textTravel', label: 'Text scroll distance', min: 0,  max: 1.5, step: 0.05, unit: '',   fmt: function(v){return v.toFixed(2)+'× room';} },
+        { key: 'textEase',   label: 'Text easing',    type: 'toggle', on: 'ease-out', off: 'linear' },
+        { key: 'imgHeight',  label: 'Image height',        min: 40, max: 96,  step: 1,    unit: 'vh', fmt: function(v){return v+'vh';} },
+        { key: 'imgDrift',   label: 'Parallax drift',      min: 0,  max: 220, step: 1,    unit: 'px', fmt: function(v){return v+'px';} },
+        { key: 'imgScale',   label: 'Parallax zoom',       min: 1,  max: 1.2, step: 0.005,unit: '',   fmt: function(v){return v.toFixed(3)+'×';} },
+        { key: 'parallax',   label: 'Parallax',       type: 'toggle', on: 'on', off: 'off' },
+        { key: 'coverFade',  label: 'Fade on cover',  type: 'toggle', on: 'on', off: 'off' },
+        { key: 'colText',    label: 'Text column',         min: 320,max: 640, step: 10,   unit: 'px', fmt: function(v){return v+'px';} },
+        { key: 'colGap',     label: 'Column gap',          min: 24, max: 160, step: 4,    unit: 'px', fmt: function(v){return v+'px';} }
+      ];
+
+      var cfg = load();
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // --- helpers ---
+      function clone(o){ return JSON.parse(JSON.stringify(o)); }
+      function load(){
+        var c = clone(DEFAULTS);
+        try {
+          var s = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+          for (var k in DEFAULTS) if (s[k] !== undefined) c[k] = s[k];
+        } catch (e) {}
+        return c;
+      }
+      function save(){ try { localStorage.setItem(STORE_KEY, JSON.stringify(cfg)); } catch (e) {} }
+      function easeOutCubic(x){ return 1 - Math.pow(1 - x, 3); }
+      function smoothstep(a, b, x){ var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+
+      // --- apply layout-affecting settings to CSS, then re-measure ---
+      var starts = [], textH = [], vh = window.innerHeight, isDesktop = true, lastPinPx = 0;
+      function applyCss(){
+        var r = document.documentElement.style;
+        r.setProperty('--hold', cfg.hold + 'vh');
+        r.setProperty('--img-h', cfg.imgHeight + 'vh');
+        if (window.innerWidth > 1000) {
+          r.setProperty('--col-text', cfg.colText + 'px');
+          r.setProperty('--col-gap', cfg.colGap + 'px');
+        }
+      }
+      function measure(){
+        vh = window.innerHeight;
+        isDesktop = window.innerWidth > 1000;
+        var y = window.scrollY || window.pageYOffset;
+        starts = panels.map(function (p) { return p.getBoundingClientRect().top + y; });
+        textH = panels.map(function (p) {
+          var t = p.querySelector('[data-paneltext]');
+          return t ? t.offsetHeight : 0;
+        });
+        // how long (px of scroll) the last panel stays pinned = the trailing spacer height
+        var endSpacer = document.querySelector('.spacer--end');
+        lastPinPx = endSpacer ? endSpacer.offsetHeight : vh;
+      }
+
+      // --- per-frame render ---
+      var lastActive = -1, lastP = 0;
+      function frame(){
+        var y = window.scrollY || window.pageYOffset;
+        var active = 0;
+        for (var i = 0; i < panels.length; i++) {
+          var s0 = starts[i];
+          var range = (i < panels.length - 1)
+            ? (starts[i + 1] - starts[i])
+            : (i > 0 ? (starts[i] - starts[i - 1]) : 1.9 * vh);
+          var p = range > 0 ? (y - s0) / range : 0;
+          p = p < 0 ? 0 : (p > 1 ? 1 : p);
+          if (p > 0 && p < 1) active = i;
+
+          var text = panels[i].querySelector('[data-paneltext]');
+          var img = panels[i].querySelector('[data-parallax]');
+          var isLast = (i === panels.length - 1);
+
+          if (text) {
+            if (reduce || !isDesktop) {
+              // static: keep centered on desktop, natural flow on mobile
+              text.style.transform = isDesktop ? 'translateY(-50%)' : 'none';
+              text.style.opacity = 1;
+            } else {
+              // content-aware: text only drifts through the empty room around it, so it never clips
+              var slack = Math.max(0, (vh - textH[i]) / 2 - 32);
+              var drift;
+              if (isLast) {
+                // last panel: settle quickly (first ~30% of the pin), then hold centered.
+                // progress measured against actual pin duration, not inter-panel spacing.
+                var q = lastPinPx > 0 ? (y - starts[i]) / lastPinPx : 1;
+                q = q < 0 ? 0 : (q > 1 ? 1 : q);
+                var inFrac = Math.min(1, q / 0.3);
+                drift = (1 - easeOutCubic(inFrac)) * slack;
+              } else {
+                var pe = cfg.textEase ? easeOutCubic(p) : p;
+                drift = (0.5 - pe) * cfg.textTravel * 2 * slack;
+              }
+              text.style.transform = 'translate3d(0, calc(-50% + ' + drift.toFixed(1) + 'px), 0)';
+              text.style.opacity = (cfg.coverFade && !isLast) ? (1 - smoothstep(0.72, 1, p)).toFixed(3) : 1;
+            }
+          }
+          if (img) {
+            if (cfg.parallax && !reduce) {
+              var iy = (p - 0.5) * cfg.imgDrift;
+              img.style.transform = 'translate3d(0,' + iy.toFixed(1) + 'px,0) scale(' + cfg.imgScale + ')';
+            } else {
+              img.style.transform = 'none';
+            }
+          }
+          if (i === active) lastP = p;
+        }
+        lastActive = active;
+        if (readout) readout.textContent = 'panel ' + (lastActive + 1) + ' · p ' + lastP.toFixed(2);
+      }
+
+      var ticking = false;
+      function onScroll(){
+        if (!ticking) { window.requestAnimationFrame(function(){ frame(); ticking = false; }); ticking = true; }
+      }
+
+      // --- full recompute after any change ---
+      function refresh(){ applyCss(); measure(); frame(); }
+
+      // ================= build the tuner UI =================
+      var body = document.getElementById('tunerBody');
+      var readout = document.getElementById('tunerReadout');
+      var controls = {};
+
+      SCHEMA.forEach(function (item) {
+        var row = document.createElement('div');
+        row.className = 'tuner__row';
+
+        if (item.type === 'toggle') {
+          var head = document.createElement('div');
+          head.className = 'tuner__rowhead';
+          head.innerHTML = '<span class="tuner__label">' + item.label + '</span>';
+          var tog = document.createElement('div');
+          tog.className = 'tuner__toggle';
+          var bOff = document.createElement('button'); bOff.textContent = item.off;
+          var bOn = document.createElement('button'); bOn.textContent = item.on;
+          function paint(){ var on = !!cfg[item.key]; bOn.classList.toggle('is-on', on); bOff.classList.toggle('is-on', !on); }
+          bOn.onclick = function(){ cfg[item.key] = 1; paint(); save(); refresh(); };
+          bOff.onclick = function(){ cfg[item.key] = 0; paint(); save(); refresh(); };
+          tog.appendChild(bOff); tog.appendChild(bOn);
+          row.appendChild(head); row.appendChild(tog);
+          controls[item.key] = { paint: paint };
+          paint();
+        } else {
+          var rh = document.createElement('div');
+          rh.className = 'tuner__rowhead';
+          var lab = document.createElement('span'); lab.className = 'tuner__label'; lab.textContent = item.label;
+          var val = document.createElement('span'); val.className = 'tuner__val'; val.textContent = item.fmt(cfg[item.key]);
+          rh.appendChild(lab); rh.appendChild(val);
+          var input = document.createElement('input');
+          input.type = 'range'; input.min = item.min; input.max = item.max; input.step = item.step; input.value = cfg[item.key];
+          input.oninput = function(){
+            cfg[item.key] = parseFloat(input.value);
+            val.textContent = item.fmt(cfg[item.key]);
+            save(); refresh();
+          };
+          row.appendChild(rh); row.appendChild(input);
+          controls[item.key] = { input: input, val: val, fmt: item.fmt };
+        }
+        body.appendChild(row);
+      });
+
+      // collapse
+      var tuner = document.getElementById('tuner');
+      document.getElementById('tunerHead').onclick = function(){ tuner.classList.toggle('is-collapsed'); };
+
+      // reset
+      document.getElementById('tunerReset').onclick = function(){
+        cfg = clone(DEFAULTS); save();
+        SCHEMA.forEach(function (item) {
+          var c = controls[item.key];
+          if (c.input) { c.input.value = cfg[item.key]; c.val.textContent = c.fmt(cfg[item.key]); }
+          if (c.paint) c.paint();
+        });
+        refresh();
+      };
+
+      // copy settings
+      document.getElementById('tunerCopy').onclick = function(){
+        var out = 'Scroll settings:\n' + JSON.stringify(cfg, null, 2);
+        var btn = document.getElementById('tunerCopy');
+        var done = function(){ var t = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(function(){ btn.textContent = t; }, 1200); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(out).then(done, function(){ window.prompt('Copy these settings:', out); });
+        } else {
+          window.prompt('Copy these settings:', out);
+        }
+      };
+
+      // hide with H
+      window.addEventListener('keydown', function(e){
+        if ((e.key === 'h' || e.key === 'H') && !/input|textarea/i.test(e.target.tagName)) {
+          tuner.style.display = (tuner.style.display === 'none') ? '' : 'none';
+        }
+      });
+
+      // ================= boot =================
+      refresh();
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function(){ refresh(); });
+      }
+      if (!reduce) {
+        window.addEventListener('scroll', onScroll, { passive: true });
+      }
+      window.addEventListener('resize', function(){ refresh(); });
+    })();
+  </script>
+</body>
+</html>

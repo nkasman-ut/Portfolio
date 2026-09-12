@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nathalia Kasman — Product Designer</title>
+  <meta name="description" content="Nathalia Kasman is a Product Designer with 6+ years of experience designing end-to-end, currently building 0-to-1 products at User Interviews." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Body: Plus Jakarta Sans (as in the source design).
+       Accent: Fraunces stands in for Tagada, a commercial typeface that can't be
+       embedded freely. To use the real Tagada, add an @font-face for it and set
+       --font-accent to "Tagada". -->
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #F2F0ED;
+      --ink: #413D38;
+      --ink-body: #423D38;
+      --divider: #DDDDDD;
+      --stamp: #FEFEFE;
+      --stamp-edge: #E4E1DC;
+
+      --card-green: #D5E3B0;
+      --card-tan: #DBD1BF;
+      --card-blue: #A0B2CC;
+
+      --page-max: 1440px;
+      --gutter: 80px;
+
+      --font-accent: "Fraunces", "Tagada", Georgia, serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+
+      --media-h: clamp(300px, 34vw, 480px);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink-body);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .page {
+      max-width: var(--page-max);
+      margin: 0 auto;
+      padding: 0 var(--gutter);
+    }
+
+    /* ---------- HERO ---------- */
+    .hero { padding-top: 58px; padding-bottom: 84px; }
+
+    .hero__title {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      font-size: clamp(64px, 11vw, 160px);
+      line-height: 1.0;
+      letter-spacing: -0.05em;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .hero__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+      gap: clamp(32px, 6vw, 96px);
+      align-items: start;
+      margin-top: 40px;
+    }
+
+    .hero__subtitle {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      font-size: clamp(38px, 5.2vw, 90px);
+      line-height: 1.04;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin: 0;
+      max-width: 14ch;
+    }
+
+    .hero__bio { margin-top: clamp(12px, 5vw, 88px); }
+    .hero__bio p {
+      font-size: clamp(18px, 1.7vw, 24px);
+      line-height: 1.46;
+      color: var(--ink-body);
+      margin: 0 0 24px;
+      max-width: 34ch;
+    }
+    .hero__bio p:last-child { margin-bottom: 0; }
+
+    /* ---------- PROJECT SECTIONS ---------- */
+    .project { padding-top: 44px; }
+    .project__divider {
+      border: 0;
+      height: 10px;
+      background: var(--divider);
+      margin: 0 0 40px;
+    }
+
+    .eyebrow {
+      font-size: 16px;
+      line-height: 20px;
+      color: var(--ink);
+      margin: 0 0 10px;
+    }
+    .project__title {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      font-size: clamp(30px, 3.4vw, 40px);
+      line-height: 1.18;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin: 0;
+    }
+    .project__title a { color: inherit; text-decoration: none; }
+    .project__title a:hover { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 1px; }
+
+    /* Media bleeds toward the right edge, aligned to the left gutter — like the design.
+       On any width the row scrolls horizontally so nothing is un-viewable. */
+    .media {
+      margin-top: 40px;
+      margin-right: calc(-1 * var(--gutter));
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      padding-bottom: 6px;
+      scrollbar-width: none;
+    }
+    .media::-webkit-scrollbar { display: none; }
+    .media > * { flex: 0 0 auto; scroll-snap-align: start; }
+
+    .shot {
+      height: var(--media-h);
+      aspect-ratio: 1820 / 1268;
+      border-radius: 12px;
+      background-size: cover;
+      background-position: 50% 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .shot--left  { background-image: url("assets/img/proj1-left.png"); }
+    .shot--right { background-image: url("assets/img/proj1-right.png"); }
+
+    /* Project 2 — colored cards with a centered video-player screenshot */
+    .card {
+      height: var(--media-h);
+      aspect-ratio: 539 / 634;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .card--green { background-color: var(--card-green); background-image: url("assets/img/proj2-tex-green.png"); background-size: cover; background-position: 50% 50%; }
+    .card--tan   { background-color: var(--card-tan);   background-image: url("assets/img/proj2-tex-rot.png");   background-size: cover; background-position: 50% 50%; }
+    .card--blue  { background-color: var(--card-blue); }
+    .card__player {
+      height: 82%;
+      aspect-ratio: 1292 / 1662;
+      border-radius: 20px;
+      background: url("assets/img/video-player.png") 50% 50% / cover no-repeat;
+      box-shadow: 0 18px 40px rgba(65, 61, 56, 0.16);
+    }
+
+    /* Project 3 — single wide mobile mockup band */
+    .media--single { justify-content: flex-start; }
+    .mockup {
+      height: var(--media-h);
+      aspect-ratio: 1867 / 979;
+      border-radius: 16px;
+      background: url("assets/img/proj3-mobile.png") 50% 50% / cover no-repeat;
+      max-width: 100%;
+    }
+
+    .project__desc {
+      margin: 40px 0 0;
+      margin-left: clamp(0px, 20vw, 288px);
+      max-width: 707px;
+      font-size: clamp(18px, 1.7vw, 24px);
+      line-height: 1.46;
+      color: var(--ink-body);
+    }
+
+    /* ---------- FOOTER / STAMP ---------- */
+    .footer {
+      padding-top: 44px;
+      padding-bottom: 96px;
+    }
+    .footer__divider {
+      border: 0; height: 10px; background: var(--divider); margin: 0 0 40px;
+    }
+    .footer__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 375px) minmax(0, 1fr);
+      gap: clamp(40px, 8vw, 128px);
+      align-items: stretch;
+    }
+    .footer__col p { margin: 0; }
+    .footer__lead {
+      font-size: clamp(20px, 2vw, 24px);
+      color: var(--ink);
+      margin-bottom: clamp(48px, 8vw, 120px) !important;
+    }
+    .footer__block {
+      font-size: clamp(16px, 1.5vw, 24px);
+      line-height: 1.46;
+      color: var(--ink-body);
+      margin-bottom: 28px !important;
+      white-space: pre-line;
+    }
+    .footer__copy {
+      font-size: clamp(16px, 1.5vw, 24px);
+      color: var(--ink-body);
+    }
+    .stamp {
+      background: var(--stamp);
+      border: 1px solid var(--stamp-edge);
+      border-radius: 14px;
+      min-height: 785px;
+      width: 100%;
+    }
+
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 900px) {
+      :root { --gutter: 28px; --media-h: clamp(260px, 62vw, 420px); }
+      .hero__grid { grid-template-columns: 1fr; gap: 40px; }
+      .hero__bio { margin-top: 8px; }
+      .hero__subtitle { max-width: none; }
+      .project__desc { margin-left: 0; }
+      .footer__grid { grid-template-columns: 1fr; }
+      .footer__lead { margin-bottom: 24px !important; }
+      .stamp { min-height: 460px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= HERO ================= -->
+  <header class="hero page" id="top">
+    <h1 class="hero__title">I'm Nathalia</h1>
+    <div class="hero__grid">
+      <p class="hero__subtitle">Product Designer with 6+ years of experience designing end-to-end</p>
+      <div class="hero__bio">
+        <p>Currently at designing 0 to 1 products at User Interviews. (acquired by UserTesting). Previoulsy at AstraZeneca.</p>
+        <p>I thrive in the in-between spaces—where ideas are still forming and close partnerships shape the strategy, direction, and outcome.</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ================= PROJECT 1 ================= -->
+    <section class="project page">
+      <hr class="project__divider" />
+      <p class="eyebrow">User Interviews</p>
+      <h2 class="project__title">
+        <a href="case-study-research-agent.html">AI-assistant for<br />Research Project Creation</a>
+      </h2>
+      <div class="media">
+        <div class="shot shot--left"></div>
+        <div class="shot shot--right"></div>
+      </div>
+      <p class="project__desc">Led design end-to-end as the sole designer of the squad, from research to shipped experience. Lifted draft-to-launch conversion to 54%, reaching 17% of all launched projects within 3 months of GA.</p>
+    </section>
+
+    <!-- ================= PROJECT 2 ================= -->
+    <section class="project page">
+      <hr class="project__divider" />
+      <p class="eyebrow">User Interviews</p>
+      <h2 class="project__title">AI-powered Research Analysis</h2>
+      <div class="media">
+        <div class="card card--green"><div class="card__player"></div></div>
+        <div class="card card--tan"><div class="card__player"></div></div>
+        <div class="card card--blue"><div class="card__player"></div></div>
+      </div>
+      <p class="project__desc">Drove design and research for 0-1 product line, AI-powered research analysis, growing feature adoption to 12% across 10+ feature launches.</p>
+    </section>
+
+    <!-- ================= PROJECT 3 ================= -->
+    <section class="project page">
+      <hr class="project__divider" />
+      <p class="eyebrow">Astrazeneca</p>
+      <h2 class="project__title">Patient Care App</h2>
+      <div class="media media--single">
+        <div class="mockup"></div>
+      </div>
+      <p class="project__desc">Drove design and research for 0-1 product line, AI-powered research analysis, growing feature adoption to 12% across 10+ feature launches.</p>
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="footer page">
+    <hr class="footer__divider" />
+    <div class="footer__grid">
+      <div class="footer__col">
+        <p class="footer__lead">Leave a stamp!</p>
+        <p class="footer__block">Stack
+Paper Design
+Claude Code
+Vercel</p>
+        <p class="footer__block">Credits
+Accent typeface: Tagada
+Body typeface: Plus Jakarta Sans
+Texture images: Unsplash</p>
+        <p class="footer__copy">© Nathalia Kasman 2026</p>
+      </div>
+      <div class="footer__col">
+        <div class="stamp" aria-hidden="true"></div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
