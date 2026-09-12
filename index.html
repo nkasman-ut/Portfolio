@@ -8,13 +8,18 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <!-- Body: Plus Jakarta Sans (as in the source design).
-       Accent: Fraunces stands in for Tagada, a commercial typeface that can't be
-       embedded freely. To use the real Tagada, add an @font-face for it and set
-       --font-accent to "Tagada". -->
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Body: Plus Jakarta Sans. Accent: Tagada (self-hosted, as in the source design). -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <style>
+    @font-face {
+      font-family: "Tagada";
+      src: url("assets/Tagada-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
       --bg: #F2F0ED;
       --ink: #413D38;
@@ -30,7 +35,7 @@
       --page-max: 1440px;
       --gutter: 80px;
 
-      --font-accent: "Fraunces", "Tagada", Georgia, serif;
+      --font-accent: "Tagada", Georgia, serif;
       --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
 
       --media-h: clamp(300px, 34vw, 480px);
