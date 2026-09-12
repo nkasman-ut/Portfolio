@@ -234,6 +234,9 @@
       :root { --gutter: 28px; --media-h: clamp(260px, 62vw, 420px); }
       .hero__subtitle { max-width: none; }
       .hero__bio { margin: 36px 0 0; max-width: none; }
+      /* Keep a right margin equal to the left gutter at the end of the scroll,
+         instead of bleeding to the viewport edge. */
+      .media { margin-right: 0; }
       .project__desc { margin-left: 0; }
       .footer__grid { grid-template-columns: 1fr; }
       .footer__lead { margin-bottom: 24px !important; }
