@@ -73,14 +73,6 @@
       margin: 0;
     }
 
-    .hero__grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
-      gap: clamp(32px, 6vw, 96px);
-      align-items: start;
-      margin-top: 40px;
-    }
-
     .hero__subtitle {
       font-family: var(--font-accent);
       font-weight: 400;
@@ -88,17 +80,20 @@
       line-height: 1.04;
       letter-spacing: -0.02em;
       color: var(--ink);
-      margin: 0;
-      max-width: 14ch;
+      margin: 40px 0 0;
+      max-width: 832px;
     }
 
-    .hero__bio { margin-top: clamp(12px, 5vw, 88px); }
+    /* Bio sits below the subtitle, aligned to the right edge — as in the design. */
+    .hero__bio {
+      margin: clamp(48px, 7vw, 100px) 0 0 auto;
+      max-width: 647px;
+    }
     .hero__bio p {
       font-size: clamp(18px, 1.7vw, 24px);
       line-height: 1.46;
       color: var(--ink-body);
       margin: 0 0 24px;
-      max-width: 34ch;
     }
     .hero__bio p:last-child { margin-bottom: 0; }
 
@@ -237,9 +232,8 @@
     /* ---------- RESPONSIVE ---------- */
     @media (max-width: 900px) {
       :root { --gutter: 28px; --media-h: clamp(260px, 62vw, 420px); }
-      .hero__grid { grid-template-columns: 1fr; gap: 40px; }
-      .hero__bio { margin-top: 8px; }
       .hero__subtitle { max-width: none; }
+      .hero__bio { margin: 36px 0 0; max-width: none; }
       .project__desc { margin-left: 0; }
       .footer__grid { grid-template-columns: 1fr; }
       .footer__lead { margin-bottom: 24px !important; }
@@ -252,12 +246,10 @@
   <!-- ================= HERO ================= -->
   <header class="hero page" id="top">
     <h1 class="hero__title">I'm Nathalia</h1>
-    <div class="hero__grid">
-      <p class="hero__subtitle">Product Designer with 6+ years of experience designing end-to-end</p>
-      <div class="hero__bio">
-        <p>Currently at designing 0 to 1 products at User Interviews. (acquired by UserTesting). Previoulsy at AstraZeneca.</p>
-        <p>I thrive in the in-between spaces—where ideas are still forming and close partnerships shape the strategy, direction, and outcome.</p>
-      </div>
+    <p class="hero__subtitle">Product Designer with 6+ years of experience designing end-to-end</p>
+    <div class="hero__bio">
+      <p>Currently at designing 0 to 1 products at User Interviews. (acquired by UserTesting). Previoulsy at AstraZeneca.</p>
+      <p>I thrive in the in-between spaces—where ideas are still forming and close partnerships shape the strategy, direction, and outcome.</p>
     </div>
   </header>
 
