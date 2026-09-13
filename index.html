@@ -150,6 +150,25 @@
     .shot--left  { background-image: url("assets/img/proj1-left.png"); }
     .shot--right { background-image: url("assets/img/proj1-right.png"); }
 
+    /* Video walkthrough — sits on a solid rectangle, sized to match the screenshots */
+    .vid {
+      height: var(--media-h);
+      border-radius: 12px;
+      background: var(--vid-bg, #C1AD6A);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(14px, 1.8vw, 26px);
+      box-sizing: border-box;
+    }
+    .vid video {
+      height: 100%;
+      width: auto;
+      display: block;
+      border-radius: 8px;
+    }
+
     /* Project 2 — colored cards with a centered video-player screenshot */
     .card {
       height: var(--media-h);
@@ -270,6 +289,9 @@
         <a href="case-study-research-agent.html">AI-assistant for<br />Research Project Creation</a>
       </h2>
       <div class="media">
+        <div class="vid">
+          <video src="assets/img/2-panel-walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
+        </div>
         <div class="shot shot--left"></div>
         <div class="shot shot--right"></div>
       </div>
