@@ -244,6 +244,7 @@
 
     /* Video walkthrough — sits on a solid rectangle, sized to match the screenshots */
     .vid {
+      position: relative;
       height: var(--media-h);
       border-radius: 12px;
       background: var(--vid-bg, #C1AD6A);
@@ -269,6 +270,13 @@
       border-radius: 12px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
+    /* Wrapper that lets the behind-the-scenes button overlay the bare video */
+    .vid-bare-wrap {
+      position: relative;
+      display: inline-block;
+      height: var(--media-h);
+    }
+    .vid-bare-wrap .vid-bare { height: 100%; }
 
     /* Project 2 — colored cards with a centered video-player screenshot */
     .card {
@@ -492,6 +500,107 @@
       .pager { order: 5; }
       .footer__colophon { order: 6; margin-top: 48px; }
     }
+
+    /* ---------- Behind-the-scenes hover button (matches .btn) ---------- */
+    .vid__cta {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, calc(-50% + 8px));
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border: 1px solid var(--ink);
+      border-radius: 10px;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-accent);
+      font-size: 26px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .28s ease, transform .28s ease;
+    }
+    .vid__cta svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .vid--walkthrough:hover .vid__cta,
+    .vid--walkthrough:focus-within .vid__cta {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+    }
+    .vid--walkthrough .vid__cta:hover { opacity: .9; }
+    .vid__cta:active { transform: translate(-50%, calc(-50% + 1px)); }
+    .vid__cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    /* Touch devices have no hover: keep the button visible. */
+    @media (hover: none) {
+      .vid__cta { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
+    }
+
+    /* ---------- Video modal ---------- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 4vw, 48px);
+    }
+    .modal.is-open { display: flex; }
+    .modal__overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(24, 22, 20, 0.74);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      transition: opacity .3s ease;
+    }
+    .modal.is-open .modal__overlay { opacity: 1; }
+    .modal__dialog {
+      position: relative;
+      width: min(1100px, 100%);
+      max-height: 90vh;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transform: scale(0.96);
+      transition: opacity .3s ease, transform .3s ease;
+    }
+    .modal.is-open .modal__dialog { opacity: 1; transform: scale(1); }
+    .modal__video {
+      display: block;
+      width: 100%;
+      max-height: 90vh;
+      background: #000;
+    }
+    .modal__close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      width: 40px;
+      height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      cursor: pointer;
+      transition: background .2s ease;
+    }
+    .modal__close:hover { background: rgba(0, 0, 0, 0.82); }
+    .modal__close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+      .vid__cta, .modal__overlay, .modal__dialog { transition: none; }
+    }
   </style>
   <!-- Mark JS as available before paint, so project sections can start hidden
        for the fade-in without flashing for no-JS / slow-JS visitors. -->
@@ -523,7 +632,13 @@
         <div class="vid">
           <video src="assets/img/2-panel-walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
         </div>
-        <video class="vid-bare" src="assets/img/ProjectCreationAgent-Walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
+        <div class="vid-bare-wrap vid--walkthrough">
+          <video class="vid-bare" src="assets/img/ProjectCreationAgent-Walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
+          <button type="button" class="vid__cta" data-video="assets/img/ProjectCreationWalkthrough.mp4" aria-haspopup="dialog">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Behind the scenes: 8min
+          </button>
+        </div>
         <div class="shot shot--right"></div>
       </div>
       <p class="project__desc">Led design end-to-end as the sole designer of the squad, from research to shipped experience. Lifted draft-to-launch conversion to 54%, reaching 17% of all launched projects within 3 months of GA.</p>
@@ -1222,6 +1337,79 @@ Texture images: Unsplash</p>
       }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
 
       projects.forEach(function (p) { io.observe(p); });
+    })();
+  </script>
+
+  <!-- ================= BEHIND-THE-SCENES VIDEO MODAL ================= -->
+  <div class="modal" id="video-modal" role="dialog" aria-modal="true"
+       aria-label="Behind the scenes walkthrough" aria-hidden="true">
+    <div class="modal__overlay" data-close></div>
+    <div class="modal__dialog">
+      <button type="button" class="modal__close" data-close aria-label="Close video">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+      <video class="modal__video" controls playsinline preload="none"></video>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var modal = document.getElementById('video-modal');
+      if (!modal) return;
+      var video = modal.querySelector('.modal__video');
+      var closeBtn = modal.querySelector('.modal__close');
+      var lastFocused = null;
+
+      function open(src) {
+        lastFocused = document.activeElement;
+        if (video.getAttribute('src') !== src) video.setAttribute('src', src);
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        video.muted = false;               // play with audio
+        var p = video.play();
+        if (p && p.catch) p.catch(function () {});
+        closeBtn.focus();
+      }
+
+      function close() {
+        if (!modal.classList.contains('is-open')) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        video.pause();
+        video.removeAttribute('src');      // release the large file
+        video.load();
+        if (lastFocused && lastFocused.focus) lastFocused.focus();
+      }
+
+      document.querySelectorAll('.vid__cta').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          open(btn.getAttribute('data-video'));
+        });
+      });
+
+      modal.querySelectorAll('[data-close]').forEach(function (el) {
+        el.addEventListener('click', close);
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') close();
+      });
+
+      // Keep keyboard focus inside the dialog while it is open.
+      modal.addEventListener('keydown', function (e) {
+        if (e.key !== 'Tab') return;
+        var f = modal.querySelectorAll('button, video[controls]');
+        if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      });
     })();
   </script>
 
