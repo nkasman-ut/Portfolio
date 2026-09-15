@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/hero-image-generator", "destination": "/hero-image-generator.html" }
+  ]
+}
