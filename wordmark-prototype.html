@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Animated Wordmark — Prototype</title>
+  <title>Wave-in Wordmark — Prototype</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,7 +24,6 @@
       --ink-body: #423D38;
       --divider: #DDDDDD;
       --stamp-ink: #9E3B2E;
-
       --font-accent: "Tagada", Georgia, serif;
       --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
     }
@@ -40,199 +39,184 @@
       text-rendering: optimizeLegibility;
     }
 
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 64px 40px 120px; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 56px 40px 120px; }
 
-    .intro__eyebrow {
+    .eyebrow {
       font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--stamp-ink); margin: 0 0 12px;
+      color: var(--stamp-ink); margin: 0 0 10px;
     }
-    .intro h1 {
+    .lede { max-width: 640px; font-size: 17px; line-height: 1.55; margin: 0 0 8px; }
+    .lede code { font-size: 0.92em; background: #fff; border: 1px solid var(--divider); border-radius: 5px; padding: 1px 5px; }
+
+    /* ---- The hero, faithfully reproduced from index.html ---- */
+    .hero {
+      margin-top: 48px;
+      background: #fff; border: 1px solid var(--divider); border-radius: 18px;
+      padding: 72px 56px 64px; overflow: hidden;
+    }
+    .hero__title {
       font-family: var(--font-accent); font-weight: 400;
-      font-size: clamp(36px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.03em;
-      color: var(--ink); margin: 0 0 16px;
+      font-size: clamp(64px, 11vw, 160px);
+      line-height: 1.0; letter-spacing: -0.05em; color: var(--ink);
+      margin: 0;
     }
-    .intro p { max-width: 620px; font-size: 17px; line-height: 1.55; margin: 0; }
-
-    /* ---------- specimen cards ---------- */
-    .grid { margin-top: 64px; display: grid; gap: 28px; }
-
-    .card {
-      background: #fff;
-      border: 1px solid var(--divider);
-      border-radius: 18px;
-      padding: 44px 40px 32px;
-      overflow: hidden;
-    }
-    .card__stage {
-      min-height: 120px;
-      display: flex; align-items: center;
-    }
-    .card__meta { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--divider); }
-    .card__name {
-      font-family: var(--font-accent); font-size: 22px; letter-spacing: -0.02em;
-      color: var(--ink); margin: 0 0 6px;
-    }
-    .card__desc { font-size: 15px; line-height: 1.5; margin: 0; color: #6b665f; }
-    .card__desc b { color: var(--ink-body); font-weight: 600; }
-
-    /* Shared wordmark base — matches the real hero title scale-down */
-    .wm {
+    .hero__subtitle {
       font-family: var(--font-accent); font-weight: 400;
-      font-size: clamp(48px, 8vw, 84px); line-height: 1; letter-spacing: -0.05em;
-      color: var(--ink); white-space: nowrap; display: inline-flex;
-    }
-    /* Per-letter spans keep their own transform origin */
-    .wm span { display: inline-block; will-change: transform; }
-    /* Preserve the natural space between words */
-    .wm .space { width: 0.28em; }
-
-    .accent { color: var(--stamp-ink); }
-
-    /* ============================================================
-       A — WAVE  (continuous, ambient)
-       Letters ride a gentle sine wave forever. Staggered by index.
-       ============================================================ */
-    @keyframes wm-wave {
-      0%, 100% { transform: translateY(0); }
-      50%      { transform: translateY(-0.14em); }
-    }
-    .wave span { animation: wm-wave 2.6s ease-in-out infinite; }
-
-    /* ============================================================
-       B — SETTLE  (entrance only, then still)
-       Letters drop + fade in with a soft overshoot, once.
-       ============================================================ */
-    @keyframes wm-settle {
-      0%   { transform: translateY(-0.5em); opacity: 0; }
-      60%  { transform: translateY(0.06em); opacity: 1; }
-      100% { transform: translateY(0); opacity: 1; }
-    }
-    .settle span { opacity: 0; animation: wm-settle 0.6s cubic-bezier(.2,.8,.2,1) forwards; }
-
-    /* ============================================================
-       C — WINK  (calm wordmark + one living accent)
-       The star/dot twinkles and spins. Rest of the word is still —
-       cheapest, most "brandable" option.
-       ============================================================ */
-    @keyframes wm-twinkle {
-      0%, 100% { transform: rotate(0deg) scale(1); }
-      50%      { transform: rotate(180deg) scale(1.25); }
-    }
-    .wink .star {
-      display: inline-block; color: var(--stamp-ink);
-      animation: wm-twinkle 3.4s ease-in-out infinite;
+      font-size: clamp(32px, 4.4vw, 72px); line-height: 1.04; letter-spacing: -0.02em;
+      color: var(--ink); margin: 28px 0 0; max-width: 832px;
     }
 
     /* ============================================================
-       D — HOVER PLAY  (still at rest, waves on interaction)
-       Best for a real header: calm until you touch it.
+       WAVE-IN
+       Every letter starts a little low and transparent, then rises
+       into place with a per-letter delay — a wave rippling
+       left-to-right. Same effect as the "Domis" title, pure CSS.
+       ------------------------------------------------------------
+       Tunables:
+         --wave-rise   how far each letter starts below its rest (em)
+         --wave-dur    per-letter travel time
+         --wave-step   delay added per letter (the "wave" spacing)
        ============================================================ */
-    .play span { transition: transform 0.2s ease; }
-    .play:hover span { animation: wm-wave 2.6s ease-in-out infinite; }
-
-    /* Replay button */
-    .replay {
-      margin-top: 20px; font-family: var(--font-body); font-size: 13px;
-      background: none; border: 1px solid var(--divider); color: var(--ink-body);
-      padding: 7px 14px; border-radius: 999px; cursor: pointer;
+    :root {
+      --wave-rise: 0.42em;
+      --wave-dur: 0.72s;
+      --wave-step: 0.045s;
     }
-    .replay:hover { border-color: var(--ink); }
 
-    /* Respect people who prefer less motion */
+    .wave-in .ch {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(var(--wave-rise));
+      /* delay is set per-letter inline via JS: --i * --wave-step */
+      animation: wave-rise var(--wave-dur) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation-delay: calc(var(--i) * var(--wave-step));
+      will-change: transform, opacity;
+    }
+    .wave-in .space { display: inline-block; width: 0.28em; }
+
+    @keyframes wave-rise {
+      from { opacity: 0; transform: translateY(var(--wave-rise)); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Reduced motion: appear instantly, no travel */
     @media (prefers-reduced-motion: reduce) {
-      .wave span, .wink .star, .play:hover span { animation: none !important; }
-      .settle span { opacity: 1 !important; animation: none !important; transform: none !important; }
+      .wave-in .ch {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
     }
+
+    /* ---- controls ---- */
+    .controls { display: flex; flex-wrap: wrap; gap: 20px 28px; align-items: center; margin-top: 44px; }
+    .replay {
+      font-family: var(--font-body); font-size: 14px; font-weight: 500;
+      background: var(--ink); border: none; color: #fff;
+      padding: 11px 20px; border-radius: 999px; cursor: pointer;
+    }
+    .replay:hover { opacity: 0.88; }
+    .slider { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b665f; }
+    .slider label { letter-spacing: 0.02em; }
+    .slider input { width: 160px; accent-color: var(--stamp-ink); }
+    .slider b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+    .note { margin-top: 40px; font-size: 14px; line-height: 1.55; color: #6b665f; max-width: 640px; }
+    .note b { color: var(--ink-body); font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="intro">
-      <p class="intro__eyebrow">Prototype</p>
-      <h1>A lightweight animated wordmark</h1>
-      <p>
-        Four CSS-only treatments of the “Nathalia” mark — no GIF, no JavaScript
-        libraries, sharp at any size, and each honours <code>prefers-reduced-motion</code>.
-        Total cost is a few keyframes. Pick the feel you like and I’ll wire it into
-        the real header.
-      </p>
+    <p class="eyebrow">Prototype · wave-in</p>
+    <p class="lede">
+      A staggered rise-and-fade — the same load animation as the “Domis” title on
+      <code>hridaew.com/domis</code>, rebuilt as pure CSS (no GSAP, no libraries).
+      Each letter starts low and transparent and lifts into place a beat after the
+      one before it. Shown here on the real hero, at real scale.
+    </p>
+
+    <!-- Faithful reproduction of the index.html hero -->
+    <div class="hero">
+      <h1 class="hero__title wave-in" data-wave aria-label="I'm Nathalia">I'm Nathalia</h1>
+      <p class="hero__subtitle wave-in" data-wave data-stagger-start="12"
+         aria-label="Product Designer with 6+ years of experience designing end-to-end">Product Designer with 6+ years of experience designing end-to-end</p>
     </div>
 
-    <div class="grid">
+    <div class="controls">
+      <button class="replay" data-replay>↻ Replay animation</button>
 
-      <!-- A — WAVE -->
-      <div class="card">
-        <div class="card__stage">
-          <span class="wm wave" data-word aria-label="Nathalia">Nathalia</span>
-        </div>
-        <div class="card__meta">
-          <p class="card__name">A · Wave</p>
-          <p class="card__desc"><b>Ambient, always on.</b> Letters ride a slow sine wave on a stagger. Closest to the Ella·Dino GIF feel, but vector-crisp and ~0 KB.</p>
-        </div>
+      <div class="slider">
+        <label>Rise distance · <b data-out="rise">0.42</b>em</label>
+        <input type="range" min="0.1" max="1" step="0.02" value="0.42" data-var="--wave-rise" data-suffix="em" data-fmt="2" />
       </div>
-
-      <!-- B — SETTLE -->
-      <div class="card">
-        <div class="card__stage">
-          <span class="wm settle" data-word aria-label="Nathalia">Nathalia</span>
-        </div>
-        <div class="card__meta">
-          <p class="card__name">B · Settle</p>
-          <p class="card__desc"><b>Entrance only.</b> Letters drop in with a soft overshoot on load, then rest. Quiet and premium — nothing moves after arrival.</p>
-          <button class="replay" data-replay>↻ Replay</button>
-        </div>
+      <div class="slider">
+        <label>Per-letter step · <b data-out="step">45</b>ms</label>
+        <input type="range" min="10" max="120" step="5" value="45" data-var="--wave-step" data-suffix="ms" data-scale="0.001" data-fmt="0" />
       </div>
-
-      <!-- C — WINK -->
-      <div class="card">
-        <div class="card__stage">
-          <span class="wm wink" aria-label="Nathalia">Nathal<span class="star">✷</span>a</span>
-        </div>
-        <div class="card__meta">
-          <p class="card__name">C · Wink</p>
-          <p class="card__desc"><b>One living accent.</b> The word stays still; a single star twinkles — echoing the site’s ✷ motif and the Ella·Dino dot. The most restrained option.</p>
-        </div>
+      <div class="slider">
+        <label>Letter travel · <b data-out="dur">720</b>ms</label>
+        <input type="range" min="300" max="1400" step="20" value="720" data-var="--wave-dur" data-suffix="ms" data-scale="0.001" data-fmt="0" />
       </div>
-
-      <!-- D — HOVER PLAY -->
-      <div class="card">
-        <div class="card__stage">
-          <span class="wm play" data-word aria-label="Nathalia">Nathalia</span>
-        </div>
-        <div class="card__meta">
-          <p class="card__name">D · Hover play</p>
-          <p class="card__desc"><b>Calm, then playful.</b> Still at rest; waves only on hover. My pick for a real header — personality on demand, no ambient distraction. <i>(Hover the word.)</i></p>
-        </div>
-      </div>
-
     </div>
+
+    <p class="note">
+      <b>How it works:</b> JS splits each heading into <code>&lt;span class="ch"&gt;</code> letters
+      and sets <code>--i</code> (the letter’s index) on each. CSS turns that into a
+      per-letter <code>animation-delay</code>, so one keyframe produces the whole wave.
+      The subtitle simply starts its count later so it trails the name.
+      Swap the values with the sliders, then I’ll bake the ones you like into
+      <code>index.html</code>.
+    </p>
   </div>
 
   <script>
-    // Split the animated wordmarks into per-letter spans and stagger them.
-    document.querySelectorAll('[data-word]').forEach(function (el) {
-      var text = el.textContent;
-      el.textContent = '';
-      [].forEach.call(text, function (ch, i) {
-        var s = document.createElement('span');
-        if (ch === ' ') { s.className = 'space'; }
-        s.textContent = ch === ' ' ? '' : ch;
-        s.style.animationDelay = (i * 0.06) + 's';
-        el.appendChild(s);
+    // Split each [data-wave] heading into per-letter spans carrying their index.
+    function build() {
+      document.querySelectorAll('[data-wave]').forEach(function (el) {
+        if (el.dataset.built) return;
+        el.dataset.built = '1';
+        var text = el.getAttribute('aria-label') || el.textContent;
+        var start = parseInt(el.dataset.staggerStart || '0', 10);
+        el.textContent = '';
+        [].forEach.call(text, function (ch, i) {
+          var s = document.createElement('span');
+          if (ch === ' ') {
+            s.className = 'space';
+          } else {
+            s.className = 'ch';
+            s.textContent = ch;
+            s.style.setProperty('--i', start + i);
+          }
+          el.appendChild(s);
+        });
+      });
+    }
+
+    function replay() {
+      document.querySelectorAll('[data-wave] .ch').forEach(function (s) {
+        s.style.animation = 'none';
+        void s.offsetWidth;      // reflow → restart
+        s.style.animation = '';
+      });
+    }
+
+    // Live tuning sliders write CSS variables on :root.
+    document.querySelectorAll('[data-var]').forEach(function (input) {
+      input.addEventListener('input', function () {
+        var scale = parseFloat(input.dataset.scale || '1');
+        var value = parseFloat(input.value) * scale;
+        var suffix = input.dataset.suffix === 'ms' ? 's' : input.dataset.suffix;
+        document.documentElement.style.setProperty(input.dataset.var, value + suffix);
+        // update readout
+        var out = document.querySelector('[data-out="' + input.dataset.var.replace('--wave-', '') + '"]');
+        if (out) out.textContent = input.value;
+        replay();
       });
     });
 
-    // Replay button for the entrance demo.
-    document.querySelectorAll('[data-replay]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var wm = btn.closest('.card').querySelector('.wm');
-        wm.querySelectorAll('span').forEach(function (s) {
-          s.style.animation = 'none';
-          void s.offsetWidth;        // force reflow so the animation restarts
-          s.style.animation = '';
-        });
-      });
-    });
+    document.querySelector('[data-replay]').addEventListener('click', replay);
+
+    build();
   </script>
 </body>
 </html>
