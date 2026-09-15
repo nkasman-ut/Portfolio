@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/hero-image-generator", "destination": "/hero-image-generator.html" },
-    { "source": "/motion-playground", "destination": "/motion-playground.html" }
+    { "source": "/motion-playground", "destination": "/motion-playground.html" },
+    { "source": "/game", "destination": "/game.html" }
   ]
 }

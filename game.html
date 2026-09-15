@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Face Bobble — 2 Player</title>
+<link rel="icon" href="/assets/favicon/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+<link rel="manifest" href="/assets/favicon/site.webmanifest" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink:#06120f; --teal:#0c3b38;
+    --amber:#ffcf3a; --mint:#5eead4; --coral:#ff5a4d;
+    --brass-d:#3a2a10; --brass-m:#b4842a; --brass-l:#ffdf8a;
+    --text:#eafff8; --muted:rgba(180,240,225,0.7);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { height:100%; background:var(--ink); color:var(--text);
+    font-family:"Press Start 2P", system-ui, monospace; overflow:hidden; }
+
+  #cam { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+  #bgtint { position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(ellipse 80% 80% at 50% 45%, rgba(8,40,40,0) 35%, rgba(6,32,32,0.5) 72%, rgba(4,22,22,0.8) 100%); }
+  #hud { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; image-rendering:pixelated; }
+  #frame { position:fixed; inset:0; pointer-events:none;
+    box-shadow: inset 0 0 0 4px var(--brass-d), inset 0 0 0 8px var(--brass-l),
+                inset 0 0 0 22px var(--brass-m), inset 0 0 0 26px var(--brass-d),
+                inset 0 0 0 30px var(--brass-l), inset 0 0 0 34px var(--brass-d); }
+
+  #tip { position:fixed; bottom:8px; left:50%; transform:translateX(-50%);
+    font-size:8px; letter-spacing:0.04em; color:var(--text); line-height:1.6;
+    background:rgba(8,30,28,0.62); border:2px solid var(--brass-m);
+    box-shadow:0 3px 0 var(--brass-d); padding:8px 14px; backdrop-filter:blur(6px); }
+
+  #gate { position:fixed; inset:0; display:grid; place-items:center;
+    background:radial-gradient(120% 120% at 50% 0%, rgba(10,46,44,0.8), rgba(4,16,14,0.95));
+    text-align:center; padding:24px; }
+  #gate .card { max-width:520px; background:var(--teal); border:4px solid var(--brass-m);
+    box-shadow:inset 0 0 0 3px var(--brass-d), 0 6px 0 var(--brass-d), 0 6px 30px rgba(0,0,0,0.5);
+    padding:34px 30px; }
+  #gate h2 { font-size:22px; line-height:1.5; margin-bottom:18px; color:var(--amber); text-shadow:2px 2px 0 var(--brass-d); }
+  #gate p { color:var(--muted); font-size:10px; line-height:2; margin-bottom:22px; }
+  .names { display:flex; gap:16px; justify-content:center; margin-bottom:24px; }
+  .names label { display:flex; flex-direction:column; gap:8px; font-size:8px; color:var(--brass-l); letter-spacing:0.08em; }
+  .names input { font-family:"Press Start 2P", monospace; font-size:11px; color:var(--amber);
+    background:rgba(0,0,0,0.45); border:2px solid var(--brass-m); padding:10px 8px; width:130px; text-align:center;
+    box-shadow:inset 0 0 0 2px var(--brass-d); outline:none; }
+  .names input:focus { border-color:var(--mint); }
+  .names input::placeholder { color:rgba(180,240,225,0.4); }
+  #gate .hint { font-size:8px; }
+  #gate code { font-family:"Space Mono", monospace; background:rgba(0,0,0,0.4); padding:2px 6px; color:var(--amber); }
+  button#start { pointer-events:auto; font-family:"Press Start 2P", monospace; font-size:12px; line-height:1.5;
+    color:var(--brass-d); background:var(--amber); border:3px solid var(--brass-l);
+    box-shadow:inset 0 0 0 2px var(--brass-d), 0 5px 0 #a06a00; padding:16px 22px; cursor:pointer;
+    transition:transform 0.08s ease; }
+  button#start:hover { transform:translateY(-2px); }
+  button#start:active { transform:translateY(2px); box-shadow:inset 0 0 0 2px var(--brass-d), 0 1px 0 #a06a00; }
+  button#start:focus-visible { outline:3px solid var(--mint); outline-offset:3px; }
+  #gate.error .card { border-color:var(--coral); }
+  #gate.error h2 { color:var(--coral); }
+
+  #over { position:fixed; inset:0; display:grid; place-items:center;
+    background:rgba(4,16,14,0.72); text-align:center; padding:24px; }
+  #over .card { background:var(--teal); border:4px solid var(--brass-m); max-width:680px;
+    box-shadow:inset 0 0 0 3px var(--brass-d), 0 6px 0 var(--brass-d), 0 6px 30px rgba(0,0,0,0.5);
+    padding:26px 32px; }
+  #over h2 { font-size:24px; line-height:1.5; margin-bottom:16px; color:var(--amber); text-shadow:2px 2px 0 var(--brass-d); }
+  #shot { display:block; width:min(56vw, 520px); image-rendering:pixelated;
+    margin:0 auto 18px; border:3px solid var(--brass-d); }
+  .overbtns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  #over .hint { font-size:8px; color:var(--muted); }
+  .btn { pointer-events:auto; display:inline-block; font-family:"Press Start 2P", monospace;
+    font-size:12px; line-height:1.5; color:var(--brass-d); background:var(--amber);
+    border:3px solid var(--brass-l); box-shadow:inset 0 0 0 2px var(--brass-d), 0 5px 0 #a06a00;
+    padding:14px 20px; cursor:pointer; text-decoration:none; transition:transform 0.08s ease; }
+  .btn:hover { transform:translateY(-2px); }
+  .btn:active { transform:translateY(2px); box-shadow:inset 0 0 0 2px var(--brass-d), 0 1px 0 #a06a00; }
+  .btn:focus-visible { outline:3px solid var(--mint); outline-offset:3px; }
+
+  .hidden { display:none !important; }
+  @media (prefers-reduced-motion: reduce) { button#start { transition:none; } }
+</style>
+</head>
+<body>
+  <video id="cam" playsinline muted></video>
+  <div id="bgtint"></div>
+  <canvas id="hud"></canvas>
+  <div id="frame"></div>
+
+  <div id="tip" class="hidden">P1 left · P2 right — tilt to aim · open mouth to fire · match colours · first to 5 wins</div>
+
+  <div id="gate">
+    <div class="card" id="gateCard">
+      <h2 id="gateTitle">Face Bobble — 2P</h2>
+      <p id="gateBody">
+        Two players. Tilt your head to aim, open your mouth to fire bubbles.
+        Match two of the same color to pop them and score. First to score to 5 wins.
+      </p>
+      <div class="names">
+        <label>LEFT<input id="n1" maxlength="10" placeholder="P1" autocomplete="off" /></label>
+        <label>RIGHT<input id="n2" maxlength="10" placeholder="P2" autocomplete="off" /></label>
+      </div>
+      <button id="start">Enable camera &amp; start</button>
+      <p class="hint" style="margin-top:18px;margin-bottom:0;">
+        Loads the MediaPipe model from a CDN, so keep this device online.
+      </p>
+    </div>
+  </div>
+
+  <div id="over" class="hidden">
+    <div class="card">
+      <h2 id="overText">P1 WINS!</h2>
+      <img id="shot" alt="winning shot" class="hidden" />
+      <div class="overbtns">
+        <a id="shotLink" class="btn" download="face-bobble-win.png">Save photo</a>
+        <button id="again" class="btn">Play again</button>
+      </div>
+      <p class="hint" style="margin-top:14px;margin-bottom:0;">or press Space</p>
+    </div>
+  </div>
+
+<script type="module">
+  const MP_VERSION = "0.10.35";
+
+  const TUNE = {
+    OPEN_THRESH:   0.45,  // how wide the mouth must open to fire (jawOpen 0..1)
+    HOLD_MS:       400,   // how long the mouth is held open to fire
+    AIM_GAIN:      2.6,   // how strongly head tilt swings the launcher
+    MAX_AIM_DEG:   75,    // launcher swing limit from straight-up
+    AIM_SIGN:      -1,    // FLIP this (to 1) if a launcher tilts the wrong way
+    SPEED:         14,    // projectile speed (px/frame)
+    COLS:          7,     // bubbles across a board (sets bubble size)
+    MIN_MATCH:     2,     // same-colour group this size+ bursts (2 = same colour meet)
+    TOUCH_FACTOR:  1.30,  // how close counts as "touching" (×combined radius)
+    MAX_BALLS:     90,    // per board, oldest culled past this
+    WIN_SCORE:     5,     // first player to this many popped bubbles wins
+    MIRROR:        true,  // flip webcam left-right (selfie/mirror view)
+  };
+
+  let FaceLandmarker, FilesetResolver;
+
+  const EYE_R = 33, EYE_L = 263;       // outer eye corners -> head roll
+  const MAX_AIM = TUNE.MAX_AIM_DEG * Math.PI / 180;
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  /* ---- Classic Bust-A-Move bubble colours ---- */
+  const BUBBLE_COLORS = [
+    { name:"blue",   base:"#2f6df6", light:"#bcd6ff", dark:"#13307f" },
+    { name:"red",    base:"#f23a3a", light:"#ffc2bc", dark:"#8f1414" },
+    { name:"yellow", base:"#ffd23a", light:"#fff4b8", dark:"#a8780a" },
+    { name:"green",  base:"#3fce3a", light:"#c2f5b8", dark:"#147a12" },
+    { name:"purple", base:"#a23df0", light:"#e0bcff", dark:"#5a1399" },
+    { name:"orange", base:"#ff8c1a", light:"#ffd9a8", dark:"#9c5200" },
+    { name:"cyan",   base:"#33cfe0", light:"#bcf3fa", dark:"#0e7a88" },
+    { name:"silver", base:"#cdd6e6", light:"#ffffff", dark:"#7d8aa0" },
+  ];
+  const randomColor = () => BUBBLE_COLORS[(Math.random() * BUBBLE_COLORS.length) | 0];
+
+  /* Pixel-art bubble sprites: render small, blit scaled-up with smoothing off. */
+  const SPRITE_PX = 32;
+  function makeSprite(color) {
+    const c = document.createElement("canvas"); c.width = c.height = SPRITE_PX;
+    const g = c.getContext("2d");
+    const cx = SPRITE_PX/2, cy = SPRITE_PX/2, r = SPRITE_PX/2 - 1;
+    const grad = g.createRadialGradient(cx - r*0.35, cy - r*0.4, r*0.12, cx, cy, r);
+    grad.addColorStop(0, color.light); grad.addColorStop(0.45, color.base); grad.addColorStop(1, color.dark);
+    g.fillStyle = grad; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI*2); g.fill();
+    g.lineWidth = Math.max(1, SPRITE_PX*0.08); g.strokeStyle = color.dark;
+    g.beginPath(); g.arc(cx, cy, r - g.lineWidth/2, 0, Math.PI*2); g.stroke();
+    g.fillStyle = "rgba(255,255,255,0.92)";
+    g.beginPath(); g.ellipse(cx - r*0.3, cy - r*0.4, r*0.26, r*0.17, -0.6, 0, Math.PI*2); g.fill();
+    g.fillStyle = "rgba(255,255,255,0.45)";
+    g.beginPath(); g.arc(cx + r*0.28, cy + r*0.32, r*0.1, 0, Math.PI*2); g.fill();
+    return c;
+  }
+  BUBBLE_COLORS.forEach(c => { c.sprite = makeSprite(c); });
+
+  function drawBubble(x, y, r, color, flying) {
+    ctx.imageSmoothingEnabled = false;
+    const d = r*2;
+    if (flying) { ctx.save(); ctx.shadowColor = color.base; ctx.shadowBlur = 14;
+      ctx.drawImage(color.sprite, x - r, y - r, d, d); ctx.restore(); }
+    else ctx.drawImage(color.sprite, x - r, y - r, d, d);
+  }
+
+  /* ---- Per-player state ---- */
+  function makePlayer(side, name) {
+    return { side, name, bounds:null, cx:0, baseY:0, r:26, L:90, ring:42, armW:9, head:22,
+      aim:0, mouthOpen:false, jawVal:0, lm:null, hasFace:false, gaze:[{x:0,y:0},{x:0,y:0}],
+      gestureSince:null, firedThisGesture:false,
+      charge:0, balls:[], particles:[], score:0, shots:0, nextColor:randomColor() };
+  }
+  const players = [ makePlayer("L", "P1"), makePlayer("R", "P2") ];
+
+  /* ---- DOM ---- */
+  const video  = document.getElementById("cam");
+  video.style.transform = TUNE.MIRROR ? "scaleX(-1)" : "none";
+  const canvas = document.getElementById("hud");
+  const ctx    = canvas.getContext("2d");
+  const gate      = document.getElementById("gate");
+  const gateTitle = document.getElementById("gateTitle");
+  const gateBody  = document.getElementById("gateBody");
+  const startBtn  = document.getElementById("start");
+  const tip       = document.getElementById("tip");
+  const over      = document.getElementById("over");
+  const overText  = document.getElementById("overText");
+  const again     = document.getElementById("again");
+  const shot       = document.getElementById("shot");
+  const shotLink   = document.getElementById("shotLink");
+  const n1 = document.getElementById("n1");
+  const n2 = document.getElementById("n2");
+
+  let faceLandmarker = null, lastVideoTime = -1, running = false;
+  let gameOver = false, winner = -1, pendingShot = false;
+
+  /* ---- Layout: two vertical boards sized to the window ---- */
+  function computeLayout() {
+    const W = canvas.width, H = canvas.height;
+    const TOP = 100, BOTTOM = 46;         // header room up top, small gap below
+    const boardH = H - TOP - BOTTOM;
+    let boardW = boardH * 0.62;          // portrait playfield
+    boardW = Math.min(boardW, W/2 - 44);
+    const r = Math.max(12, Math.floor(boardW / (2*TUNE.COLS)));
+    const centers = [W*0.25, W*0.75];
+    players.forEach((p, i) => {
+      const cx = centers[i];
+      p.bounds = { x0: cx - boardW/2, y0: TOP, x1: cx + boardW/2, y1: H - BOTTOM };
+      p.cx = cx;
+      p.r = r;
+      p.baseY = (H - BOTTOM) - Math.round(r*1.9);
+      p.L = Math.round(boardW * 0.42);
+      p.ring = Math.round(r * 1.7);
+      p.armW = Math.max(4, Math.round(r * 0.34));
+      p.head = Math.round(r * 0.9);
+    });
+  }
+  function sizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; computeLayout(); }
+  window.addEventListener("resize", sizeCanvas);
+  sizeCanvas();
+
+  function showError(title, bodyHTML) {
+    gate.classList.remove("hidden"); gate.classList.add("error");
+    gateTitle.textContent = title; gateBody.innerHTML = bodyHTML; startBtn.classList.add("hidden");
+  }
+
+  async function setup() {
+    if (!window.isSecureContext) {
+      showError("Serve this over localhost",
+        'Browsers block the camera on <code>file://</code> pages. Run a server in this folder, e.g. ' +
+        '<code>python3 -m http.server 8000</code>, then open <code>http://localhost:8000/game.html</code>.');
+      return;
+    }
+    startBtn.disabled = true; startBtn.textContent = "Loading model…";
+    players[0].name = (n1.value.trim() || "P1").slice(0, 10);
+    players[1].name = (n2.value.trim() || "P2").slice(0, 10);
+
+    try {
+      ({ FaceLandmarker, FilesetResolver } =
+        await import(`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}`));
+    } catch (e) {
+      console.error(e);
+      showError("Couldn't load MediaPipe",
+        'The library failed to load from the CDN. Check your connection, or bump <code>MP_VERSION</code>.<br><br>Error: <code>' +
+        (e && e.message ? e.message : String(e)) + '</code>');
+      return;
+    }
+
+    try {
+      const fileset = await FilesetResolver.forVisionTasks(
+        `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/wasm`);
+      const make = (delegate) => FaceLandmarker.createFromOptions(fileset, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+          delegate,
+        },
+        outputFaceBlendshapes: true,
+        runningMode: "VIDEO",
+        numFaces: 2,                     // <-- two players
+      });
+      try { faceLandmarker = await make("GPU"); }
+      catch (gpuErr) { console.warn("GPU failed, using CPU:", gpuErr); faceLandmarker = await make("CPU"); }
+    } catch (e) {
+      console.error(e);
+      showError("Couldn't load the model",
+        'The MediaPipe model failed to load. Check your connection, or bump <code>MP_VERSION</code>.<br><br>Error: <code>' +
+        (e && e.message ? e.message : String(e)) + '</code>');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
+      video.srcObject = stream; await video.play();
+    } catch (e) {
+      console.error(e);
+      showError("Camera blocked",
+        'No camera access. Allow the camera permission and reload. (macOS: System Settings → Privacy → Camera.)');
+      return;
+    }
+
+    gate.classList.add("hidden"); tip.classList.remove("hidden");
+    sizeCanvas(); running = true; requestAnimationFrame(loop);
+  }
+
+  /* ---- Faces -> players ---- */
+  function processFaces(res, nowMs) {
+    const n = res.faceLandmarks ? res.faceLandmarks.length : 0;
+    const faces = [];
+    for (let i = 0; i < n; i++) {
+      const lm = res.faceLandmarks[i];
+      let cx = (lm[EYE_R].x + lm[EYE_L].x) / 2;       // 0..1 in the raw image
+      if (TUNE.MIRROR) cx = 1 - cx;                   // ...flipped to match the display
+      faces.push({ cx, lm, bs: res.faceBlendshapes ? res.faceBlendshapes[i] : null });
+    }
+    faces.sort((a, b) => a.cx - b.cx);
+    const assigned = [null, null];
+    if (faces.length === 1) { if (faces[0].cx < 0.5) assigned[0] = faces[0]; else assigned[1] = faces[0]; }
+    else if (faces.length >= 2) { assigned[0] = faces[0]; assigned[1] = faces[1]; }
+    players.forEach((p, i) => assigned[i] ? applyFace(p, assigned[i], nowMs) : noFace(p));
+  }
+
+  function applyFace(p, face, nowMs) {
+    p.lm = face.lm; p.hasFace = true;
+    const a = face.lm[EYE_R], b = face.lm[EYE_L];
+    const roll = Math.atan2(b.y - a.y, b.x - a.x);
+    p.aim = clamp(roll * TUNE.AIM_GAIN * TUNE.AIM_SIGN, -MAX_AIM, MAX_AIM);
+    let jaw = 0;
+    if (face.bs) for (const c of face.bs.categories) {
+      if (c.categoryName === "jawOpen") jaw = c.score;
+    }
+    p.jawVal = jaw;
+    p.mouthOpen = jaw > TUNE.OPEN_THRESH;
+    if (p.mouthOpen) {
+      if (p.gestureSince === null) p.gestureSince = nowMs;
+      p.charge = clamp((nowMs - p.gestureSince) / TUNE.HOLD_MS, 0, 1);
+      if (p.charge >= 1 && !p.firedThisGesture) { fire(p); p.firedThisGesture = true; }
+    } else { p.gestureSince = null; p.firedThisGesture = false; p.charge = 0; }
+  }
+  function noFace(p) { p.hasFace = false; p.mouthOpen = false; p.gestureSince = null; p.firedThisGesture = false; p.charge = 0; }
+
+  function fire(p) {
+    const dx = Math.sin(p.aim), dy = -Math.cos(p.aim);
+    p.balls.push({ x: p.cx + dx*p.L, y: p.baseY + dy*p.L,
+      vx: dx*TUNE.SPEED, vy: dy*TUNE.SPEED, r: p.r, stuck: false, color: p.nextColor });
+    p.nextColor = randomColor(); p.shots++;
+  }
+
+  /* ---- Per-player physics, sticking, matching ---- */
+  function updatePlayer(p) {
+    if (!p.bounds) return;
+    const { x0, y0, x1, y1 } = p.bounds;
+    const justStuck = [];
+    for (const ball of p.balls) {
+      if (ball.stuck) continue;
+      const r = ball.r;
+      ball.x += ball.vx; ball.y += ball.vy;
+      let stick = false;
+      if (ball.x < x0 + r) { ball.x = x0 + r; stick = true; }
+      if (ball.x > x1 - r) { ball.x = x1 - r; stick = true; }
+      if (ball.y < y0 + r) { ball.y = y0 + r; stick = true; }
+      if (ball.y > y1 - r) { ball.y = y1 - r; stick = true; }
+      if (!stick) {
+        for (const o of p.balls) {
+          if (o === ball || !o.stuck) continue;
+          const dx = ball.x - o.x, dy = ball.y - o.y, dist = Math.hypot(dx, dy), touch = r + o.r;
+          if (dist < touch) {
+            const nx = dist === 0 ? 0 : dx/dist, ny = dist === 0 ? -1 : dy/dist;
+            ball.x = o.x + nx*touch; ball.y = o.y + ny*touch; stick = true; break;
+          }
+        }
+      }
+      if (stick) { ball.vx = 0; ball.vy = 0; ball.stuck = true; justStuck.push(ball); }
+    }
+    for (const seed of justStuck) {
+      if (!p.balls.includes(seed)) continue;
+      const group = sameColorCluster(p, seed);
+      if (group.length >= TUNE.MIN_MATCH) {
+        const dead = new Set(group);
+        for (const b of group) burst(p, b);
+        p.balls = p.balls.filter(b => !dead.has(b));
+        p.score += group.length;
+      }
+    }
+    if (p.balls.length > TUNE.MAX_BALLS) p.balls = p.balls.slice(-TUNE.MAX_BALLS);
+    for (const pt of p.particles) { pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.35; pt.life--; }
+    p.particles = p.particles.filter(pt => pt.life > 0);
+  }
+
+  function sameColorCluster(p, seed) {
+    const group = [], seen = new Set([seed]), stack = [seed];
+    while (stack.length) {
+      const b = stack.pop(); group.push(b);
+      for (const o of p.balls) {
+        if (seen.has(o) || !o.stuck || o.color !== b.color) continue;
+        const dx = o.x - b.x, dy = o.y - b.y, maxd = (o.r + b.r) * TUNE.TOUCH_FACTOR;
+        if (dx*dx + dy*dy <= maxd*maxd) { seen.add(o); stack.push(o); }
+      }
+    }
+    return group;
+  }
+
+  function burst(p, ball) {
+    for (let i = 0; i < 9; i++) {
+      const ang = Math.random()*Math.PI*2, sp = 2 + Math.random()*4;
+      p.particles.push({ x: ball.x, y: ball.y, vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp - 2,
+        life: 24 + (Math.random()*10|0), max: 34, size: Math.max(3, ball.r*0.18|0) + 2, color: ball.color });
+    }
+  }
+
+  /* ---- Drawing ---- */
+  function drawFrameRect(x0, y0, x1, y1) {
+    const bands = [[0,"#3a2a10",4],[3,"#ffdf8a",2],[6,"#b4842a",6],[12,"#3a2a10",3]];
+    for (const [ins, col, w] of bands) {
+      ctx.lineWidth = w; ctx.strokeStyle = col;
+      ctx.strokeRect(x0 + ins, y0 + ins, (x1 - x0) - 2*ins, (y1 - y0) - 2*ins);
+    }
+  }
+
+  function drawLauncher(p) {
+    ctx.save(); ctx.translate(p.cx, p.baseY); ctx.rotate(p.aim);
+    const ringR = p.ring, ringW = Math.max(3, Math.round(p.armW*0.7));
+    ctx.beginPath(); ctx.arc(0,0,ringR,0,Math.PI*2); ctx.lineWidth = ringW;
+    ctx.strokeStyle = "rgba(255,255,255,0.14)"; ctx.stroke();
+    if (p.charge > 0) {
+      ctx.beginPath(); ctx.arc(0,0,ringR,-Math.PI/2,-Math.PI/2 + p.charge*Math.PI*2);
+      ctx.lineWidth = ringW; ctx.lineCap = "round";
+      ctx.strokeStyle = p.charge >= 1 ? "#ff5a4d" : "#5eead4"; ctx.stroke();
+    }
+    const L = p.L, h = p.head;
+    ctx.strokeStyle = p.mouthOpen ? "#ff5a4d" : "#ffdf8a"; ctx.fillStyle = p.mouthOpen ? "#ff5a4d" : "#ffdf8a";
+    ctx.lineWidth = p.armW; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(0,-ringR); ctx.lineTo(0,-L); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-L-h); ctx.lineTo(-h*0.85,-L+h*0.55); ctx.lineTo(h*0.85,-L+h*0.55); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    drawBubble(p.cx, p.baseY, p.r, p.nextColor, false);   // loaded next bubble
+  }
+
+  // Map a normalised landmark (raw-image space) to screen px, matching the
+  // mirrored + object-fit:cover video so overlays land on the real face.
+  function toScreen(nx, ny) {
+    const W = canvas.width, H = canvas.height, vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    const scale = Math.max(W/vw, H/vh), dw = vw*scale, dh = vh*scale, dx = (W-dw)/2, dy = (H-dh)/2;
+    let sx = dx + nx*dw; const sy = dy + ny*dh;
+    if (TUNE.MIRROR) sx = W - sx;
+    return { x: sx, y: sy };
+  }
+
+  function drawFaceOverlay(p) {
+    if (!p.hasFace || !p.lm) return;
+    const b = p.bounds;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0); ctx.clip();
+    drawGooglyEye(p, 0, { outer: 33,  inner: 133, top: 159, bottom: 145 });
+    drawGooglyEye(p, 1, { outer: 263, inner: 362, top: 386, bottom: 374 });
+    ctx.restore();
+  }
+
+  const GAZE_GAIN = 1.9;   // how strongly real gaze pushes the cartoon pupil
+
+  // Twemoji-style googly eye whose pupil follows the player's real gaze
+  // (from MediaPipe iris landmarks 468 / 473), falling back to the aim direction.
+  function drawGooglyEye(p, idx, cfg) {
+    const lm = p.lm;
+    const o  = toScreen(lm[cfg.outer].x,  lm[cfg.outer].y);
+    const ir = toScreen(lm[cfg.inner].x,  lm[cfg.inner].y);
+    const tp = toScreen(lm[cfg.top].x,    lm[cfg.top].y);
+    const bt = toScreen(lm[cfg.bottom].x, lm[cfg.bottom].y);
+    if (!o || !ir || !tp || !bt) return;
+    const scx = (o.x + ir.x)/2, scy = (tp.y + bt.y)/2;       // eye-socket centre
+    const halfW = Math.max(1, Math.hypot(o.x - ir.x, o.y - ir.y) / 2);
+
+    // gaze vector in [-1,1] from the nearest iris centre, else look toward the aim
+    let gx = 0, gy = 0;
+    if (lm.length >= 478 && lm[468] && lm[473]) {
+      const i1 = toScreen(lm[468].x, lm[468].y), i2 = toScreen(lm[473].x, lm[473].y);
+      const d1 = Math.hypot(i1.x - scx, i1.y - scy), d2 = Math.hypot(i2.x - scx, i2.y - scy);
+      const iris = d1 < d2 ? i1 : i2;
+      gx = clamp((iris.x - scx) / halfW * GAZE_GAIN, -1, 1);
+      gy = clamp((iris.y - scy) / halfW * GAZE_GAIN, -1, 1);
+    } else {
+      const tx = p.cx + Math.sin(p.aim)*p.L, ty = p.baseY - Math.cos(p.aim)*p.L;
+      const ang = Math.atan2(ty - scy, tx - scx); gx = Math.cos(ang); gy = Math.sin(ang);
+    }
+    // smooth out iris jitter
+    const g = p.gaze[idx]; g.x += (gx - g.x) * 0.35; g.y += (gy - g.y) * 0.35;
+
+    // sclera: tall white oval with a soft grey-blue rim
+    const rx = Math.max(8, halfW * 1.24), ry = rx * 1.4;
+    ctx.lineWidth = Math.max(2, rx * 0.22); ctx.strokeStyle = "#b0bec5"; ctx.fillStyle = "#fafafa";
+    ctx.beginPath(); ctx.ellipse(scx, scy, rx, ry, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+
+    // glossy pupil bead, offset by gaze, kept inside the eye
+    const pr = rx * 0.6, maxX = (rx - pr) * 0.9, maxY = (ry - pr) * 0.9;
+    const px = scx + g.x * maxX, py = scy + g.y * maxY;
+    const grad = ctx.createLinearGradient(px, py - pr, px, py + pr);
+    grad.addColorStop(0, "#424242"); grad.addColorStop(1, "#212121");
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.beginPath(); ctx.arc(px - pr*0.32, py - pr*0.36, pr*0.3, 0, Math.PI*2); ctx.fill();
+  }
+
+  function drawBoard(p) {
+    const { x0, y0, x1, y1 } = p.bounds;
+    ctx.fillStyle = "rgba(6,18,28,0.42)"; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    drawFaceOverlay(p);                    // googly eyes + cartoon mouth on the camera
+    drawFrameRect(x0, y0, x1, y1);
+    for (const ball of p.balls) drawBubble(ball.x, ball.y, ball.r, ball.color, !ball.stuck);
+    ctx.imageSmoothingEnabled = false;
+    for (const pt of p.particles) {
+      ctx.globalAlpha = Math.max(0, pt.life / pt.max);
+      ctx.fillStyle = pt.color.light;
+      ctx.fillRect(Math.round(pt.x), Math.round(pt.y), pt.size, pt.size);
+    }
+    ctx.globalAlpha = 1;
+    drawLauncher(p);
+    // labels + score
+    // header: player label + score, above the board
+    const mid = (x0 + x1) / 2, opp = players[p === players[0] ? 1 : 0];
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#ffdf8a"; ctx.font = '12px "Press Start 2P", monospace';
+    ctx.fillText(p.name, mid, y0 - 52);
+    ctx.fillStyle = (p.score > opp.score) ? "#5eead4" : "#eafff8";
+    ctx.font = '24px "Press Start 2P", monospace';
+    ctx.fillText(String(p.score).padStart(2, "0"), mid, y0 - 20);
+  }
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    // black everywhere, then reveal the camera feed only inside each board
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+    for (const p of players) {
+      const b = p.bounds;
+      if (b) ctx.clearRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0);
+    }
+    for (const p of players) drawBoard(p);
+    // brass centre divider
+    ctx.fillStyle = "#3a2a10"; ctx.fillRect(W/2 - 7, 40, 14, H - 80);
+    ctx.fillStyle = "#b4842a"; ctx.fillRect(W/2 - 4, 40, 8, H - 80);
+    ctx.fillStyle = "#ffdf8a"; ctx.fillRect(W/2 - 1, 40, 2, H - 80);
+  }
+
+  function loop() {
+    if (!running) return;
+    if (video.readyState >= 2) {
+      const nowMs = performance.now();
+      if (!gameOver && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        const res = faceLandmarker.detectForVideo(video, nowMs);
+        processFaces(res, nowMs);
+      }
+      if (!gameOver) {
+        for (const p of players) updatePlayer(p);
+        checkWin();
+      }
+      draw();
+      if (pendingShot) { captureShot(); pendingShot = false; }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  // Composite the live camera + game overlay into a downloadable PNG.
+  function captureShot() {
+    const W = canvas.width, H = canvas.height;
+    const snap = document.createElement("canvas"); snap.width = W; snap.height = H;
+    const s = snap.getContext("2d");
+    s.fillStyle = "#000"; s.fillRect(0, 0, W, H);
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (vw && vh) {
+      const scale = Math.max(W/vw, H/vh), dw = vw*scale, dh = vh*scale, dx = (W-dw)/2, dy = (H-dh)/2;
+      s.save();
+      if (TUNE.MIRROR) { s.translate(W, 0); s.scale(-1, 1); }   // match the on-screen flip
+      s.drawImage(video, dx, dy, dw, dh);                       // cover-fit, like the display
+      s.restore();
+    }
+    s.drawImage(canvas, 0, 0);     // game overlay masks the camera to the boards, adds bubbles + scores
+    let url; try { url = snap.toDataURL("image/png"); } catch (e) { console.error(e); return; }
+    shot.src = url; shot.classList.remove("hidden"); shotLink.href = url;
+  }
+
+  function checkWin() {
+    for (let i = 0; i < players.length; i++) {
+      if (players[i].score >= TUNE.WIN_SCORE) {
+        gameOver = true; winner = i; pendingShot = true;
+        overText.textContent = players[i].name + " WINS!";
+        over.classList.remove("hidden");
+        break;
+      }
+    }
+  }
+
+  function resetGame() {
+    for (const p of players) {
+      p.balls = []; p.particles = []; p.score = 0; p.shots = 0;
+      p.aim = 0; p.charge = 0; p.mouthOpen = false;
+      p.gestureSince = null; p.firedThisGesture = false; p.nextColor = randomColor();
+    }
+    gameOver = false; winner = -1; pendingShot = false;
+    shot.classList.add("hidden"); shot.removeAttribute("src");
+    over.classList.add("hidden");
+  }
+
+  startBtn.addEventListener("click", setup);
+  again.addEventListener("click", resetGame);
+  window.addEventListener("keydown", (e) => {
+    if (gameOver && (e.key === " " || e.key === "Enter")) { e.preventDefault(); resetGame(); }
+  });
+</script>
+</body>
+</html>

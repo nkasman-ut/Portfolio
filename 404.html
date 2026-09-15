@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page not found — Nathalia Kasman</title>
+  <!-- Favicons -->
+  <link rel="icon" href="/assets/favicon/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/favicon/site.webmanifest" />
+  <meta name="description" content="This page could not be found." />
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Body: Plus Jakarta Sans. Accent: Tagada (self-hosted, as in the source design). -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    @font-face {
+      font-family: "Tagada";
+      src: url("assets/Tagada-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #F2F0EC;
+      --ink: #413D38;
+      --ink-body: #423D38;
+
+      --font-accent: "Tagada", Georgia, serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink-body);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+    }
+
+    .notfound {
+      width: 100%;
+      max-width: 900px;
+      text-align: center;
+    }
+
+    .notfound__title {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      color: var(--ink);
+      letter-spacing: -0.05em;
+      margin: 0;
+      line-height: 1.0;
+      font-size: clamp(64px, 12vw, 160px);
+    }
+
+    .notfound__subtitle {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      color: var(--ink);
+      letter-spacing: -0.05em;
+      margin: 8px 0 0;
+      line-height: 1.05;
+      font-size: clamp(40px, 7.5vw, 104px);
+    }
+
+    .notfound__text {
+      font-family: var(--font-body);
+      font-size: clamp(18px, 2vw, 24px);
+      line-height: 1.45;
+      color: var(--ink-body);
+      margin: 40px 0 0;
+    }
+
+    .notfound__actions {
+      margin-top: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 10px;
+      padding: 13px 22px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      border: 1px solid var(--ink);
+      transition: transform .12s ease, opacity .18s ease, background .18s ease, color .18s ease;
+      white-space: nowrap;
+    }
+
+    .btn--primary { background: var(--ink); color: #fff; }
+    .btn--secondary { background: transparent; color: var(--ink); }
+
+    .btn:hover { opacity: .9; }
+    .btn--secondary:hover { background: var(--ink); color: #fff; opacity: 1; }
+    .btn:active { transform: translateY(1px); }
+  </style>
+</head>
+<body>
+  <main class="notfound">
+    <h1 class="notfound__title">Woops...</h1>
+    <p class="notfound__subtitle">there's nothing here</p>
+    <p class="notfound__text">You can go back, or play a game</p>
+    <div class="notfound__actions">
+      <a class="btn btn--primary" href="/index.html">Go back to portfolio</a>
+      <a class="btn btn--secondary" href="/game">Play a game</a>
+    </div>
+  </main>
+</body>
+</html>
