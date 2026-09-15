@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Hero Image Generator — Nathalia Kasman</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    @font-face {
+      font-family: "Tagada";
+      src: url("assets/Tagada-Regular.woff2") format("woff2");
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+
+    :root {
+      --bg: #F2F0ED;
+      --ink: #413D38;
+      --ink-body: #423D38;
+      --divider: #DDDDDD;
+      --panel: #FBFAF8;
+      --panel-edge: #E4E1DC;
+      --accent: #D9A679;
+
+      --card-green: #D5E3B0;
+      --card-tan: #DBD1BF;
+      --card-blue: #A0B2CC;
+
+      --font-accent: "Tagada", Georgia, serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { max-width: 1440px; margin: 0 auto; padding: 40px clamp(20px, 5vw, 80px) 96px; }
+
+    header { margin-bottom: 32px; }
+    h1 {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      font-size: clamp(30px, 4vw, 48px);
+      margin: 0 0 8px;
+      letter-spacing: -0.01em;
+    }
+    .sub { color: var(--ink-body); opacity: 0.72; font-size: 15px; max-width: 60ch; line-height: 1.5; margin: 0; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+    /* ---------- CONTROLS ---------- */
+    .controls {
+      background: var(--panel);
+      border: 1px solid var(--panel-edge);
+      border-radius: 16px;
+      padding: 22px;
+      position: sticky;
+      top: 24px;
+    }
+    @media (max-width: 860px) { .controls { position: static; } }
+
+    .field { margin-bottom: 22px; }
+    .field:last-child { margin-bottom: 0; }
+    .label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      opacity: 0.6;
+      margin-bottom: 8px;
+    }
+    .hint { font-size: 12px; opacity: 0.5; margin-top: 6px; line-height: 1.4; }
+
+    .drop {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px;
+      border: 1.5px dashed var(--panel-edge);
+      border-radius: 12px;
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      background: #fff;
+      transition: border-color 140ms ease, background 140ms ease;
+      font-size: 13px;
+    }
+    .drop:hover, .drop.is-drag { border-color: var(--accent); background: #fffdfb; }
+    .drop input { display: none; }
+    .drop__name { font-size: 12px; opacity: 0.6; word-break: break-all; }
+    .drop.has-file { border-style: solid; border-color: #cdbfae; }
+
+    .presets { display: flex; flex-direction: column; gap: 8px; }
+    .preset {
+      display: flex; align-items: center; gap: 10px;
+      border: 1px solid var(--panel-edge);
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--ink);
+      text-align: left;
+      transition: border-color 140ms ease, box-shadow 140ms ease;
+    }
+    .preset:hover { border-color: #cdbfae; }
+    .preset.is-on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .preset__glyph {
+      flex: 0 0 auto;
+      width: 34px; height: 34px;
+      border-radius: 6px;
+      background: var(--card-tan);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .preset__glyph i {
+      display: block;
+      background: #fff;
+      border-radius: 3px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .preset__meta { display: flex; flex-direction: column; }
+    .preset__meta b { font-weight: 600; }
+    .preset__meta span { font-size: 11px; opacity: 0.55; }
+
+    .warn {
+      margin-top: 10px; padding: 9px 11px; border-radius: 8px;
+      background: #fbf1e2; border: 1px solid #e8d3ad; color: #7a5a1e;
+      font-size: 12px; line-height: 1.45;
+    }
+    .toggle { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; cursor: pointer; }
+    .toggle input { accent-color: var(--accent); width: 15px; height: 15px; }
+    .label__val { float: right; font-weight: 500; opacity: 0.75; letter-spacing: 0; text-transform: none; }
+    .range { width: 100%; accent-color: var(--accent); }
+
+    .crop { display: none; margin: 12px 0 4px; }
+    .crop.show { display: block; }
+    .crop__row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .crop__row span { opacity: 0.6; }
+    .crop__row input[type="range"] { flex: 1; accent-color: var(--accent); }
+    .crop__reset {
+      border: 1px solid var(--panel-edge); background: #fff; border-radius: 6px;
+      padding: 4px 9px; font-size: 11px; cursor: pointer; font-family: inherit; color: var(--ink);
+    }
+    .crop__reset:hover { border-color: #cdbfae; }
+
+    .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+    .swatch {
+      width: 30px; height: 30px; border-radius: 7px; cursor: pointer;
+      border: 1px solid rgba(0,0,0,0.08);
+      padding: 0;
+    }
+    .swatch.is-on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent); }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 140ms ease, background 140ms ease;
+    }
+    .btn--primary { background: var(--accent); color: #241f1e; }
+    .btn--primary:hover { background: #cf9868; }
+    .btn--ghost { background: transparent; color: var(--ink); border: 1px solid var(--panel-edge); margin-top: 8px; }
+    .btn--ghost:hover { border-color: #cdbfae; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ---------- PREVIEW ---------- */
+    .previewCol { min-width: 0; }
+    .stageWrap {
+      background:
+        linear-gradient(45deg, #eae7e2 25%, transparent 25%, transparent 75%, #eae7e2 75%),
+        linear-gradient(45deg, #eae7e2 25%, #f4f2ee 25%, #f4f2ee 75%, #eae7e2 75%);
+      background-size: 22px 22px;
+      background-position: 0 0, 11px 11px;
+      border: 1px solid var(--panel-edge);
+      border-radius: 16px;
+      padding: clamp(16px, 4vw, 48px);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 360px;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%; /* JS sets exact px width/height to preserve aspect */
+      background-color: var(--card-tan);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .stage.is-draggable { cursor: grab; }
+    .stage.is-dragging { cursor: grabbing; }
+
+    /* Background image layer we can pan/zoom independently of the frame. */
+    .stage__bg {
+      position: absolute; inset: 0;
+      background-repeat: no-repeat;
+      z-index: 0;
+      display: none;
+    }
+    .stage__bg.show { display: block; }
+
+    .frame {
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+      background: #fff;
+      line-height: 0;
+      pointer-events: none; /* let drags fall through to the background */
+    }
+    .frame img, .frame video {
+      width: 100%; height: 100%;
+      object-fit: contain; /* never crop the interface — fit the whole thing */
+      display: block;
+    }
+
+    .empty {
+      color: var(--ink-body); opacity: 0.4; font-size: 14px; text-align: center;
+      padding: 60px 20px; line-height: 1.5;
+    }
+
+    .toolbar { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .toolbar .dim { font-size: 12px; opacity: 0.5; }
+    .toolbar .grow { flex: 1; }
+    .toolbar .btn { width: auto; padding: 10px 18px; }
+
+    .snippet {
+      margin-top: 20px;
+      background: #2a2622;
+      color: #e9e4dd;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      position: relative;
+      display: none;
+    }
+    .snippet.show { display: block; }
+    .snippet__label { font-family: var(--font-body); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.55; margin-bottom: 8px; }
+    .snippet__copy {
+      position: absolute; top: 12px; right: 12px;
+      background: rgba(255,255,255,0.12); color: #fff; border: 0; border-radius: 6px;
+      padding: 5px 10px; font-size: 11px; cursor: pointer; font-family: var(--font-body);
+    }
+    .snippet__copy:hover { background: rgba(255,255,255,0.22); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Hero Image Generator</h1>
+      <p class="sub">Drop an interface (image, GIF, or MP4) onto a decorative background, pick a frame preset, and preview the composed hero. Export a still PNG or copy the markup for animated media.</p>
+    </header>
+
+    <div class="layout">
+      <!-- CONTROLS -->
+      <aside class="controls">
+        <div class="field">
+          <span class="label">Background</span>
+          <label class="drop" id="bgDrop">
+            <input type="file" id="bgInput" accept="image/*" />
+            <span>Click or drop an image</span>
+            <span class="drop__name" id="bgName"></span>
+          </label>
+          <div class="crop" id="crop">
+            <div class="crop__row">
+              <span>Zoom</span>
+              <input type="range" id="bgZoom" min="1" max="3" step="0.02" value="1" />
+              <button type="button" class="crop__reset" id="cropReset">Reset</button>
+            </div>
+            <div class="hint">Drag the preview to reposition the background.</div>
+          </div>
+
+          <div class="hint">Or use a solid color:</div>
+          <div class="swatches" id="swatches" style="margin-top:8px;">
+            <button class="swatch" data-color="#D5E3B0" style="background:#D5E3B0"></button>
+            <button class="swatch" data-color="#DBD1BF" style="background:#DBD1BF"></button>
+            <button class="swatch" data-color="#A0B2CC" style="background:#A0B2CC"></button>
+            <button class="swatch" data-color="#E9E4DD" style="background:#E9E4DD"></button>
+            <button class="swatch" data-color="#2A2622" style="background:#2A2622"></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="label">Interface (your work)</span>
+          <label class="drop" id="fgDrop">
+            <input type="file" id="fgInput" accept="image/*,video/mp4,video/webm,image/gif" />
+            <span>Click or drop image / GIF / MP4</span>
+            <span class="drop__name" id="fgName"></span>
+          </label>
+          <div class="warn" id="fgWarn" hidden>⚠︎ This interface has transparency. It's flattened on white so the background can't tint it — but if the card itself looks washed out or off-color, re-export it fully opaque (no alpha) for exact colors.</div>
+        </div>
+
+        <div class="field">
+          <span class="label">Corner style</span>
+          <div class="presets" id="presets"></div>
+          <label class="toggle">
+            <input type="checkbox" id="roundToggle" />
+            <span>Round interface corners</span>
+          </label>
+          <div class="hint">Off = the interface is placed exactly as uploaded (no clipping). On applies the radius above.</div>
+        </div>
+
+        <div class="field">
+          <span class="label">Background inset <span id="insetVal" class="label__val">9%</span></span>
+          <input type="range" id="inset" min="0" max="30" step="1" value="9" class="range" />
+          <div class="hint">Uniform border around the interface, as a % of its longer edge. The output size follows the interface.</div>
+        </div>
+
+        <div class="field">
+          <button class="btn btn--primary" id="downloadBtn" disabled>Download PNG</button>
+          <button class="btn btn--ghost" id="snippetBtn" disabled>Get hero HTML snippet</button>
+        </div>
+      </aside>
+
+      <!-- PREVIEW -->
+      <section class="previewCol">
+        <div class="stageWrap">
+          <div class="stage" id="stage">
+            <div class="stage__bg" id="stageBg"></div>
+            <div class="empty" id="empty">Upload an interface to see the preview</div>
+            <div class="frame" id="frame" style="display:none"></div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <span class="dim" id="dims"></span>
+          <span class="grow"></span>
+          <span class="dim" id="note"></span>
+        </div>
+
+        <div class="snippet" id="snippet">
+          <button class="snippet__copy" id="copyBtn">Copy</button>
+          <div class="snippet__label">Paste into index.html (your hero media row)</div>
+          <code id="snippetCode"></code>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Main-thread GIF encoder (bundled, no worker → works over file://). -->
+  <script src="assets/vendor/gifenc.js"></script>
+  <script>
+  (function () {
+    // --- Presets. Each defines output aspect (w/h), how much of the stage the
+    //     interface occupies (0-1 of the limiting dimension), corner radius as a
+    //     fraction of interface height, and shadow strength. Interface keeps its
+    //     own aspect ratio so nothing gets cropped. ---
+    // The interface is the anchor: it is never resized or cropped. The background
+    // fills a uniform inset around it (a % of the interface's longer edge), so the
+    // output size = interface + inset and its aspect ratio is whatever results.
+    // Presets carry the corner radius (your real 12/20/28/16px values, kept
+    // proportional via radiusFrac = px at a 480px-tall interface) and a default
+    // inset. The shadow is the shared proj-2 float shadow, sized to the interface.
+    const SHADOW = {                            // proj-2: 0 18px 40px rgba(65,61,56,0.16)
+      dyPct: 18 / 394, blurPct: 40 / 394, color: 'rgba(65, 61, 56, 0.16)',
+      css: '0 18px 40px rgba(65, 61, 56, 0.16)',
+    };
+    const PRESETS = {
+      screenshot: { label: 'Screenshot',  note: '12px corners', radiusPx: 12, radiusFrac: 12/480, inset: 0.06, glyph: [28, 20] },
+      card:       { label: 'App card',    note: '20px corners', radiusPx: 20, radiusFrac: 20/480, inset: 0.09, glyph: [20, 24] },
+      detail:     { label: 'Detail card', note: '28px corners', radiusPx: 28, radiusFrac: 28/480, inset: 0.11, glyph: [22, 26] },
+      phone:      { label: 'Phone',       note: '16px corners', radiusPx: 16, radiusFrac: 16/480, inset: 0.06, glyph: [16, 26] },
+    };
+
+    const state = {
+      preset: 'card',
+      inset: PRESETS.card.inset, // background border as a fraction of the interface's longer edge
+      roundCorners: false,       // off = artefact placed 100% as uploaded (no corner clipping)
+      outAspect: 4 / 5,          // computed from interface + inset; drives bg crop
+      bgColor: '#DBD1BF',
+      bgURL: null,          // object URL for background image
+      bgImg: null,          // loaded HTMLImageElement for export
+      bgZoom: 1,            // 1 = cover fit; >1 zooms into the image
+      bgFx: 0.5, bgFy: 0.5, // focal point (0..1) for the crop
+      fg: null,             // { type:'image'|'video', el, w, h, url }
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const stage = $('stage'), stageBg = $('stageBg'), frame = $('frame'), empty = $('empty');
+
+    // Largest crop of the image with the stage's aspect, shrunk by zoom, centered on
+    // the focal point and clamped to the image. Same math drives preview and export.
+    function computeCrop(iw, ih, A, zoom, fx, fy) {
+      const imgA = iw / ih;
+      let sw, sh;
+      if (imgA > A) { sh = ih; sw = ih * A; } else { sw = iw; sh = iw / A; }
+      sw /= zoom; sh /= zoom;
+      let sx = fx * iw - sw / 2;
+      let sy = fy * ih - sh / 2;
+      sx = Math.max(0, Math.min(iw - sw, sx));
+      sy = Math.max(0, Math.min(ih - sh, sy));
+      return { sx, sy, sw, sh };
+    }
+
+    // Size the stage to the exact output aspect within the available area, so the
+    // frame (a % of the stage) always matches the interface aspect — no cover crop.
+    function sizeStage(aspect) {
+      const wrap = stage.parentElement;
+      const cs = getComputedStyle(wrap);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const availW = wrap.clientWidth - padX;
+      const maxH = Math.max(240, window.innerHeight * 0.68 - padY);
+      let w = availW, h = w / aspect;
+      if (h > maxH) { h = maxH; w = h * aspect; }
+      stage.style.width = w + 'px';
+      stage.style.height = h + 'px';
+    }
+
+    // Detect whether an uploaded interface has an alpha channel (semi-transparent or
+    // fully transparent pixels). If it does, the background/backing shows through and
+    // tints it — so we warn the user. Samples a downscaled copy for speed.
+    function hasTransparency(el, w, h) {
+      const cw = Math.min(180, w || 180);
+      const ch = Math.max(1, Math.round(cw * ((h || 180) / (w || 180))));
+      const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+      const x = c.getContext('2d');
+      let data;
+      try { x.drawImage(el, 0, 0, cw, ch); data = x.getImageData(0, 0, cw, ch).data; }
+      catch (e) { return false; }
+      let nonOpaque = 0;
+      for (let i = 3; i < data.length; i += 4) { if (data[i] < 250) nonOpaque++; }
+      return nonOpaque / (cw * ch) > 0.02; // >2% of pixels not fully opaque
+    }
+    function updateFgWarn() {
+      $('fgWarn').hidden = !(state.fg && state.fg.hasAlpha);
+    }
+    window.addEventListener('resize', () => { if (state.fg || state.bgImg) render(); });
+
+    // Paint the background layer from the current crop.
+    function renderBg() {
+      const img = state.bgImg; if (!img) return;
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const c = computeCrop(iw, ih, state.outAspect, state.bgZoom, state.bgFx, state.bgFy);
+      stageBg.style.backgroundImage = 'url("' + state.bgURL + '")';
+      stageBg.style.backgroundSize = (iw / c.sw) * 100 + '% ' + (ih / c.sh) * 100 + '%';
+      const px = (iw - c.sw) > 0 ? (c.sx / (iw - c.sw)) * 100 : 50;
+      const py = (ih - c.sh) > 0 ? (c.sy / (ih - c.sh)) * 100 : 50;
+      stageBg.style.backgroundPosition = px + '% ' + py + '%';
+    }
+    const downloadBtn = $('downloadBtn'), snippetBtn = $('snippetBtn');
+
+    // ---- Build preset buttons ----
+    const presetsEl = $('presets');
+    Object.entries(PRESETS).forEach(([key, p]) => {
+      const btn = document.createElement('button');
+      btn.className = 'preset' + (key === state.preset ? ' is-on' : '');
+      btn.dataset.key = key;
+      const [gw, gh] = p.glyph;
+      btn.innerHTML =
+        '<span class="preset__glyph"><i style="width:' + gw + 'px;height:' + gh + 'px"></i></span>' +
+        '<span class="preset__meta"><b>' + p.label + '</b><span>' + p.note + '</span></span>';
+      btn.addEventListener('click', () => {
+        state.preset = key;
+        state.inset = p.inset;
+        document.querySelectorAll('.preset').forEach(b => b.classList.toggle('is-on', b === btn));
+        render();
+      });
+      presetsEl.appendChild(btn);
+    });
+
+    // ---- Background: image upload ----
+    wireDrop($('bgDrop'), $('bgInput'), (file) => {
+      if (!file || !file.type.startsWith('image/')) return;
+      if (state.bgURL) URL.revokeObjectURL(state.bgURL);
+      state.bgURL = URL.createObjectURL(file);
+      $('bgName').textContent = file.name;
+      $('bgDrop').classList.add('has-file');
+      const img = new Image();
+      img.onload = () => {
+        state.bgImg = img;
+        state.bgZoom = 1; state.bgFx = 0.5; state.bgFy = 0.5;
+        $('bgZoom').value = 1;
+        $('crop').classList.add('show');
+        render();
+      };
+      img.src = state.bgURL;
+      // Clear active swatch highlight
+      document.querySelectorAll('.swatch').forEach(s => s.classList.remove('is-on'));
+    });
+
+    // Inset (background border) control.
+    $('inset').addEventListener('input', (e) => { state.inset = parseInt(e.target.value, 10) / 100; render(); });
+
+    // Round-corners toggle.
+    $('roundToggle').addEventListener('change', (e) => { state.roundCorners = e.target.checked; render(); });
+
+    // Crop controls.
+    $('bgZoom').addEventListener('input', (e) => { state.bgZoom = parseFloat(e.target.value); render(); });
+    $('cropReset').addEventListener('click', () => {
+      state.bgZoom = 1; state.bgFx = 0.5; state.bgFy = 0.5; $('bgZoom').value = 1; render();
+    });
+
+    // Drag the preview to reposition the background (pan the focal point).
+    let dragging = false, lastX = 0, lastY = 0;
+    stage.addEventListener('pointerdown', (e) => {
+      if (!state.bgImg) return;
+      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      stage.classList.add('is-dragging');
+      stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener('pointermove', (e) => {
+      if (!dragging || !state.bgImg) return;
+      const rect = stage.getBoundingClientRect();
+      const img = state.bgImg;
+      const c = computeCrop(img.naturalWidth, img.naturalHeight, state.outAspect, state.bgZoom, state.bgFx, state.bgFy);
+      // Convert pixel drag into focal-point movement (drag right → reveal left).
+      state.bgFx -= ((e.clientX - lastX) / rect.width) * (c.sw / img.naturalWidth);
+      state.bgFy -= ((e.clientY - lastY) / rect.height) * (c.sh / img.naturalHeight);
+      state.bgFx = Math.max(0, Math.min(1, state.bgFx));
+      state.bgFy = Math.max(0, Math.min(1, state.bgFy));
+      lastX = e.clientX; lastY = e.clientY;
+      renderBg();
+    });
+    const endDrag = () => { dragging = false; stage.classList.remove('is-dragging'); };
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+
+    // ---- Background: color swatches ----
+    document.querySelectorAll('.swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        state.bgColor = sw.dataset.color;
+        state.bgImg = null; state.bgURL = null;
+        $('bgName').textContent = '';
+        $('bgDrop').classList.remove('has-file');
+        $('crop').classList.remove('show');
+        document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('is-on', s === sw));
+        render();
+      });
+    });
+
+    // ---- Interface upload ----
+    wireDrop($('fgDrop'), $('fgInput'), (file) => {
+      if (!file) return;
+      if (state.fg && state.fg.url) URL.revokeObjectURL(state.fg.url);
+      const url = URL.createObjectURL(file);
+      $('fgName').textContent = file.name;
+      $('fgDrop').classList.add('has-file');
+
+      const isVideo = file.type.startsWith('video/');
+      if (isVideo) {
+        const v = document.createElement('video');
+        v.src = url; v.muted = true; v.loop = true; v.autoplay = true;
+        v.setAttribute('playsinline', '');
+        v.addEventListener('loadedmetadata', () => {
+          state.fg = { type: 'video', el: v, w: v.videoWidth, h: v.videoHeight, url, name: file.name, file, hasAlpha: false };
+          updateFgWarn();
+          render();
+          v.play().catch(() => {});
+        });
+      } else {
+        const img = new Image();
+        img.onload = () => {
+          state.fg = { type: 'image', el: img, w: img.naturalWidth, h: img.naturalHeight, url, name: file.name, file, isGif: file.type === 'image/gif' };
+          state.fg.hasAlpha = hasTransparency(img, img.naturalWidth, img.naturalHeight);
+          updateFgWarn();
+          render();
+        };
+        img.src = url;
+      }
+    });
+
+    // ---- Shared drop/click wiring ----
+    function wireDrop(drop, input, onFile) {
+      input.addEventListener('change', (e) => onFile(e.target.files[0]));
+      ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('is-drag'); }));
+      ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('is-drag'); }));
+      drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) onFile(f); });
+    }
+
+    // ---- Live DOM preview ----
+    function render() {
+      const p = PRESETS[state.preset];
+      const hasFg = !!state.fg;
+      empty.style.display = hasFg ? 'none' : 'block';
+      frame.style.display = hasFg ? 'block' : 'none';
+      downloadBtn.disabled = !hasFg;
+      snippetBtn.disabled = !hasFg;
+      downloadBtn.textContent = hasFg ? ('Download ' + outputKind().label) : 'Download';
+
+      // Output geometry = interface + a uniform inset (border) on all four sides.
+      // The inset is a fraction of the interface's longer edge, so the border reads
+      // the same weight whether the interface is wide or tall. The output aspect
+      // (which drives the background crop) falls out of this — no fixed shape.
+      const iw = hasFg ? state.fg.w : 4, ih = hasFg ? state.fg.h : 5;
+      const border = state.inset * Math.max(iw, ih);
+      const outW = iw + 2 * border, outH = ih + 2 * border;
+      state.outAspect = outW / outH;
+      sizeStage(state.outAspect);
+
+      // Stage background: cropped image layer, or a solid color.
+      if (state.bgImg) {
+        renderBg();
+        stageBg.classList.add('show');
+        stage.style.backgroundColor = 'transparent';
+        stage.classList.add('is-draggable');
+      } else {
+        stageBg.classList.remove('show');
+        stage.style.backgroundColor = state.bgColor;
+        stage.classList.remove('is-draggable');
+      }
+
+      $('inset').value = Math.round(state.inset * 100);
+      $('insetVal').textContent = Math.round(state.inset * 100) + '%';
+
+      if (!hasFg) { $('dims').textContent = ''; return; }
+
+      // The interface is placed 1:1 (never resized or cropped); it simply occupies
+      // the inner rectangle of the output, so the border is uniform all around.
+      frame.style.width = (iw / outW * 100) + '%';
+      frame.style.height = (ih / outH * 100) + '%';
+
+      // Media element inside frame.
+      const existing = frame.firstElementChild;
+      const want = state.fg.el;
+      if (existing !== want) { frame.innerHTML = ''; frame.appendChild(want); }
+
+      // Radius + shadow scale with the interface's rendered height so they read like
+      // the real hero (e.g. 20px corners at a 480px-tall interface) at any size.
+      const frameH = stage.getBoundingClientRect().height * (ih / outH) || 480;
+      frame.style.borderRadius = state.roundCorners ? (p.radiusFrac * frameH) + 'px' : '0px';
+      frame.style.boxShadow = '0 ' + (frameH * SHADOW.dyPct).toFixed(1) + 'px ' + (frameH * SHADOW.blurPct).toFixed(1) + 'px ' + SHADOW.color;
+
+      // Dimensions readout — the composed output size.
+      const kind = outputKind();
+      $('dims').textContent = Math.round(outW) + '×' + Math.round(outH) + ' · interface ' + iw + '×' + ih + ' · ' + kind.label;
+      $('note').textContent = (kind.kind === 'video' || kind.kind === 'gif')
+        ? 'Exports the full animation — larger file, takes a moment to encode.'
+        : '';
+    }
+
+    // Decide what the Download button produces from the uploaded interface type.
+    function pickVideoMime() {
+      const cands = [
+        { type: 'video/mp4;codecs=avc1.42E01E', ext: 'mp4', label: 'MP4' },
+        { type: 'video/mp4', ext: 'mp4', label: 'MP4' },
+        { type: 'video/webm;codecs=vp9', ext: 'webm', label: 'WebM' },
+        { type: 'video/webm', ext: 'webm', label: 'WebM' },
+      ];
+      const ok = window.MediaRecorder && MediaRecorder.isTypeSupported;
+      for (const c of cands) { if (ok && MediaRecorder.isTypeSupported(c.type)) return c; }
+      return { type: '', ext: 'webm', label: 'WebM' };
+    }
+    function outputKind() {
+      if (!state.fg) return { kind: 'png', ext: 'png', label: 'PNG' };
+      if (state.fg.type === 'video') { const m = pickVideoMime(); return { kind: 'video', ext: m.ext, label: m.label, mime: m.type }; }
+      if (state.fg.isGif) return { kind: 'gif', ext: 'gif', label: 'GIF' };
+      return { kind: 'png', ext: 'png', label: 'PNG' };
+    }
+
+    // ---- Export to PNG via canvas ----
+    downloadBtn.addEventListener('click', async () => {
+      if (!state.fg) return;
+      const kind = outputKind();
+      const label = downloadBtn.textContent;
+      downloadBtn.disabled = true;
+      try {
+        if (kind.kind === 'video') { downloadBtn.textContent = 'Recording…'; await exportVideo(kind); }
+        else if (kind.kind === 'gif') { downloadBtn.textContent = 'Encoding GIF…'; await exportGIF(); }
+        else { await exportPNG(); }
+      } catch (err) {
+        alert('Export failed: ' + (err && err.message ? err.message : err));
+      } finally {
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = label;
+      }
+    });
+
+    // Output geometry = interface at native size + a uniform border. The interface is
+    // never resized or cropped; a generous cap only guards extreme resolutions.
+    function computeExportGeom(cap) {
+      const p = PRESETS[state.preset];
+      const iw = state.fg.w, ih = state.fg.h;
+      const border = state.inset * Math.max(iw, ih);
+      let outW = iw + 2 * border, outH = ih + 2 * border;
+      const longest = Math.max(outW, outH);
+      const S = (cap && longest > cap) ? cap / longest : 1;
+      outW = Math.round(outW * S); outH = Math.round(outH * S);
+      const box = { x: border * S, y: border * S, w: iw * S, h: ih * S };
+      const r = state.roundCorners ? p.radiusFrac * box.h : 0;
+      return { outW, outH, box, r };
+    }
+    function paintBackground(ctx, outW, outH) {
+      if (state.bgImg) {
+        const bi = state.bgImg;
+        const cr = computeCrop(bi.naturalWidth, bi.naturalHeight, outW / outH, state.bgZoom, state.bgFx, state.bgFy);
+        ctx.drawImage(bi, cr.sx, cr.sy, cr.sw, cr.sh, 0, 0, outW, outH);
+      } else {
+        ctx.fillStyle = state.bgColor;
+        ctx.fillRect(0, 0, outW, outH);
+      }
+    }
+    // White backing + shadow, then clip to the (optional) rounded corners and let the
+    // caller draw one interface frame. Flatten-on-white lives here.
+    function paintFrame(ctx, box, r, drawFn) {
+      ctx.save();
+      ctx.shadowColor = SHADOW.color;
+      ctx.shadowBlur = box.h * SHADOW.blurPct;
+      ctx.shadowOffsetY = box.h * SHADOW.dyPct;
+      roundRect(ctx, box.x, box.y, box.w, box.h, r);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      roundRect(ctx, box.x, box.y, box.w, box.h, r);
+      ctx.clip();
+      drawFn(ctx, box);
+      ctx.restore();
+    }
+    function downloadBlob(blob, ext) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'hero-' + state.preset + '-' + Date.now() + '.' + ext;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }
+
+    // Still image → PNG.
+    function exportPNG() {
+      const { outW, outH, box, r } = computeExportGeom(6000);
+      const canvas = document.createElement('canvas');
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      paintBackground(ctx, outW, outH);
+      paintFrame(ctx, box, r, (c, b) => c.drawImage(state.fg.el, b.x, b.y, b.w, b.h));
+      return new Promise((res) => canvas.toBlob((blob) => { downloadBlob(blob, 'png'); res(); }, 'image/png'));
+    }
+
+    // Video → record the composited animation with MediaRecorder (mp4 if supported,
+    // else webm). Plays a fresh copy of the clip once and captures the canvas.
+    async function exportVideo(kind) {
+      const { outW, outH, box, r } = computeExportGeom(1920);
+      const canvas = document.createElement('canvas');
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      const v = document.createElement('video');
+      v.src = state.fg.url; v.muted = true; v.playsInline = true; v.loop = false;
+      await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = () => rej(new Error('could not load the video')); });
+      const stream = canvas.captureStream(30);
+      const opts = kind.mime ? { mimeType: kind.mime, videoBitsPerSecond: 8e6 } : { videoBitsPerSecond: 8e6 };
+      const rec = new MediaRecorder(stream, opts);
+      const chunks = [];
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      const stopped = new Promise((res) => { rec.onstop = res; });
+      let raf;
+      const draw = () => { paintBackground(ctx, outW, outH); paintFrame(ctx, box, r, (c, b) => c.drawImage(v, b.x, b.y, b.w, b.h)); raf = requestAnimationFrame(draw); };
+      rec.start();
+      try { await v.play(); } catch (e) {}
+      draw();
+      const dur = Math.min((isFinite(v.duration) && v.duration > 0) ? v.duration : 8, 20);
+      const finish = () => { if (rec.state !== 'inactive') rec.stop(); cancelAnimationFrame(raf); v.pause(); };
+      v.onended = finish;
+      const t = setTimeout(finish, dur * 1000 + 400);
+      await stopped; clearTimeout(t);
+      downloadBlob(new Blob(chunks, { type: kind.mime || 'video/webm' }), kind.ext);
+    }
+
+    // GIF → decode each source frame (WebCodecs ImageDecoder), composite it, and
+    // re-encode an animated GIF on the main thread (gifenc — no worker).
+    async function exportGIF() {
+      if (!('ImageDecoder' in window) || !window.gifenc) {
+        alert('This browser can’t re-encode GIFs (needs ImageDecoder). Exporting a still PNG instead.');
+        return exportPNG();
+      }
+      const { GIFEncoder, quantize, applyPalette } = window.gifenc;
+      const { outW, outH, box, r } = computeExportGeom(900);
+      const canvas = document.createElement('canvas');
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      const buf = await state.fg.file.arrayBuffer();
+      const dec = new ImageDecoder({ data: buf, type: 'image/gif' });
+      await dec.tracks.ready;
+      const count = (dec.tracks.selectedTrack && dec.tracks.selectedTrack.frameCount) || 1;
+      const gif = GIFEncoder();
+      for (let i = 0; i < count; i++) {
+        let frame;
+        try { frame = await dec.decode({ frameIndex: i }); } catch (e) { break; }
+        const image = frame.image;
+        paintBackground(ctx, outW, outH);
+        paintFrame(ctx, box, r, (c, b) => c.drawImage(image, b.x, b.y, b.w, b.h));
+        if (image.close) image.close();
+        const { data } = ctx.getImageData(0, 0, outW, outH);
+        const palette = quantize(data, 256);
+        const index = applyPalette(data, palette);
+        const delay = Math.max(20, Math.round((frame.duration || 100000) / 1000));
+        gif.writeFrame(index, outW, outH, { palette, delay });
+      }
+      gif.finish();
+      downloadBlob(new Blob([gif.bytes()], { type: 'image/gif' }), 'gif');
+    }
+
+    function drawCover(ctx, img, dx, dy, dw, dh) {
+      const iw = img.naturalWidth || img.videoWidth;
+      const ih = img.naturalHeight || img.videoHeight;
+      const ir = iw / ih, dr = dw / dh;
+      let sw, sh, sx, sy;
+      if (ir > dr) { sh = ih; sw = ih * dr; sx = (iw - sw) / 2; sy = 0; }
+      else { sw = iw; sh = iw / dr; sx = 0; sy = (ih - sh) / 2; }
+      ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      r = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    // ---- HTML snippet for animated media ----
+    snippetBtn.addEventListener('click', () => {
+      const p = PRESETS[state.preset];
+      const isVideo = state.fg.type === 'video';
+      const fname = state.fg.name || (isVideo ? 'interface.mp4' : 'interface.png');
+      const bgLine = state.bgImg
+        ? 'background: url("assets/img/BACKGROUND.png") 50% 50% / cover;'
+        : 'background: ' + state.bgColor + ';';
+      const inner = isVideo
+        ? '<video src="assets/' + fname + '" autoplay muted loop playsinline></video>'
+        : '<img src="assets/img/' + fname + '" alt="" />';
+
+      // Reproduce the interface-anchored composition: output = interface + inset,
+      // interface placed at its own aspect (height %), radius/shadow at media-h scale.
+      const iw = state.fg.w, ih = state.fg.h;
+      const border = state.inset * Math.max(iw, ih);
+      const outW = Math.round(iw + 2 * border), outH = Math.round(ih + 2 * border);
+      const framePctH = (ih / outH * 100).toFixed(2);
+      const fh480 = (ih / outH) * 480; // interface height when the hero is 480px tall
+      const radius = state.roundCorners ? Math.round(p.radiusFrac * fh480) : 0;
+      const shDy = (SHADOW.dyPct * fh480).toFixed(1), shBlur = (SHADOW.blurPct * fh480).toFixed(1);
+
+      const code =
+'<!-- Hero card — ' + p.label + ' · inset ' + Math.round(state.inset * 100) + '% -->\n' +
+'<div class="hero-card">\n' +
+'  <div class="hero-card__frame">\n' +
+'    ' + inner + '\n' +
+'  </div>\n' +
+'</div>\n\n' +
+'<style>\n' +
+'.hero-card {\n' +
+'  height: var(--media-h, 480px);\n' +
+'  aspect-ratio: ' + outW + ' / ' + outH + ';\n' +
+'  ' + bgLine + '\n' +
+'  border-radius: 12px;\n' +
+'  display: flex; align-items: center; justify-content: center;\n' +
+'  overflow: hidden;\n' +
+'}\n' +
+'.hero-card__frame {\n' +
+'  height: ' + framePctH + '%;\n' +
+'  border-radius: ' + radius + 'px;\n' +
+'  box-shadow: 0 ' + shDy + 'px ' + shBlur + 'px rgba(65, 61, 56, 0.16);\n' +
+'  overflow: hidden;\n' +
+'  line-height: 0;\n' +
+'}\n' +
+'.hero-card__frame img, .hero-card__frame video { display: block; height: 100%; width: auto; }\n' +
+'</style>';
+
+      $('snippetCode').textContent = code;
+      $('snippet').classList.add('show');
+      $('snippet').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    $('copyBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText($('snippetCode').textContent).then(() => {
+        $('copyBtn').textContent = 'Copied';
+        setTimeout(() => { $('copyBtn').textContent = 'Copy'; }, 1400);
+      });
+    });
+
+    function round(n, d) { const f = Math.pow(10, d); return Math.round(n * f) / f; }
+
+    // Initial highlight for default color.
+    document.querySelector('.swatch[data-color="#DBD1BF"]').classList.add('is-on');
+    render();
+  })();
+  </script>
+</body>
+</html>
