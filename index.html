@@ -24,7 +24,6 @@
       --bg: #F2F0ED;
       --ink: #413D38;
       --ink-body: #423D38;
-      --divider: #DDDDDD;
       --stamp: #FEFEFE;
       --stamp-edge: #E4E1DC;
       --stamp-ink: #9E3B2E;
@@ -272,12 +271,17 @@
 
     /* ---------- FOOTER / STAMP ---------- */
     .footer {
-      padding-top: 44px;
-      padding-bottom: 48px;
+      /* Layout container: the .page gutter keeps the card off the viewport
+         edges at every width; the card itself carries the colour + padding. */
+      margin-top: clamp(72px, 9vw, 128px);
+      margin-bottom: 24px;
     }
-    .footer__divider {
-      border: 0; height: 10px; background: var(--divider);
-      margin: 0 0 clamp(72px, 8vw, 104px);
+    /* Inset chocolate card */
+    .footer__card {
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: 20px;
+      padding: 48px;
     }
     .footer__grid {
       display: grid;
@@ -293,11 +297,11 @@
       font-size: clamp(40px, 5vw, 72px);
       line-height: 1.0;
       letter-spacing: -0.05em;
-      color: var(--ink);
+      color: var(--bg);
       margin-bottom: 20px !important;
     }
     .footer__note {
-      font-size: 15px; line-height: 1.5; color: var(--ink-body);
+      font-size: 15px; line-height: 1.5; color: var(--bg);
       opacity: .75; margin-bottom: 20px !important; max-width: 320px;
     }
     /* colophon (stack / credits / copyright) anchored to the foot of the column */
@@ -305,13 +309,13 @@
     .footer__block {
       font-size: clamp(12.8px, 1.2vw, 19.2px);
       line-height: 1.46;
-      color: var(--ink-body);
+      color: var(--bg);
       margin-bottom: 28px !important;
       white-space: pre-line;
     }
     .footer__copy {
       font-size: clamp(12.8px, 1.2vw, 19.2px);
-      color: var(--ink-body);
+      color: var(--bg);
     }
 
     /* ---------- STAMP CONTROLS ---------- */
@@ -497,7 +501,7 @@
 
   <!-- ================= FOOTER ================= -->
   <footer class="footer page">
-    <hr class="footer__divider" />
+   <div class="footer__card">
     <div class="footer__grid">
       <div class="footer__col">
         <p class="footer__lead">Leave a stamp</p>
@@ -535,6 +539,7 @@ Texture images: Unsplash</p>
         </div>
       </div>
     </div>
+   </div>
   </footer>
 
   <!-- cursor-following stamp preview -->
