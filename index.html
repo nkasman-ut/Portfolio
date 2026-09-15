@@ -259,58 +259,13 @@
       color: var(--ink-body);
     }
 
-    /* ---------- STICKY STACK ----------
-       Each project pins to the top of the viewport and holds while you keep
-       scrolling; the next project then rises up and covers it (Code & Theory
-       "sticky stacking"). Pure layout — position: sticky, no JS. The opaque
-       page-colored background is what does the covering; the upward box-shadow
-       gives the incoming panel a visible "sheet" edge as it slides over. */
-    .stack { position: relative; }
-    .project {
-      position: sticky;
-      top: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      background: var(--bg);
-      padding-top: clamp(36px, 7vh, 80px);
-      padding-bottom: clamp(36px, 7vh, 80px);
-      box-shadow: 0 -22px 48px rgba(65, 61, 56, 0.12);
-    }
-    /* Divider sits at the panel's top edge — the visible lip of the sheet. */
-    .project__divider { margin: 0 0 clamp(24px, 4vh, 44px); flex: 0 0 auto; }
-    /* First panel meets the hero, not another panel — no cast shadow there. */
-    .project:first-child { box-shadow: none; }
-
-    @media (prefers-reduced-motion: reduce) {
-      /* Full accessible fallback: no pinning, plain vertical flow. */
-      .project {
-        position: static;
-        min-height: 0;
-        display: block;
-        padding-top: 44px;
-        padding-bottom: 0;
-        box-shadow: none;
-      }
-      .project__divider { margin: 0 0 40px; }
-    }
-
     /* ---------- FOOTER / STAMP ---------- */
     .footer {
-      /* Layout container: the .page gutter keeps the card off the viewport
-         edges at every width; the card itself carries the colour + padding. */
-      margin-top: clamp(72px, 9vw, 128px);
-      margin-bottom: 24px;
-    }
-    .footer__card {
-      background: var(--ink);
-      color: var(--bg);
-      border-radius: 20px;
-      padding: 48px;
+      padding-top: 44px;
+      padding-bottom: 48px;
     }
     .footer__divider {
-      border: 0; height: 10px; background: rgba(242,240,237,0.28);
+      border: 0; height: 10px; background: var(--divider);
       margin: 0 0 clamp(72px, 8vw, 104px);
     }
     .footer__grid {
@@ -327,11 +282,11 @@
       font-size: clamp(40px, 5vw, 72px);
       line-height: 1.0;
       letter-spacing: -0.05em;
-      color: var(--bg);
+      color: var(--ink);
       margin-bottom: 20px !important;
     }
     .footer__note {
-      font-size: 15px; line-height: 1.5; color: var(--bg);
+      font-size: 15px; line-height: 1.5; color: var(--ink-body);
       opacity: .75; margin-bottom: 20px !important; max-width: 320px;
     }
     /* colophon (stack / credits / copyright) anchored to the foot of the column */
@@ -339,13 +294,13 @@
     .footer__block {
       font-size: clamp(12.8px, 1.2vw, 19.2px);
       line-height: 1.46;
-      color: var(--bg);
+      color: var(--ink-body);
       margin-bottom: 28px !important;
       white-space: pre-line;
     }
     .footer__copy {
       font-size: clamp(12.8px, 1.2vw, 19.2px);
-      color: var(--bg);
+      color: var(--ink-body);
     }
 
     /* ---------- STAMP CONTROLS ---------- */
@@ -362,13 +317,13 @@
     .btn {
       font-family: var(--font-body); font-size: 14px; font-weight: 500;
       border-radius: 10px; padding: 12px 18px; cursor: pointer;
-      border: 1px solid var(--bg); background: var(--bg); color: var(--ink);
+      border: 1px solid var(--ink); background: var(--ink); color: #fff;
       transition: transform .12s ease, opacity .18s ease; white-space: nowrap;
     }
     .btn:hover { opacity: .9; }
     .btn:active { transform: translateY(1px); }
     .btn:disabled { opacity: .5; cursor: default; }
-    .status { font-size: 13px; min-height: 18px; color: var(--bg); opacity: .7; margin: 0; }
+    .status { font-size: 13px; min-height: 18px; color: var(--ink-body); opacity: .7; margin: 0; }
     .status--err { color: var(--stamp-ink); opacity: 1; }
 
     /* ---------- STAMP PAD (paper) ---------- */
@@ -435,14 +390,13 @@
     .pager__btn:hover:not(:disabled) { border-color: #b9b3aa; }
     .pager__btn:disabled { opacity: .35; cursor: default; }
     .pager__label {
-      font-size: 12px; letter-spacing: .04em; color: var(--bg); opacity: .7;
+      font-size: 12px; letter-spacing: .04em; color: var(--ink-body); opacity: .7;
       min-width: 46px; text-align: center; font-variant-numeric: tabular-nums;
     }
 
     /* ---------- RESPONSIVE ---------- */
     @media (max-width: 900px) {
       :root { --gutter: 28px; --media-h: clamp(260px, 62vw, 420px); }
-      .footer__card { padding: 32px 24px; }
       .hero__subtitle { max-width: none; }
       .hero__bio { margin: 36px 0 0; max-width: none; }
       /* Keep a right margin equal to the left gutter at the end of the scroll,
@@ -525,14 +479,13 @@
         <div class="phone phone--3"></div>
         <div class="phone phone--4"></div>
       </div>
-      <p class="project__desc">Reimagined how patients with neuropathy (fingertip numbness) log symptoms, exploring voice and touch input so patients can log with ease and providers can spot changes in progress sooner.</p>
+      <p class="project__desc">Drove design and research for 0-1 product line, AI-powered research analysis, growing feature adoption to 12% across 10+ feature launches.</p>
     </section>
 
   </main>
 
   <!-- ================= FOOTER ================= -->
   <footer class="footer page">
-   <div class="footer__card">
     <hr class="footer__divider" />
     <div class="footer__grid">
       <div class="footer__col">
@@ -571,7 +524,6 @@ Texture images: Unsplash</p>
         </div>
       </div>
     </div>
-   </div>
   </footer>
 
   <!-- cursor-following stamp preview -->
