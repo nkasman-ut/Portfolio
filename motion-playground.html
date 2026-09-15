@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motion Sampler — Text Reveal Playground</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    @font-face {
+      font-family: "Tagada";
+      src: url("assets/Tagada-Regular.woff2") format("woff2");
+      font-weight: 400; font-style: normal; font-display: swap;
+    }
+
+    :root {
+      --bg: #F2F0ED;
+      --panel: #FFFFFF;
+      --ink: #413D38;
+      --ink-body: #423D38;
+      --muted: #6b665f;
+      --divider: #E2DFDA;
+      --divider-strong: #D5D1CB;
+      --accent: #9E3B2E;
+      --font-accent: "Tagada", Georgia, serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink-body);
+      font-family: var(--font-body); -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      min-height: 100vh;
+    }
+    @media (max-width: 920px) { .app { grid-template-columns: 1fr; } }
+
+    /* ---------------- STAGE (left) ---------------- */
+    .stage-wrap {
+      position: relative;
+      display: flex; flex-direction: column;
+      padding: 28px 40px;
+      min-height: 100vh;
+    }
+    .topbar { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+    .topbar h1 {
+      font-family: var(--font-accent); font-weight: 400; font-size: 26px;
+      letter-spacing: -0.02em; color: var(--ink); margin: 0;
+    }
+    .topbar .tag {
+      font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .stage {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--divider);
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 1px 1px, rgba(65,61,56,0.05) 1px, transparent 0) 0 0 / 22px 22px,
+        var(--panel);
+      overflow: hidden;
+      padding: 40px;
+    }
+    #headline {
+      font-family: var(--font-accent); font-weight: 400;
+      line-height: 1.02; letter-spacing: -0.04em; color: var(--ink);
+      text-align: center; margin: 0; max-width: 100%;
+    }
+    #headline .space { display: inline-block; }
+
+    .stage-foot {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .btn {
+      font-family: var(--font-body); font-size: 14px; font-weight: 500;
+      border-radius: 999px; cursor: pointer; border: 1px solid var(--divider-strong);
+      background: var(--panel); color: var(--ink-body); padding: 10px 18px;
+    }
+    .btn:hover { border-color: var(--ink); }
+    .btn--primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .btn--primary:hover { opacity: 0.9; }
+    .chk { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); cursor: pointer; }
+    .chk input { accent-color: var(--accent); }
+
+    /* ---------------- CONTROLS (right) ---------------- */
+    .panel {
+      border-left: 1px solid var(--divider);
+      background: var(--panel);
+      padding: 26px 24px 60px;
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+    @media (max-width: 920px) { .panel { border-left: none; border-top: 1px solid var(--divider); max-height: none; } }
+
+    .panel h2 {
+      font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin: 0 0 12px; font-weight: 600;
+    }
+    .section + .section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--divider); }
+
+    /* style picker */
+    .styles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .style-btn {
+      text-align: left; border: 1px solid var(--divider-strong); background: var(--panel);
+      border-radius: 12px; padding: 10px 12px; cursor: pointer; font-family: var(--font-body);
+    }
+    .style-btn:hover { border-color: var(--ink); }
+    .style-btn.is-active { border-color: var(--ink); background: #F7F5F2; box-shadow: inset 0 0 0 1px var(--ink); }
+    .style-btn .n { display: block; font-weight: 600; font-size: 13.5px; color: var(--ink); }
+    .style-btn .k { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .style-desc { margin: 12px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+    /* knobs */
+    .knob { margin-top: 16px; }
+    .knob[hidden] { display: none; }
+    .knob__top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+    .knob__label { font-size: 13px; color: var(--ink-body); }
+    .knob__val { font-size: 12px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+    input[type=range] { width: 100%; accent-color: var(--accent); }
+    select, input[type=text] {
+      width: 100%; font-family: var(--font-body); font-size: 14px; color: var(--ink);
+      border: 1px solid var(--divider-strong); border-radius: 9px; padding: 9px 10px;
+      background: var(--panel);
+    }
+    .field { margin-top: 14px; }
+    .field label { display: block; font-size: 13px; color: var(--ink-body); margin-bottom: 6px; }
+
+    /* export */
+    .export__actions { display: flex; gap: 8px; margin-bottom: 10px; }
+    pre.code {
+      margin: 0; background: #2B2825; color: #EDE9E3; border-radius: 12px;
+      padding: 14px; font-size: 11.5px; line-height: 1.5; overflow-x: auto;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      white-space: pre; max-height: 260px;
+    }
+    pre.code + pre.code { margin-top: 10px; }
+    .hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- ===================== STAGE ===================== -->
+    <div class="stage-wrap">
+      <div class="topbar">
+        <h1>Motion Sampler</h1>
+        <span class="tag">text reveal playground</span>
+      </div>
+      <div class="stage">
+        <h2 id="headline">I'm Nathalia</h2>
+      </div>
+      <div class="stage-foot">
+        <button class="btn btn--primary" id="replay">↻ Replay</button>
+        <label class="chk"><input type="checkbox" id="autoplay" checked /> Autoplay on change</label>
+        <label class="chk"><input type="checkbox" id="loop" /> Loop</label>
+      </div>
+    </div>
+
+    <!-- ===================== CONTROLS ===================== -->
+    <div class="panel">
+      <div class="section">
+        <h2>Style</h2>
+        <div class="styles" id="styles"></div>
+        <p class="style-desc" id="styleDesc"></p>
+      </div>
+
+      <div class="section">
+        <h2>Timing &amp; motion</h2>
+
+        <div class="knob" data-knob="dur">
+          <div class="knob__top"><span class="knob__label">Duration</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="dur" min="150" max="1600" step="10" />
+        </div>
+        <div class="knob" data-knob="step">
+          <div class="knob__top"><span class="knob__label" data-steplabel>Stagger step</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="step" min="0" max="160" step="5" />
+        </div>
+        <div class="knob" data-knob="delay">
+          <div class="knob__top"><span class="knob__label">Start delay</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="delay" min="0" max="1200" step="10" />
+        </div>
+
+        <div class="field" data-knob="ease">
+          <label>Easing</label>
+          <select data-var="ease">
+            <option value="smooth">Smooth (ease-out)</option>
+            <option value="snappy">Snappy</option>
+            <option value="gentle">Gentle</option>
+            <option value="overshoot">Overshoot (back)</option>
+            <option value="linear">Linear</option>
+          </select>
+        </div>
+        <div class="field" data-knob="order">
+          <label>Reveal order</label>
+          <select data-var="order">
+            <option value="ltr">Left → right</option>
+            <option value="rtl">Right → left</option>
+            <option value="center">Center → out</option>
+            <option value="edges">Edges → in</option>
+            <option value="random">Random</option>
+          </select>
+        </div>
+
+        <div class="knob" data-knob="dist">
+          <div class="knob__top"><span class="knob__label">Distance</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="dist" min="0" max="1.5" step="0.02" />
+        </div>
+        <div class="knob" data-knob="blur">
+          <div class="knob__top"><span class="knob__label">Blur amount</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="blur" min="0" max="30" step="1" />
+        </div>
+        <div class="knob" data-knob="scale">
+          <div class="knob__top"><span class="knob__label">Scale from</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="scale" min="0" max="1.6" step="0.02" />
+        </div>
+        <div class="knob" data-knob="rot">
+          <div class="knob__top"><span class="knob__label">Rotation</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="rot" min="0" max="120" step="1" />
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Content</h2>
+        <div class="field">
+          <label>Sample text</label>
+          <input type="text" id="text" value="I'm Nathalia" />
+        </div>
+        <div class="knob" data-knob="size" style="display:block">
+          <div class="knob__top"><span class="knob__label">Size</span><span class="knob__val" data-out></span></div>
+          <input type="range" data-var="size" min="32" max="180" step="2" />
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Export — paste into index.html</h2>
+        <div class="export__actions">
+          <button class="btn" data-copy="css">Copy CSS</button>
+          <button class="btn" data-copy="html">Copy HTML</button>
+        </div>
+        <pre class="code" id="outCss"></pre>
+        <pre class="code" id="outHtml"></pre>
+        <p class="hint" id="outHint"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- live-generated animation CSS is injected here -->
+  <style id="live"></style>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var EASES = {
+      smooth:    "cubic-bezier(0.22, 1, 0.36, 1)",
+      snappy:    "cubic-bezier(0.16, 1, 0.3, 1)",
+      gentle:    "cubic-bezier(0.33, 1, 0.68, 1)",
+      overshoot: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+      linear:    "linear"
+    };
+
+    // Each style declares which knobs it uses, its defaults, whether it splits
+    // by word instead of letter, and whether it is JS-driven. `css()` returns the
+    // keyframes + per-unit rule for a given scope — the SAME string powers the
+    // live preview and the export, so what you see is what you copy.
+    var STYLES = {
+      wave: {
+        label: "Wave", kind: "rise + fade",
+        desc: "Each letter lifts and fades into place, rippling across. The current site treatment.",
+        knobs: ["dur","step","delay","ease","order","dist"],
+        defaults: { dur: 440, step: 55, delay: 0, ease: "smooth", dist: 0.44 },
+        css: function (s, c) {
+          return kf("wave",
+            "from{opacity:0;transform:translateY(" + c.dist + "em)}" +
+            "to{opacity:1;transform:translateY(0)}") +
+            unit(s, "wave", c);
+        }
+      },
+      fade: {
+        label: "Fade up", kind: "soft opacity",
+        desc: "A quieter reveal — mostly opacity with a hair of lift. Premium and understated.",
+        knobs: ["dur","step","delay","ease","order","dist"],
+        defaults: { dur: 620, step: 40, delay: 0, ease: "gentle", dist: 0.14 },
+        css: function (s, c) {
+          return kf("fade",
+            "from{opacity:0;transform:translateY(" + c.dist + "em)}" +
+            "to{opacity:1;transform:translateY(0)}") +
+            unit(s, "fade", c);
+        }
+      },
+      blur: {
+        label: "Blur in", kind: "defocus → sharp",
+        desc: "Letters resolve from a soft blur. Feels modern and cinematic; used on hridaew.com.",
+        knobs: ["dur","step","delay","ease","order","dist","blur"],
+        defaults: { dur: 700, step: 45, delay: 0, ease: "smooth", dist: 0.12, blur: 12 },
+        css: function (s, c) {
+          return kf("blur",
+            "from{opacity:0;filter:blur(" + c.blur + "px);transform:translateY(" + c.dist + "em)}" +
+            "to{opacity:1;filter:blur(0);transform:translateY(0)}") +
+            unit(s, "blur", c);
+        }
+      },
+      mask: {
+        label: "Mask reveal", kind: "slide from clip",
+        desc: "No fade — letters slide up from behind a hard edge. Editorial and confident.",
+        knobs: ["dur","step","delay","ease","order","dist"],
+        defaults: { dur: 620, step: 50, delay: 0, ease: "smooth", dist: 0.55 },
+        css: function (s, c) {
+          return kf("mask",
+            "from{clip-path:inset(0 0 100% 0);transform:translateY(" + c.dist + "em)}" +
+            "to{clip-path:inset(0 0 0 0);transform:translateY(0)}") +
+            unit(s, "mask", c);
+        }
+      },
+      pop: {
+        label: "Pop", kind: "scale + fade",
+        desc: "Letters spring up from small with a little overshoot. Energetic and friendly.",
+        knobs: ["dur","step","delay","ease","order","scale"],
+        defaults: { dur: 520, step: 45, delay: 0, ease: "overshoot", scale: 0.5 },
+        css: function (s, c) {
+          return kf("pop",
+            "from{opacity:0;transform:scale(" + c.scale + ")}" +
+            "to{opacity:1;transform:scale(1)}") +
+            unit(s, "pop", c);
+        }
+      },
+      drop: {
+        label: "Drop bounce", kind: "fall + settle",
+        desc: "Letters fall from above and settle with a bounce. Playful, toy-like.",
+        knobs: ["dur","step","delay","ease","order","dist"],
+        defaults: { dur: 720, step: 55, delay: 0, ease: "smooth", dist: 0.6 },
+        css: function (s, c) {
+          return kf("drop",
+            "0%{opacity:0;transform:translateY(-" + c.dist + "em)}" +
+            "55%{opacity:1;transform:translateY(" + (c.dist * 0.16).toFixed(3) + "em)}" +
+            "78%{transform:translateY(-" + (c.dist * 0.06).toFixed(3) + "em)}" +
+            "100%{opacity:1;transform:translateY(0)}") +
+            unit(s, "drop", c);
+        }
+      },
+      flip: {
+        label: "Flip", kind: "3D rotateX",
+        desc: "Each letter flips down into place on its bottom edge. Dimensional, mechanical.",
+        knobs: ["dur","step","delay","ease","order","rot"],
+        defaults: { dur: 620, step: 50, delay: 0, ease: "smooth", rot: 90 },
+        css: function (s, c) {
+          return kf("flip",
+            "from{opacity:0;transform:rotateX(-" + c.rot + "deg)}" +
+            "to{opacity:1;transform:rotateX(0)}") +
+            s + "{perspective:700px}" +
+            unit(s, "flip", c, "transform-origin:center bottom;");
+        }
+      },
+      slide: {
+        label: "Slide", kind: "horizontal",
+        desc: "Letters slide in from the side and line up. Directional and clean.",
+        knobs: ["dur","step","delay","ease","order","dist"],
+        defaults: { dur: 560, step: 40, delay: 0, ease: "smooth", dist: 0.7 },
+        css: function (s, c) {
+          return kf("slide",
+            "from{opacity:0;transform:translateX(-" + c.dist + "em)}" +
+            "to{opacity:1;transform:translateX(0)}") +
+            unit(s, "slide", c);
+        }
+      },
+      skew: {
+        label: "Rotate in", kind: "lift + tilt",
+        desc: "Lift with a slight rotation that straightens out. Handmade, lively.",
+        knobs: ["dur","step","delay","ease","order","dist","rot"],
+        defaults: { dur: 560, step: 45, delay: 0, ease: "overshoot", dist: 0.35, rot: 10 },
+        css: function (s, c) {
+          return kf("skew",
+            "from{opacity:0;transform:translateY(" + c.dist + "em) rotate(-" + c.rot + "deg)}" +
+            "to{opacity:1;transform:translateY(0) rotate(0)}") +
+            unit(s, "skew", c);
+        }
+      },
+      word: {
+        label: "Word fade", kind: "word-by-word",
+        desc: "Reveals a word at a time instead of a letter at a time. Calmer cadence for longer lines.",
+        knobs: ["dur","step","delay","ease","order","dist"],
+        defaults: { dur: 620, step: 90, delay: 0, ease: "smooth", dist: 0.3 },
+        byWord: true,
+        css: function (s, c) {
+          return kf("word",
+            "from{opacity:0;transform:translateY(" + c.dist + "em)}" +
+            "to{opacity:1;transform:translateY(0)}") +
+            unit(s, "word", c);
+        }
+      },
+      shimmer: {
+        label: "Shimmer sweep", kind: "highlight pass",
+        desc: "A bright band sweeps across the whole word once. Letters are visible the whole time.",
+        knobs: ["dur","delay"],
+        defaults: { dur: 1400, delay: 0 },
+        whole: true,
+        css: function (s, c) {
+          return "@keyframes samp-shimmer{from{background-position:120% 0}to{background-position:-20% 0}}" +
+            s + "{background:linear-gradient(100deg,var(--ink) 0 42%,#D9B25A 50%,var(--ink) 58% 100%);" +
+            "background-size:280% 100%;-webkit-background-clip:text;background-clip:text;" +
+            "-webkit-text-fill-color:transparent;color:transparent;" +
+            "animation:samp-shimmer " + c.dur + "ms " + EASES.smooth + " " + c.delay + "ms both}";
+        }
+      },
+      typewriter: {
+        label: "Typewriter", kind: "char by char (JS)",
+        desc: "Types out one character at a time with a blinking caret. Driven by a little JS.",
+        knobs: ["step","delay"],
+        defaults: { step: 70, delay: 0 },
+        js: true,
+        css: function (s) {
+          return s + " .ch{opacity:0}" + s + ".is-typing::after{content:'';display:inline-block;" +
+            "width:.06em;height:1em;margin-left:.04em;background:var(--accent);" +
+            "vertical-align:-0.08em;animation:samp-caret .9s steps(1) infinite}" +
+            "@keyframes samp-caret{50%{opacity:0}}";
+        }
+      },
+      scramble: {
+        label: "Scramble", kind: "decode (JS)",
+        desc: "Each letter cycles through random glyphs before locking to the real one. Driven by JS.",
+        knobs: ["dur","step","delay"],
+        defaults: { dur: 700, step: 45, delay: 0 },
+        js: true,
+        css: function (s) { return s + " .ch{opacity:1}"; }
+      }
+    };
+
+    // Build the shared per-unit rule (letter or word).
+    function unit(scope, name, c, extra) {
+      var sel = scope + " .ch";
+      var delay = "calc(var(--i) * " + (c.step || 0) + "ms + " + (c.delay || 0) + "ms)";
+      return sel + "{display:inline-block;" + (extra || "") +
+        "animation:samp-" + name + " " + c.dur + "ms " + EASES[c.ease || "smooth"] +
+        " " + delay + " both;will-change:transform,opacity,filter}";
+    }
+    function kf(name, body) { return "@keyframes samp-" + name + "{" + body + "}"; }
+
+    // ---- state ----
+    var state = { style: "wave", text: "I'm Nathalia", size: 96 };
+    // per-knob live values (merged with the active style's defaults)
+    var vals = {};
+
+    var live = document.getElementById("live");
+    var headline = document.getElementById("headline");
+    var stylesEl = document.getElementById("styles");
+    var descEl = document.getElementById("styleDesc");
+    var jsTimers = [];
+
+    // ---- build style buttons ----
+    Object.keys(STYLES).forEach(function (id) {
+      var s = STYLES[id];
+      var b = document.createElement("button");
+      b.className = "style-btn";
+      b.dataset.style = id;
+      b.innerHTML = '<span class="n">' + s.label + '</span><span class="k">' + s.kind + '</span>';
+      b.addEventListener("click", function () { selectStyle(id); });
+      stylesEl.appendChild(b);
+    });
+
+    // ---- knob wiring ----
+    var knobEls = {};
+    document.querySelectorAll("[data-var]").forEach(function (input) {
+      knobEls[input.dataset.var] = input;
+      input.addEventListener("input", function () {
+        var v = input.value;
+        if (input.type === "range") v = parseFloat(v);
+        if (input.dataset.var === "size") { state.size = v; applySize(); return; }
+        vals[input.dataset.var] = v;
+        writeReadout(input);
+        render(true);
+      });
+    });
+    document.getElementById("text").addEventListener("input", function (e) {
+      state.text = e.target.value || " ";
+      splitHeadline(); render(true);
+    });
+
+    function writeReadout(input) {
+      var wrap = input.closest("[data-knob]");
+      if (!wrap) return;
+      var out = wrap.querySelector("[data-out]");
+      if (!out) return;
+      var k = input.dataset.var, v = vals[k] != null ? vals[k] : input.value;
+      var txt = v;
+      if (k === "dur" || k === "step" || k === "delay") txt = v + "ms";
+      else if (k === "dist") txt = (+v).toFixed(2) + "em";
+      else if (k === "blur") txt = v + "px";
+      else if (k === "scale") txt = (+v).toFixed(2) + "×";
+      else if (k === "rot") txt = v + "°";
+      else if (k === "size") txt = v + "px";
+      out.textContent = txt;
+    }
+
+    // ---- select a style: load defaults, toggle relevant knobs ----
+    function selectStyle(id) {
+      state.style = id;
+      var s = STYLES[id];
+      vals = Object.assign({}, s.defaults);
+
+      document.querySelectorAll(".style-btn").forEach(function (b) {
+        b.classList.toggle("is-active", b.dataset.style === id);
+      });
+      descEl.textContent = s.desc;
+
+      // show only knobs this style uses; push default values into inputs
+      document.querySelectorAll("[data-knob]").forEach(function (wrap) {
+        var k = wrap.dataset.knob;
+        if (k === "size") return; // global
+        var used = s.knobs.indexOf(k) !== -1;
+        wrap.hidden = !used;
+        if (used && knobEls[k] != null && vals[k] != null) {
+          knobEls[k].value = vals[k];
+          writeReadout(knobEls[k]);
+        }
+      });
+      // relabel the stagger control for typewriter
+      var sl = document.querySelector("[data-steplabel]");
+      if (sl) sl.textContent = (id === "typewriter") ? "Type speed (per char)" : "Stagger step";
+
+      splitHeadline();
+      render(true);
+    }
+
+    // ---- split text into ordered units ----
+    function splitHeadline() {
+      var s = STYLES[state.style];
+      var text = state.text;
+      headline.innerHTML = "";
+      headline.setAttribute("aria-label", text);
+
+      var units = [];
+      if (s.byWord) {
+        text.split(/(\s+)/).forEach(function (tok) {
+          if (tok === "") return;
+          if (/^\s+$/.test(tok)) units.push({ space: true });
+          else units.push({ text: tok });
+        });
+      } else {
+        for (var i = 0; i < text.length; i++) {
+          var ch = text[i];
+          units.push(ch === " " ? { space: true } : { text: ch });
+        }
+      }
+      // assign order indices to the non-space units
+      var realIdx = units.map(function (u, i) { return u.space ? -1 : i; }).filter(function (i) { return i >= 0; });
+      var order = computeOrder(realIdx.length, vals.order || "ltr");
+      var oi = 0;
+      units.forEach(function (u) {
+        var span = document.createElement("span");
+        if (u.space) {
+          span.className = "space";
+          span.innerHTML = "&nbsp;";
+          span.setAttribute("aria-hidden", "true");
+        } else {
+          span.className = "ch";
+          span.textContent = u.text;
+          span.dataset.final = u.text;
+          span.style.setProperty("--i", order[oi++]);
+        }
+        headline.appendChild(span);
+      });
+    }
+
+    function computeOrder(n, mode) {
+      var out = [];
+      for (var i = 0; i < n; i++) {
+        if (mode === "rtl") out.push(n - 1 - i);
+        else if (mode === "center") out.push(Math.round(Math.abs(i - (n - 1) / 2)));
+        else if (mode === "edges") out.push(Math.round((n - 1) / 2 - Math.abs(i - (n - 1) / 2)));
+        else out.push(i); // ltr
+      }
+      if (mode === "random") {
+        for (var j = n - 1; j > 0; j--) { var k = Math.floor(Math.random() * (j + 1)); var t = out[j]; out[j] = out[k]; out[k] = t; }
+      }
+      return out;
+    }
+
+    function applySize() {
+      headline.style.fontSize = state.size + "px";
+      var so = document.querySelector('[data-knob="size"] [data-out]');
+      if (so) so.textContent = state.size + "px";
+    }
+
+    // ---- render: inject CSS + (re)play ----
+    function render(play) {
+      var s = STYLES[state.style];
+      var c = vals;
+      live.textContent = s.css("#headline", c);
+      updateExport();
+      if (play && document.getElementById("autoplay").checked) replay();
+      else if (!play) replay();
+    }
+
+    function clearTimers() { jsTimers.forEach(clearTimeout); jsTimers = []; }
+
+    function replay() {
+      clearTimers();
+      headline.classList.remove("is-typing");
+      var s = STYLES[state.style];
+
+      if (s.js) { runJS(state.style); return; }
+
+      // CSS restart: rebuild spans so animations re-run from the start
+      splitHeadline();
+      // force reflow
+      void headline.offsetWidth;
+    }
+
+    // ---- JS-driven styles ----
+    function runJS(id) {
+      var chars = [].slice.call(headline.querySelectorAll(".ch"));
+      var spaces = [].slice.call(headline.querySelectorAll(".space"));
+      if (id === "typewriter") {
+        chars.forEach(function (ch) { ch.style.opacity = "0"; });
+        spaces.forEach(function (sp) { sp.style.opacity = "0"; });
+        headline.classList.add("is-typing");
+        var all = [].slice.call(headline.children); // in DOM order
+        var shown = 0;
+        function step() {
+          if (shown >= all.length) { return; }
+          all[shown].style.opacity = "1";
+          shown++;
+          jsTimers.push(setTimeout(step, vals.step));
+        }
+        jsTimers.push(setTimeout(step, vals.delay || 0));
+      } else if (id === "scramble") {
+        var glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz@#%&*+=/";
+        chars.forEach(function (ch) {
+          var final = ch.dataset.final;
+          var order = parseInt(ch.style.getPropertyValue("--i")) || 0;
+          var start = (vals.delay || 0) + order * vals.step;
+          var ticks = Math.max(3, Math.round(vals.dur / 45));
+          var t = 0;
+          function tick() {
+            if (t >= ticks) { ch.textContent = final; return; }
+            ch.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+            t++;
+            jsTimers.push(setTimeout(tick, 45));
+          }
+          jsTimers.push(setTimeout(tick, start));
+        });
+      }
+    }
+
+    // ---- loop ----
+    var loopTimer = null;
+    document.getElementById("loop").addEventListener("change", function (e) {
+      if (e.target.checked) { loopTimer = setInterval(replay, 2600); }
+      else { clearInterval(loopTimer); loopTimer = null; }
+    });
+    document.getElementById("replay").addEventListener("click", replay);
+
+    // ---- export ----
+    function esc(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    function updateExport() {
+      var s = STYLES[state.style], c = vals;
+      var scoped = s.css(".hero__title", c);
+      // pretty-ish: newline after each } for readability
+      var css = scoped.replace(/}/g, "}\n").trim();
+      var full = "/* " + s.label + " — hero title reveal */\n" + css +
+        "\n@media (prefers-reduced-motion: reduce){\n" +
+        "  .hero__title .ch{animation:none;opacity:1;filter:none;transform:none;clip-path:none}\n}";
+      document.getElementById("outCss").textContent = full;
+
+      // HTML snippet reflecting current text + order
+      document.getElementById("outHtml").textContent = buildHtmlSnippet();
+
+      var hint = document.getElementById("outHint");
+      if (s.js) hint.textContent = "This style needs the small JS driver from motion-sampler.html (the runJS() branch) in addition to the CSS above.";
+      else if (s.whole) hint.textContent = "Whole-word effect — no per-letter split needed; the CSS targets .hero__title itself.";
+      else hint.textContent = "Letters are pre-split so one keyframe staggers them — no JS, no flash of unstyled text.";
+    }
+
+    function buildHtmlSnippet() {
+      var s = STYLES[state.style];
+      if (s.whole) {
+        return '<h1 class="hero__title">' + esc(state.text) + "</h1>";
+      }
+      var html = '<h1 class="hero__title" aria-label="' + esc(state.text) + '">';
+      var nodes = headline.children;
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i];
+        if (n.classList.contains("space")) html += '<span class="space" aria-hidden="true">&nbsp;</span>';
+        else html += '<span class="ch" style="--i:' + (n.style.getPropertyValue("--i").trim()) + '">' + esc(n.dataset.final) + "</span>";
+      }
+      return html + "</h1>";
+    }
+
+    document.querySelectorAll("[data-copy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.dataset.copy === "css" ? "outCss" : "outHtml";
+        var text = document.getElementById(id).textContent;
+        navigator.clipboard && navigator.clipboard.writeText(text);
+        var old = btn.textContent; btn.textContent = "Copied ✓";
+        setTimeout(function () { btn.textContent = old; }, 1200);
+      });
+    });
+
+    // reveal order changes need a re-split
+    knobEls.order && knobEls.order.addEventListener("change", function () { splitHeadline(); render(true); });
+
+    // ---- init ----
+    applySize();
+    knobEls.size.value = state.size;
+    selectStyle("wave");
+  })();
+  </script>
+</body>
+</html>
