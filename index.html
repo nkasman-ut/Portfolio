@@ -259,6 +259,43 @@
       color: var(--ink-body);
     }
 
+    /* ---------- STICKY STACK ----------
+       Each project pins to the top of the viewport and holds while you keep
+       scrolling; the next project then rises up and covers it (Code & Theory
+       "sticky stacking"). Pure layout — position: sticky, no JS. The opaque
+       page-colored background is what does the covering; the upward box-shadow
+       gives the incoming panel a visible "sheet" edge as it slides over. */
+    .stack { position: relative; }
+    .project {
+      position: sticky;
+      top: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      background: var(--bg);
+      padding-top: clamp(36px, 7vh, 80px);
+      padding-bottom: clamp(36px, 7vh, 80px);
+      box-shadow: 0 -22px 48px rgba(65, 61, 56, 0.12);
+    }
+    /* Divider sits at the panel's top edge — the visible lip of the sheet. */
+    .project__divider { margin: 0 0 clamp(24px, 4vh, 44px); flex: 0 0 auto; }
+    /* First panel meets the hero, not another panel — no cast shadow there. */
+    .project:first-child { box-shadow: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      /* Full accessible fallback: no pinning, plain vertical flow. */
+      .project {
+        position: static;
+        min-height: 0;
+        display: block;
+        padding-top: 44px;
+        padding-bottom: 0;
+        box-shadow: none;
+      }
+      .project__divider { margin: 0 0 40px; }
+    }
+
     /* ---------- FOOTER / STAMP ---------- */
     .footer {
       padding-top: 44px;
