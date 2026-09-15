@@ -145,6 +145,97 @@
     }
     pre.code + pre.code { margin-top: 10px; }
     .hint { font-size: 12px; color: var(--muted); margin: 8px 0 0; line-height: 1.5; }
+
+    /* ---------------- MODE SWITCHER ---------------- */
+    [hidden] { display: none !important; }
+    .modes {
+      display: inline-flex; gap: 2px; margin-left: auto; align-self: center;
+      background: #EAE7E1; border-radius: 999px; padding: 3px;
+    }
+    .modes button {
+      font-family: var(--font-body); font-size: 12.5px; font-weight: 500;
+      border: 0; background: transparent; color: var(--muted);
+      padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    }
+    .modes button.is-active {
+      background: var(--panel); color: var(--ink);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .modeview { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+    /* ---------------- STICKY-STACK PLAYGROUND ---------------- */
+    .stackstage {
+      position: relative; flex: 1; min-height: 0;
+      border: 1px solid var(--divider); border-radius: 20px; overflow: hidden;
+      background:
+        radial-gradient(circle at 1px 1px, rgba(65,61,56,0.05) 1px, transparent 0) 0 0 / 22px 22px,
+        var(--panel);
+    }
+    .stackscroll {
+      height: 100%; overflow-y: auto; scroll-behavior: smooth;
+      padding: 0 14px; scrollbar-width: thin; scrollbar-color: var(--divider-strong) transparent;
+    }
+    .stackscroll::-webkit-scrollbar { width: 8px; }
+    .stackscroll::-webkit-scrollbar-thumb { background: var(--divider-strong); border-radius: 99px; }
+
+    .spanel {
+      position: sticky; top: var(--soffset, 0px);
+      height: var(--pheight, 86%);
+      margin: 7% 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      padding: clamp(20px, 4vw, 40px);
+      border-radius: var(--sradius, 18px);
+      color: var(--p-ink, #2b2825);
+      background: var(--p-bg, #ddd);
+      box-shadow: 0 -14px var(--sblur, 30px) rgba(40, 34, 30, 0.16);
+      overflow: hidden;
+    }
+    .spanel:first-child { margin-top: 3%; }
+    .spanel:last-child { margin-bottom: 40%; }
+    /* the "sheet" edge highlight so the covering panel has a crisp lip */
+    .spanel::before {
+      content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .spanel__meta { display: flex; flex-direction: column; gap: 6px; z-index: 1; }
+    .spanel__idx {
+      font-variant-numeric: tabular-nums; font-size: 13px; letter-spacing: 0.14em;
+      opacity: 0.6; text-transform: uppercase;
+    }
+    .spanel__title {
+      font-family: var(--font-accent); font-weight: 400;
+      font-size: clamp(26px, 4.4vw, 46px); line-height: 0.98; letter-spacing: -0.02em; margin: 0;
+    }
+    .spanel__tag { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; }
+    /* decorative shape on the right of each panel */
+    .spanel__shape { width: clamp(60px, 12vw, 120px); height: clamp(60px, 12vw, 120px); flex: 0 0 auto; opacity: 0.9; }
+    .shape--circle { border-radius: 50%; background: currentColor; }
+    .shape--ring   { border-radius: 50%; border: 12px solid currentColor; }
+    .shape--square { border-radius: 14px; background: currentColor; }
+    .shape--tri    { width: 0; height: 0; background: none; border-left: clamp(30px,6vw,60px) solid transparent; border-right: clamp(30px,6vw,60px) solid transparent; border-bottom: clamp(52px,10vw,104px) solid currentColor; border-radius: 0; }
+    .shape--blob   { background: currentColor; border-radius: 46% 54% 62% 38% / 52% 42% 58% 48%; }
+
+    @supports (animation-timeline: view()) {
+      .stackscroll.dim .spanel {
+        animation: spanelDim linear both;
+        animation-timeline: view();
+        animation-range: exit 10% exit 90%;
+      }
+      @keyframes spanelDim { to { filter: brightness(calc(1 - var(--sdim, 0.18))); } }
+    }
+
+    .scrollcue {
+      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+      background: var(--panel); border: 1px solid var(--divider); border-radius: 999px;
+      padding: 6px 14px; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    .scrollcue.gone { opacity: 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stackscroll { scroll-behavior: auto; }
+      .stackscroll.dim .spanel { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -153,20 +244,41 @@
     <div class="stage-wrap">
       <div class="topbar">
         <h1>Motion Playground</h1>
-        <span class="tag">text reveal playground</span>
+        <span class="tag" id="modeTag">text reveal playground</span>
+        <div class="modes" id="modes">
+          <button data-mode="text" class="is-active" type="button">Text reveal</button>
+          <button data-mode="stack" type="button">Sticky stack</button>
+        </div>
       </div>
-      <div class="stage">
-        <h2 id="headline">I'm Nathalia</h2>
+
+      <!-- ---- TEXT REVEAL STAGE ---- -->
+      <div class="modeview" id="stageText">
+        <div class="stage">
+          <h2 id="headline">I'm Nathalia</h2>
+        </div>
+        <div class="stage-foot">
+          <button class="btn btn--primary" id="replay">↻ Replay</button>
+          <label class="chk"><input type="checkbox" id="autoplay" checked /> Autoplay on change</label>
+          <label class="chk"><input type="checkbox" id="loop" /> Loop</label>
+        </div>
       </div>
-      <div class="stage-foot">
-        <button class="btn btn--primary" id="replay">↻ Replay</button>
-        <label class="chk"><input type="checkbox" id="autoplay" checked /> Autoplay on change</label>
-        <label class="chk"><input type="checkbox" id="loop" /> Loop</label>
+
+      <!-- ---- STICKY STACK STAGE ---- -->
+      <div class="modeview" id="stageStack" hidden>
+        <div class="stackstage">
+          <div class="stackscroll dim" id="stackScroll"></div>
+          <div class="scrollcue" id="scrollCue">Scroll ↓</div>
+        </div>
+        <div class="stage-foot">
+          <button class="btn btn--primary" id="stackTop" type="button">↑ Back to top</button>
+          <span class="hint" style="margin:0">Each panel pins, then the next covers it.</span>
+        </div>
       </div>
     </div>
 
     <!-- ===================== CONTROLS ===================== -->
     <div class="panel">
+     <div id="ctrlText">
       <div class="section">
         <h2>Style</h2>
         <div class="styles" id="styles"></div>
@@ -250,6 +362,59 @@
         <pre class="code" id="outHtml"></pre>
         <p class="hint" id="outHint"></p>
       </div>
+     </div><!-- /#ctrlText -->
+
+     <!-- ---- STICKY STACK CONTROLS ---- -->
+     <div id="ctrlStack" hidden>
+      <div class="section">
+        <h2>Sticky stack</h2>
+        <p class="style-desc">Each panel pins to the top and holds while you scroll; the next panel rises up and covers it. Pure layout — <code>position: sticky</code>, no JS. Scroll the stage on the left to feel it.</p>
+      </div>
+
+      <div class="section">
+        <h2>Composition</h2>
+        <div class="knob" data-sknob="count">
+          <div class="knob__top"><span class="knob__label">Panels</span><span class="knob__val" data-sout></span></div>
+          <input type="range" data-svar="count" min="3" max="6" step="1" />
+        </div>
+        <div class="knob" data-sknob="pheight">
+          <div class="knob__top"><span class="knob__label">Panel height</span><span class="knob__val" data-sout></span></div>
+          <input type="range" data-svar="pheight" min="60" max="100" step="1" />
+        </div>
+        <div class="knob" data-sknob="offset">
+          <div class="knob__top"><span class="knob__label">Stick offset</span><span class="knob__val" data-sout></span></div>
+          <input type="range" data-svar="offset" min="0" max="48" step="2" />
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Depth &amp; feel</h2>
+        <div class="knob" data-sknob="radius">
+          <div class="knob__top"><span class="knob__label">Corner radius</span><span class="knob__val" data-sout></span></div>
+          <input type="range" data-svar="radius" min="0" max="32" step="1" />
+        </div>
+        <div class="knob" data-sknob="shadow">
+          <div class="knob__top"><span class="knob__label">Shadow depth</span><span class="knob__val" data-sout></span></div>
+          <input type="range" data-svar="shadow" min="0" max="70" step="1" />
+        </div>
+        <div class="knob" data-sknob="dim">
+          <div class="knob__top"><span class="knob__label">Dim when covered</span><span class="knob__val" data-sout></span></div>
+          <input type="range" data-svar="dim" min="0" max="45" step="1" />
+        </div>
+        <p class="hint">“Dim when covered” uses scroll-driven animation (<code>animation-timeline</code>) where the browser supports it — Chromium today. Elsewhere it falls back to just the shadow lip.</p>
+      </div>
+
+      <div class="section">
+        <h2>Export — sticky-stack section</h2>
+        <div class="export__actions">
+          <button class="btn" data-scopy="css">Copy CSS</button>
+          <button class="btn" data-scopy="html">Copy HTML</button>
+        </div>
+        <pre class="code" id="sOutCss"></pre>
+        <pre class="code" id="sOutHtml"></pre>
+        <p class="hint">Full-viewport version (<code>min-height:100vh</code>) ready to drop over sibling sections. Give each panel an opaque <code>background</code> — that's what does the covering.</p>
+      </div>
+     </div><!-- /#ctrlStack -->
     </div>
   </div>
 
@@ -713,6 +878,174 @@
     applySize();
     knobEls.size.value = state.size;
     selectStyle("wave");
+  })();
+  </script>
+
+  <!-- ===================== STICKY-STACK PLAYGROUND ===================== -->
+  <script>
+  (function () {
+    "use strict";
+
+    // Six tonal panels — colour + a simple shape, so the "cover" reads clearly.
+    var PAL = [
+      { name: "Sage",  bg: "#D5E3B0", ink: "#3B4A2A", shape: "circle" },
+      { name: "Clay",  bg: "#E0B7A4", ink: "#4A2E22", shape: "blob"   },
+      { name: "Denim", bg: "#A0B2CC", ink: "#26303F", shape: "ring"   },
+      { name: "Ochre", bg: "#DBCFA8", ink: "#4A4026", shape: "square" },
+      { name: "Lilac", bg: "#C7C0E0", ink: "#322C4A", shape: "tri"    },
+      { name: "Teal",  bg: "#AAD0CF", ink: "#234042", shape: "circle" }
+    ];
+
+    var state = { count: 4, pheight: 86, offset: 8, radius: 18, shadow: 30, dim: 18 };
+
+    var scroll   = document.getElementById("stackScroll");
+    var cue      = document.getElementById("scrollCue");
+    var sknobEls = {};
+
+    // ---- build the stack of panels ----
+    function buildPanels() {
+      scroll.innerHTML = "";
+      for (var i = 0; i < state.count; i++) {
+        var p = PAL[i % PAL.length];
+        var panel = document.createElement("article");
+        panel.className = "spanel";
+        panel.style.setProperty("--p-bg", p.bg);
+        panel.style.setProperty("--p-ink", p.ink);
+        panel.innerHTML =
+          '<div class="spanel__meta">' +
+            '<span class="spanel__idx">' + pad(i + 1) + " / " + pad(state.count) + "</span>" +
+            '<h3 class="spanel__title">' + p.name + "</h3>" +
+            '<span class="spanel__tag">' + p.shape + "</span>" +
+          "</div>" +
+          '<div class="spanel__shape shape--' + p.shape + '"></div>';
+        scroll.appendChild(panel);
+      }
+    }
+    function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+    // ---- push knob values into CSS custom props on the scroller ----
+    function applyVars() {
+      scroll.style.setProperty("--soffset", state.offset + "px");
+      scroll.style.setProperty("--pheight", state.pheight + "%");
+      scroll.style.setProperty("--sradius", state.radius + "px");
+      scroll.style.setProperty("--sblur", state.shadow + "px");
+      scroll.style.setProperty("--sdim", (state.dim / 100).toFixed(3));
+    }
+
+    // ---- knob wiring ----
+    document.querySelectorAll("[data-svar]").forEach(function (input) {
+      var k = input.dataset.svar;
+      sknobEls[k] = input;
+      input.value = state[k];
+      input.addEventListener("input", function () {
+        state[k] = parseFloat(input.value);
+        writeReadout(k);
+        if (k === "count") buildPanels();
+        applyVars();
+        updateExport();
+      });
+    });
+
+    function writeReadout(k) {
+      var wrap = document.querySelector('[data-sknob="' + k + '"]');
+      if (!wrap) return;
+      var out = wrap.querySelector("[data-sout]");
+      if (!out) return;
+      var v = state[k], txt = v;
+      if (k === "pheight" || k === "dim") txt = v + "%";
+      else if (k === "offset" || k === "radius" || k === "shadow") txt = v + "px";
+      else txt = "" + v;
+      out.textContent = txt;
+    }
+    function writeAllReadouts() { Object.keys(sknobEls).forEach(writeReadout); }
+
+    // ---- scroll cue ----
+    scroll.addEventListener("scroll", function () {
+      if (scroll.scrollTop > 8) cue.classList.add("gone");
+      else cue.classList.remove("gone");
+    });
+    document.getElementById("stackTop").addEventListener("click", function () {
+      scroll.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // ---- export ----
+    function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+    function buildCss() {
+      var s = state;
+      var css =
+        "/* Sticky stack — each panel pins, the next covers it */\n" +
+        ".stack { position: relative; }\n" +
+        ".stack__panel {\n" +
+        "  position: sticky;\n" +
+        "  top: " + s.offset + "px;\n" +
+        "  min-height: 100vh;\n" +
+        (s.radius ? "  border-radius: " + s.radius + "px;\n" : "") +
+        "  background: var(--panel-bg, #f2f0ed); /* give each panel an opaque colour */\n" +
+        "  box-shadow: 0 -22px " + s.shadow + "px rgba(40, 34, 30, 0.16);\n" +
+        "}\n" +
+        ".stack__panel:first-child { box-shadow: none; }";
+      if (s.dim > 0) {
+        var b = (1 - s.dim / 100).toFixed(2);
+        css += "\n\n@supports (animation-timeline: view()) {\n" +
+          "  .stack__panel {\n" +
+          "    animation: stackDim linear both;\n" +
+          "    animation-timeline: view();\n" +
+          "    animation-range: exit 10% exit 90%;\n" +
+          "  }\n" +
+          "  @keyframes stackDim { to { filter: brightness(" + b + "); } }\n}";
+      }
+      css += "\n\n@media (prefers-reduced-motion: reduce) {\n" +
+        "  .stack__panel { position: static; min-height: 0; box-shadow: none; animation: none; }\n}";
+      return css;
+    }
+
+    function buildHtml() {
+      var out = '<section class="stack">\n';
+      for (var i = 0; i < state.count; i++) {
+        var p = PAL[i % PAL.length];
+        out += '  <article class="stack__panel" style="--panel-bg:' + p.bg + '">\n' +
+               "    <!-- panel " + pad(i + 1) + " content -->\n" +
+               "  </article>\n";
+      }
+      return out + "</section>";
+    }
+
+    function updateExport() {
+      document.getElementById("sOutCss").textContent = buildCss();
+      document.getElementById("sOutHtml").textContent = buildHtml();
+    }
+
+    document.querySelectorAll("[data-scopy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.dataset.scopy === "css" ? "sOutCss" : "sOutHtml";
+        var text = document.getElementById(id).textContent;
+        navigator.clipboard && navigator.clipboard.writeText(text);
+        var old = btn.textContent; btn.textContent = "Copied ✓";
+        setTimeout(function () { btn.textContent = old; }, 1200);
+      });
+    });
+
+    // ---- mode switching ----
+    var TAGS = { text: "text reveal playground", stack: "sticky-stack playground" };
+    var built = false;
+    function setMode(mode) {
+      document.querySelectorAll("#modes button").forEach(function (b) {
+        b.classList.toggle("is-active", b.dataset.mode === mode);
+      });
+      document.getElementById("stageText").hidden = mode !== "text";
+      document.getElementById("stageStack").hidden = mode !== "stack";
+      document.getElementById("ctrlText").hidden = mode !== "text";
+      document.getElementById("ctrlStack").hidden = mode !== "stack";
+      document.getElementById("modeTag").textContent = TAGS[mode];
+      if (mode === "stack" && !built) {
+        buildPanels(); applyVars(); writeAllReadouts(); updateExport();
+        built = true;
+      }
+    }
+    document.querySelectorAll("#modes button").forEach(function (b) {
+      b.addEventListener("click", function () { setMode(b.dataset.mode); });
+    });
   })();
   </script>
 </body>
