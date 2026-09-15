@@ -27,6 +27,7 @@
       --divider: #DDDDDD;
       --stamp: #FEFEFE;
       --stamp-edge: #E4E1DC;
+      --stamp-ink: #9E3B2E;
 
       --card-green: #D5E3B0;
       --card-tan: #DBD1BF;
@@ -231,8 +232,14 @@
     .footer__lead {
       font-size: clamp(20px, 2vw, 24px);
       color: var(--ink);
-      margin-bottom: clamp(48px, 8vw, 120px) !important;
+      margin-bottom: 20px !important;
     }
+    .footer__note {
+      font-size: 15px; line-height: 1.5; color: var(--ink-body);
+      opacity: .75; margin-bottom: 20px !important; max-width: 320px;
+    }
+    /* colophon (stack / credits / copyright) sits at the foot of the column */
+    .footer__colophon { margin-top: clamp(48px, 7vw, 96px); }
     .footer__block {
       font-size: clamp(16px, 1.5vw, 24px);
       line-height: 1.46;
@@ -244,12 +251,95 @@
       font-size: clamp(16px, 1.5vw, 24px);
       color: var(--ink-body);
     }
+
+    /* ---------- STAMP CONTROLS ---------- */
+    .controls { display: flex; flex-direction: column; gap: 12px; max-width: 340px; }
+    .controls__row { display: flex; gap: 10px; }
+    .field {
+      flex: 1 1 auto;
+      font-family: var(--font-body); font-size: 15px; color: var(--ink);
+      background: #fff; border: 1px solid var(--stamp-edge); border-radius: 10px;
+      padding: 12px 14px; outline: none; transition: border-color .18s ease;
+    }
+    .field:focus { border-color: #b9b3aa; }
+    .field::placeholder { color: #a8a29a; }
+    .btn {
+      font-family: var(--font-body); font-size: 14px; font-weight: 500;
+      border-radius: 10px; padding: 12px 18px; cursor: pointer;
+      border: 1px solid var(--ink); background: var(--ink); color: #fff;
+      transition: transform .12s ease, opacity .18s ease; white-space: nowrap;
+    }
+    .btn:hover { opacity: .9; }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .status { font-size: 13px; min-height: 18px; color: var(--ink-body); opacity: .7; margin: 0; }
+    .status--err { color: var(--stamp-ink); opacity: 1; }
+
+    /* ---------- STAMP PAD (paper) ---------- */
     .stamp {
-      background: var(--stamp);
+      position: relative;
+      background-color: #FEFEFC;
+      /* Realistic paper: warm mottling + fine fibre grain, inline SVG (nothing fetched). */
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.46  0 0 0 0 0.4  0 0 0 0 0.32  0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 320px 320px, 200px 200px;
+      background-repeat: repeat, repeat;
       border: 1px solid var(--stamp-edge);
       border-radius: 14px;
       min-height: 785px;
       width: 100%;
+      overflow: hidden;
+      cursor: default;
+      box-shadow: inset 0 0 110px rgba(92,76,54,0.08),
+                  inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .stamp.is-armed { cursor: crosshair; }
+
+    .stamp__hint {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-accent); font-size: 20px; color: #cfcac2;
+      pointer-events: none; text-align: center; padding: 24px;
+      transition: opacity .3s ease;
+    }
+    .stamp.is-armed .stamp__hint { color: var(--stamp-ink); opacity: .55; }
+    .stamp__hint[hidden] { display: none; }
+
+    .mark {
+      position: absolute; width: 190px; height: 190px;
+      transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+      pointer-events: none; color: var(--stamp-ink);
+      mix-blend-mode: multiply; opacity: .9;
+    }
+    .mark svg { width: 100%; height: 100%; display: block; }
+
+    /* cursor-following preview while armed */
+    .ghost {
+      position: fixed; width: 150px; height: 150px;
+      transform: translate(-50%, -50%) rotate(-4deg);
+      pointer-events: none; color: var(--stamp-ink); opacity: .5;
+      z-index: 50; display: none;
+    }
+    .ghost svg { width: 100%; height: 100%; }
+
+    /* ---------- PAGER ---------- */
+    .pager {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 6px; margin-top: 12px;
+    }
+    .pager__btn {
+      font-family: var(--font-body); font-size: 15px; line-height: 1;
+      width: 26px; height: 26px; border-radius: 999px;
+      border: 1px solid var(--stamp-edge); background: #fff; color: var(--ink);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: opacity .15s ease, border-color .15s ease;
+    }
+    .pager__btn:hover:not(:disabled) { border-color: #b9b3aa; }
+    .pager__btn:disabled { opacity: .35; cursor: default; }
+    .pager__label {
+      font-size: 12px; letter-spacing: .04em; color: var(--ink-body); opacity: .7;
+      min-width: 46px; text-align: center; font-variant-numeric: tabular-nums;
     }
 
     /* ---------- RESPONSIVE ---------- */
@@ -332,22 +422,633 @@
     <hr class="footer__divider" />
     <div class="footer__grid">
       <div class="footer__col">
-        <p class="footer__lead">Leave a stamp!</p>
-        <p class="footer__block">Stack
+        <p class="footer__lead">Leave a stamp</p>
+        <p class="footer__note">Type where you're visiting from, hit Create Stamp, then click the page to press your mark.</p>
+
+        <div class="controls">
+          <input class="field" id="locInput" type="text" placeholder="City, Country" autocomplete="off" />
+          <div class="controls__row">
+            <button class="btn" id="createBtn" type="button">Create Stamp</button>
+          </div>
+          <p class="status" id="status"></p>
+        </div>
+
+        <div class="footer__colophon">
+          <p class="footer__block">Stack
 Paper Design
 Claude Code
 Vercel</p>
-        <p class="footer__block">Credits
+          <p class="footer__block">Credits
 Accent typeface: Tagada
 Body typeface: Plus Jakarta Sans
 Texture images: Unsplash</p>
-        <p class="footer__copy">© Nathalia Kasman 2026</p>
+          <p class="footer__copy">© Nathalia Kasman 2026</p>
+        </div>
       </div>
+
       <div class="footer__col">
-        <div class="stamp" aria-hidden="true"></div>
+        <div class="stamp" id="pad">
+          <div class="stamp__hint" id="hint">Your stamp will land here</div>
+        </div>
+        <div class="pager" id="pager" hidden>
+          <button class="pager__btn" id="prevPage" type="button" aria-label="Previous page">‹</button>
+          <span class="pager__label" id="pageLabel">1 / 1</span>
+          <button class="pager__btn" id="nextPage" type="button" aria-label="Next page">›</button>
+        </div>
       </div>
     </div>
   </footer>
+
+  <!-- cursor-following stamp preview -->
+  <div class="ghost" id="ghost"></div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const locInput = $('locInput');
+    const createBtn = $('createBtn');
+    const status = $('status');
+    const pad = $('pad');
+    const hint = $('hint');
+    const ghost = $('ghost');
+    const pager = $('pager');
+    const prevPage = $('prevPage');
+    const nextPage = $('nextPage');
+    const pageLabel = $('pageLabel');
+
+    let armedSVG = null; // the SVG string ready to be pressed
+
+    function setStatus(msg, isErr) {
+      status.textContent = msg || '';
+      status.classList.toggle('status--err', !!isErr);
+    }
+
+    function todayStr() {
+      const d = new Date();
+      const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    // ---------- Emblem library (single-ink silhouettes, 100x100 box) ----------
+    // Each entry is inner SVG markup; it inherits ink colour + texture from the stamp.
+    const ICONS = {
+      liberty: `<g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="46" cy="34" r="6.5" fill="currentColor" stroke="none"/>
+        <path d="M39,30 L36,23 M43,27 L42,19 M46,26 L46,17 M49,27 L50,19 M53,30 L56,23"/>
+        <path d="M52,36 L64,19"/>
+        <circle cx="66" cy="15" r="3.4" fill="currentColor" stroke="none"/>
+        <path d="M66,11 C68,6 68,3 66,1 C64,4 64,7 66,11 Z" fill="currentColor" stroke="none"/>
+        <path d="M42,42 L38,86 L60,86 L52,42 Z" fill="currentColor" stroke="none"/>
+        <path d="M42,50 L31,60"/>
+        <rect x="24" y="58" width="9" height="12" rx="1" fill="currentColor" stroke="none"/>
+        <rect x="34" y="86" width="30" height="7" fill="currentColor" stroke="none"/>
+      </g>`,
+      peach: `<g fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M50,34 C33,32 23,48 23,61 C23,79 38,90 50,90 C62,90 77,79 77,61 C77,48 67,32 50,34 Z"/>
+        <path d="M50,36 C45,52 45,74 50,88"/>
+        <path d="M50,34 L54,22"/>
+        <path d="M54,24 C64,15 75,19 72,30 C64,37 56,33 54,24 Z" fill="currentColor" stroke="none"/>
+      </g>`,
+      eiffel: `<g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M50,12 L50,5"/>
+        <path d="M50,12 C48,38 40,66 27,92"/>
+        <path d="M50,12 C52,38 60,66 73,92"/>
+        <path d="M40,44 L60,44"/>
+        <path d="M33,66 L67,66"/>
+        <path d="M29,88 C40,80 60,80 71,88"/>
+        <path d="M44,66 L50,44 L56,66"/>
+      </g>`,
+      bigben: `<g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+        <rect x="40" y="34" width="20" height="55"/>
+        <path d="M40,34 L50,14 L60,34 Z" fill="currentColor" stroke="none"/>
+        <path d="M50,14 L50,8"/>
+        <circle cx="50" cy="46" r="6"/>
+        <path d="M50,46 L50,42 M50,46 L53,48"/>
+        <path d="M40,60 L60,60"/>
+        <rect x="35" y="88" width="30" height="6" fill="currentColor" stroke="none"/>
+      </g>`,
+      fuji: `<g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M12,84 L40,43 C45,36 55,36 60,43 L88,84"/>
+        <path d="M33,52 l5,5 l5,-5 l5,5 l5,-5 l5,5"/>
+        <path d="M14,90 q8,-6 16,0 t16,0 t16,0 t16,0"/>
+      </g>`,
+      pyramids: `<g stroke="currentColor" stroke-width="3.4" stroke-linejoin="round">
+        <circle cx="76" cy="26" r="9" fill="currentColor" stroke="none"/>
+        <path d="M46,32 L18,84 L74,84 Z" fill="currentColor" stroke="none"/>
+        <path d="M24,52 L6,84 L42,84 Z" fill="currentColor" stroke="none"/>
+        <path d="M4,88 L96,88" fill="none" stroke-linecap="round"/>
+      </g>`,
+      colosseum: `<g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M14,44 C40,30 60,30 86,44"/>
+        <path d="M14,44 L14,82 M86,44 L86,82"/>
+        <path d="M9,84 L91,84"/>
+        <path d="M23,54 v26 M35,51 v30 M47,50 v31 M59,50 v31 M71,51 v30"/>
+        <path d="M23,62 q6,-8 12,0 M47,60 q6,-8 12,0 M65,62 q6,-8 12,0"/>
+      </g>`,
+      opera: `<g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M16,82 Q28,34 44,82"/>
+        <path d="M30,82 Q46,24 64,82"/>
+        <path d="M50,82 Q66,34 82,82"/>
+        <path d="M10,84 L90,84"/>
+        <path d="M12,89 q6,-4 12,0 t12,0 t12,0 t12,0 t12,0 t12,0"/>
+      </g>`,
+      taj: `<g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M38,54 C36,38 44,30 50,30 C56,30 64,38 62,54"/>
+        <path d="M50,30 L50,22"/><circle cx="50" cy="20" r="2" fill="currentColor" stroke="none"/>
+        <rect x="34" y="54" width="32" height="30"/>
+        <path d="M42,84 L42,66 C42,60 58,60 58,66 L58,84"/>
+        <path d="M18,84 L18,45 M26,84 L26,45"/><path d="M18,45 q4,-6 8,0"/>
+        <path d="M74,84 L74,45 M82,84 L82,45"/><path d="M74,45 q4,-6 8,0"/>
+        <path d="M8,88 L92,88"/>
+      </g>`,
+      windmill: `<g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M40,88 L45,52 L55,52 L60,88 Z"/>
+        <path d="M43,52 L50,42 L57,52"/>
+        <path d="M50,48 L30,28 M50,48 L70,28 M50,48 L30,68 M50,48 L70,68"/>
+        <circle cx="50" cy="48" r="3" fill="currentColor" stroke="none"/>
+        <path d="M36,90 L64,90"/>
+      </g>`,
+      christ: `<g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="50" cy="30" r="6" fill="currentColor" stroke="none"/>
+        <path d="M20,45 L80,45"/>
+        <path d="M20,45 L20,53 M80,45 L80,53"/>
+        <path d="M44,40 L40,80 L60,80 L56,40"/>
+        <rect x="42" y="80" width="16" height="6" fill="currentColor" stroke="none"/>
+        <path d="M40,90 L60,90"/>
+      </g>`,
+      monas: `<g fill="none" stroke="currentColor" stroke-width="3.8" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M46,30 L44,84 L56,84 L54,30 Z"/>
+        <path d="M50,30 C46,24 48,18 50,14 C52,18 54,24 50,30 Z" fill="currentColor" stroke="none"/>
+        <rect x="36" y="84" width="28" height="6" fill="currentColor" stroke="none"/>
+        <path d="M30,92 L70,92"/>
+      </g>`,
+      goldengate: `<g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M4,62 L96,62"/>
+        <path d="M28,62 L28,22 M72,62 L72,22"/>
+        <path d="M23,28 L33,28 M67,28 L77,28"/>
+        <path d="M4,46 L28,22 C44,52 56,52 72,22 L96,46"/>
+        <path d="M14,55 L14,62 M40,44 L40,62 M50,44 L50,62 M60,44 L60,62 M86,55 L86,62"/>
+        <path d="M4,62 L4,70 M96,62 L96,70"/>
+      </g>`,
+      palm: `<g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M50,90 C46,70 46,54 50,44 C54,54 54,70 52,90"/>
+        <path d="M50,44 C40,34 28,32 20,36"/>
+        <path d="M50,44 C42,30 32,24 22,24"/>
+        <path d="M50,44 C50,30 48,20 44,14"/>
+        <path d="M50,44 C58,30 68,24 78,24"/>
+        <path d="M50,44 C60,34 72,32 80,36"/>
+        <path d="M50,44 C52,30 56,22 62,16"/>
+        <circle cx="50" cy="44" r="2.5" fill="currentColor" stroke="none"/>
+        <path d="M30,92 L70,92"/>
+      </g>`,
+      skyline: `<g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M8,84 L92,84"/>
+        <rect x="14" y="54" width="14" height="30"/>
+        <rect x="30" y="40" width="14" height="44"/>
+        <rect x="46" y="26" width="12" height="58"/>
+        <path d="M52,26 L52,16"/>
+        <rect x="60" y="46" width="14" height="38"/>
+        <rect x="76" y="60" width="12" height="24"/>
+      </g>`,
+      lonestar: `<g fill="currentColor" stroke="none">
+        <path d="M50,14 L58.8,37.9 L84.2,38.9 L64.3,54.6 L71.2,79.1 L50,65 L28.8,79.1 L35.7,54.6 L15.8,38.9 L41.2,37.9 Z"/>
+      </g>`,
+      pine: `<g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M50,14 L34,44 L44,44 L30,68 L45,68 L45,86 L55,86 L55,68 L70,68 L56,44 L66,44 Z"/>
+      </g>`,
+      pin: `<g fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M50,22 C36,22 28,33 28,45 C28,62 50,84 50,84 C50,84 72,62 72,45 C72,33 64,22 50,22 Z"/>
+        <circle cx="50" cy="44" r="8" fill="currentColor" stroke="none"/>
+      </g>`
+    };
+
+    // Representative images, most specific first. Level 1: city (optional `region`
+    // restricts it, e.g. Portland OR vs Portland ME). Level 2: US state (city inherits
+    // its state's image). Level 3: country landmark. Anything past this uses a flag.
+    const CITY_RULES = [
+      { c: ['new york', 'nyc'], icon: 'liberty' },
+      { c: ['san francisco'], icon: 'goldengate' },
+      { c: ['los angeles'], icon: 'palm' },
+      { c: ['atlanta'], icon: 'peach' },
+      { c: ['chicago'], icon: 'skyline' },
+      { c: ['austin'], icon: 'lonestar' },
+      { c: ['portland'], icon: 'pine', region: ['oregon', 'or'] },
+      { c: ['paris'], icon: 'eiffel' },
+      { c: ['london'], icon: 'bigben' },
+      { c: ['tokyo'], icon: 'fuji' },
+      { c: ['rome', 'roma'], icon: 'colosseum' },
+      { c: ['sydney'], icon: 'opera' },
+      { c: ['cairo', 'giza'], icon: 'pyramids' },
+      { c: ['agra'], icon: 'taj' },
+      { c: ['amsterdam'], icon: 'windmill' },
+      { c: ['rio', 'janeiro'], icon: 'christ' },
+      { c: ['jakarta'], icon: 'monas' },
+    ];
+    const STATE_RULES = [
+      { s: ['georgia'], abbr: 'GA', icon: 'peach' },
+      { s: ['california'], abbr: 'CA', icon: 'palm' },
+      { s: ['texas'], abbr: 'TX', icon: 'lonestar' },
+      { s: ['illinois'], abbr: 'IL', icon: 'skyline' },
+      { s: ['oregon'], abbr: 'OR', icon: 'pine' },
+    ];
+    const COUNTRY_RULES = [
+      { c: ['france'], icon: 'eiffel' },
+      { c: ['japan'], icon: 'fuji' },
+      { c: ['italy', 'italia'], icon: 'colosseum' },
+      { c: ['australia'], icon: 'opera' },
+      { c: ['egypt'], icon: 'pyramids' },
+      { c: ['india'], icon: 'taj' },
+      { c: ['united kingdom', 'england', 'britain', 'scotland', 'wales', 'uk'], icon: 'bigben' },
+      { c: ['netherlands', 'holland'], icon: 'windmill' },
+      { c: ['brazil', 'brasil'], icon: 'christ' },
+      { c: ['indonesia'], icon: 'monas' },
+    ];
+
+    function wordHit(key, w) {
+      const esc = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp('\\b' + esc + '\\b', 'i').test(key);
+    }
+    // ---------- Monochrome ink flags (country fallback) ----------
+    // Descriptors: h/v = number of horizontal/vertical bands; disc, cross (nordic),
+    // crossSq (swiss), leaf (maple), star, crescent. Anything uncurated -> neutral star flag.
+    const FLAG_RULES = [
+      [['germany','deutschland'], { h: 3 }],
+      [['austria'], { h: 3 }],
+      [['spain','espana','españa'], { h: 3 }],
+      [['poland','polska'], { h: 2 }],
+      [['indonesia','monaco'], { h: 2 }],
+      [['belgium','ireland','eire'], { v: 3 }],
+      [['nigeria','italy','france','peru'], { v: 3 }],
+      [['portugal'], { v: 2 }],
+      [['canada'], { v: 3, leaf: 1 }],
+      [['japan','bangladesh','palau'], { disc: 1 }],
+      [['south korea','korea'], { disc: 1 }],
+      [['sweden','norway','denmark','finland','iceland'], { cross: 1 }],
+      [['switzerland','swiss'], { crossSq: 1 }],
+      [['turkey','turkiye','singapore','tunisia','pakistan'], { crescent: 1 }],
+      [['china','vietnam','morocco'], { star: 1 }],
+      [['mexico'], { v: 3, disc: 1 }],
+      // Americas
+      [['argentina'], { h: 3, disc: 1 }],
+      [['colombia','ecuador','bolivia','costa rica'], { h: 3 }],
+      [['venezuela','honduras'], { h: 3, star: 1 }],
+      [['chile','cuba','uruguay','panama'], { h: 2, star: 1 }],
+      [['dominican republic'], { crossSq: 1 }],
+      [['guatemala','nicaragua','el salvador'], { v: 3 }],
+    ];
+
+    // ---------- US state recognition (states aren't countries) ----------
+    const US_STATES = ['alabama','alaska','arizona','arkansas','california','colorado',
+      'connecticut','delaware','florida','georgia','hawaii','idaho','illinois','indiana',
+      'iowa','kansas','kentucky','louisiana','maine','maryland','massachusetts','michigan',
+      'minnesota','mississippi','missouri','montana','nebraska','nevada','new hampshire',
+      'new jersey','new mexico','new york','north carolina','north dakota','ohio','oklahoma',
+      'oregon','pennsylvania','rhode island','south carolina','south dakota','tennessee',
+      'texas','utah','vermont','virginia','washington','west virginia','wisconsin','wyoming',
+      'district of columbia','washington dc'];
+    const US_ABBR = new Set(['AL','AK','AZ','AR','CA','CO','CT','FL','GA','HI','ID','IL','IA',
+      'KS','KY','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH',
+      'OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']);
+    function isUSA(city, country) {
+      const key = ((city || '') + ' ' + (country || '')).toLowerCase();
+      if (['united states','usa','u.s','u.s.a','america'].some(w => wordHit(key, w))) return true;
+      if (US_STATES.some(s => wordHit(key, s))) return true;
+      const c = (country || '').trim().toUpperCase();
+      return US_ABBR.has(c); // exact 2-letter match only (avoids "La Paz" etc.)
+    }
+
+    function starPath(cx, cy, r) {
+      let p = '', inner = r * 0.42;
+      for (let i = 0; i < 10; i++) {
+        const ang = -Math.PI / 2 + i * Math.PI / 5;
+        const rad = (i % 2) ? inner : r;
+        const x = cx + rad * Math.cos(ang), y = cy + rad * Math.sin(ang);
+        p += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1);
+      }
+      return p + 'Z';
+    }
+
+    function renderFlag(d) {
+      const u = 'fl' + Math.random().toString(36).slice(2, 7);
+      const FX0 = 18, FX1 = 84, FY0 = 15, FY1 = 52, W = FX1 - FX0, H = FY1 - FY0;
+      const cx = (FX0 + FX1) / 2, cy = (FY0 + FY1) / 2;
+      const flagPath =
+        `M${FX0},${FY0} C34,${FY0 - 4} 50,${FY0 + 6} 66,${FY0 - 1} C74,${FY0 - 4} 80,${FY0 - 2} ${FX1},${FY0}` +
+        ` L${FX1},${FY1} C74,${FY1 + 2} 68,${FY1 - 3} 58,${FY1} C44,${FY1 + 4} 32,${FY1 - 4} ${FX0},${FY1} Z`;
+
+      let inner = '';
+      const line = (x1, y1, x2, y2, w) => `<path d="M${x1},${y1} L${x2},${y2}" stroke-width="${w || 3}"/>`;
+      if (d.h) for (let i = 1; i < d.h; i++) { const y = FY0 + H * i / d.h; inner += line(FX0, y, FX1, y); }
+      if (d.v) for (let i = 1; i < d.v; i++) { const x = FX0 + W * i / d.v; inner += line(x, FY0, x, FY1); }
+      if (d.disc) inner += `<circle cx="${cx}" cy="${cy}" r="9" fill="currentColor" stroke="none"/>`;
+      if (d.cross) { const vx = FX0 + W * 0.34; inner += line(vx, FY0, vx, FY1, 5) + line(FX0, cy, FX1, cy, 5); }
+      if (d.crossSq) inner += `<path d="M${cx - 3},${cy - 9} h6 v6 h6 v6 h-6 v6 h-6 v-6 h-6 v-6 h6 Z" fill="currentColor" stroke="none"/>`;
+      if (d.leaf) inner += `<g transform="translate(${cx},${cy}) scale(0.9)" fill="currentColor" stroke="none"><path d="M0,-11 L2,-4 L9,-6 L5,-0.5 L11,2 L4,4 L6,11 L0,7 L-6,11 L-4,4 L-11,2 L-5,-0.5 L-9,-6 L-2,-4 Z"/></g>`;
+      if (d.star) inner += `<path d="${starPath(cx, cy, 9)}" fill="currentColor" stroke="none"/>`;
+      if (d.crescent) {
+        inner += `<path d="M${cx + 4},${cy - 8} A9,9 0 1,0 ${cx + 4},${cy + 8} A7,7 0 1,1 ${cx + 4},${cy - 8} Z" fill="currentColor" stroke="none"/>`;
+        inner += `<path d="${starPath(cx + 11, cy, 4)}" fill="currentColor" stroke="none"/>`;
+      }
+      if (d.us) {
+        const cw = W * 0.44, ch = H * 0.55, cr = FX0 + cw, cb = FY0 + ch;
+        for (let i = 1; i < 6; i++) { const y = FY0 + H * i / 6; inner += line((y < cb) ? cr : FX0, y, FX1, y, 2.6); }
+        inner += `<rect x="${FX0}" y="${FY0}" width="${cw.toFixed(1)}" height="${ch.toFixed(1)}" fill="none" stroke-width="2.2"/>`;
+        const sx = [0.26, 0.6, 0.43, 0.26, 0.6], sy = [0.3, 0.3, 0.5, 0.72, 0.72];
+        for (let i = 0; i < sx.length; i++)
+          inner += `<path d="${starPath(FX0 + cw * sx[i], FY0 + ch * sy[i], 2.2)}" fill="currentColor" stroke="none"/>`;
+      }
+
+      return `
+      <clipPath id="${u}"><path d="${flagPath}"/></clipPath>
+      <g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M${FX0},${FY0 - 4} L${FX0},92"/>
+        <circle cx="${FX0}" cy="${FY0 - 6}" r="2.5" fill="currentColor" stroke="none"/>
+        <g clip-path="url(#${u})" stroke-linecap="butt">${inner}</g>
+        <path d="${flagPath}"/>
+      </g>`;
+    }
+
+    function flagEmblem(str) {
+      const key = (str || '').toLowerCase();
+      for (const [words, desc] of FLAG_RULES) {
+        if (words.some(w => wordHit(key, w))) return renderFlag(desc);
+      }
+      return renderFlag({ star: 1 }); // neutral flag for uncurated countries
+    }
+
+    function iconFor(city, country) {
+      const cityKey = (city || '').toLowerCase();
+      const regionKey = (country || '').toLowerCase();
+      const bothKey = cityKey + ' ' + regionKey;
+      const abbr = (country || '').trim().toUpperCase();
+
+      // 1. City has its own representative image (optionally scoped to a region).
+      for (const r of CITY_RULES) {
+        if (!r.c.some(w => wordHit(cityKey, w))) continue;
+        if (r.region && !r.region.some(w => wordHit(regionKey, w))) continue;
+        return ICONS[r.icon];
+      }
+      // 2. US state image — a city with no image of its own inherits its state's.
+      for (const r of STATE_RULES) {
+        if (r.s.some(w => wordHit(bothKey, w)) || abbr === r.abbr) return ICONS[r.icon];
+      }
+      // 3. Country landmark image.
+      for (const r of COUNTRY_RULES) {
+        if (r.c.some(w => wordHit(bothKey, w))) return ICONS[r.icon];
+      }
+      // 4. No representative image anywhere: fall back to a flag.
+      if (isUSA(city, country)) return renderFlag({ us: 1 });
+      const c = (country || '').trim() || (city || '').trim();
+      if (c) return flagEmblem(c);
+      // 5. Nothing to go on.
+      return ICONS.pin;
+    }
+
+    // ---------- Build the circular postmark SVG ----------
+    function buildStampSVG(city, country) {
+      const emblem = iconFor(city, country);
+      city = (city || 'SOMEWHERE').toUpperCase();
+      country = (country || '').toUpperCase();
+      const date = todayStr();
+
+      // Unique filter id per stamp so multiple can coexist
+      const uid = 'f' + Math.random().toString(36).slice(2, 8);
+
+      return `
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <path id="top-${uid}" d="M 100,100 m -74,0 a 74,74 0 1,1 148,0" />
+          <path id="bot-${uid}" d="M 100,100 m -68,0 a 68,68 0 1,0 136,0" />
+          <filter id="rough-${uid}">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${Math.floor(Math.random()*100)}" result="n"/>
+            <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+          </filter>
+          <filter id="ink-${uid}">
+            <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="3" seed="${Math.floor(Math.random()*100)}" result="t"/>
+            <feColorMatrix in="t" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.4 1.05" result="mask"/>
+            <feComposite in="SourceGraphic" in2="mask" operator="in"/>
+          </filter>
+        </defs>
+
+        <g filter="url(#ink-${uid})">
+          <g filter="url(#rough-${uid})" fill="currentColor" stroke="currentColor">
+            <!-- rings -->
+            <circle cx="100" cy="100" r="88" fill="none" stroke-width="3.5"/>
+            <circle cx="100" cy="100" r="60" fill="none" stroke-width="2"/>
+
+            <!-- curved city (top) -->
+            <text font-family="Plus Jakarta Sans, sans-serif" font-weight="600"
+                  font-size="17" letter-spacing="1.5" stroke="none">
+              <textPath href="#top-${uid}" startOffset="50%" text-anchor="middle">${city}</textPath>
+            </text>
+
+            <!-- curved country (bottom) -->
+            <text font-family="Plus Jakarta Sans, sans-serif" font-weight="500"
+                  font-size="12.5" letter-spacing="2" stroke="none">
+              <textPath href="#bot-${uid}" startOffset="50%" text-anchor="middle">${country}</textPath>
+            </text>
+
+            <!-- side stars -->
+            <text x="18" y="105" font-size="16" stroke="none" text-anchor="middle">★</text>
+            <text x="182" y="105" font-size="16" stroke="none" text-anchor="middle">★</text>
+
+            <!-- center emblem -->
+            <g transform="translate(100,82) scale(0.60) translate(-50,-50)">
+              ${emblem}
+            </g>
+            <!-- date under emblem -->
+            <line x1="64" y1="120" x2="136" y2="120" stroke-width="1.2"/>
+            <text x="100" y="134" font-family="Plus Jakarta Sans, sans-serif" font-weight="600"
+                  font-size="12" letter-spacing="1.4" text-anchor="middle" stroke="none">${date}</text>
+          </g>
+        </g>
+      </svg>`;
+    }
+
+    function parseLocation(raw) {
+      const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+      if (parts.length >= 2) return { city: parts[0], country: parts[parts.length - 1] };
+      return { city: parts[0] || '', country: '' };
+    }
+
+    // ---------- Persistent, paginated record of stamps ----------
+    // Each page is an array of { svg, x, y, rot } where x/y are fractions (0..1)
+    // of the pad so stamps land correctly regardless of pad size.
+    // NOTE: prototype persistence is localStorage (this browser only). The real
+    // portfolio needs a shared backend so every visitor sees the same record.
+    const STORE_KEY = 'stamp_record_v1';
+    const CAPACITY = 12;            // stamps per page before a new page begins
+    let pages = loadPages();        // array of pages
+    let view = pages.length - 1;    // which page is currently shown
+
+    function loadPages() {
+      try {
+        const raw = localStorage.getItem(STORE_KEY);
+        const p = raw ? JSON.parse(raw) : null;
+        if (Array.isArray(p) && p.length && Array.isArray(p[0])) return p;
+      } catch (e) { /* ignore */ }
+      return [[]];
+    }
+    function savePages() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(pages)); } catch (e) { /* ignore */ }
+    }
+
+    function makeMark(stamp, animate) {
+      const mark = document.createElement('div');
+      mark.className = 'mark';
+      mark.style.left = (stamp.x * 100) + '%';
+      mark.style.top = (stamp.y * 100) + '%';
+      mark.style.setProperty('--rot', stamp.rot + 'deg');
+      if (!animate) mark.style.animation = 'none';
+      mark.innerHTML = stamp.svg;
+      return mark;
+    }
+
+    function renderPage() {
+      pad.querySelectorAll('.mark').forEach(m => m.remove());
+      const list = pages[view] || [];
+      list.forEach(s => pad.appendChild(makeMark(s, false)));
+      hint.hidden = list.length > 0;
+      updatePager();
+    }
+
+    function updatePager() {
+      pager.hidden = pages.length <= 1;
+      pageLabel.textContent = (view + 1) + ' / ' + pages.length;
+      prevPage.disabled = view <= 0;
+      nextPage.disabled = view >= pages.length - 1;
+    }
+
+    prevPage.addEventListener('click', () => { if (view > 0) { view--; renderPage(); } });
+    nextPage.addEventListener('click', () => { if (view < pages.length - 1) { view++; renderPage(); } });
+
+    // ---------- Arm a stamp (ready to press) ----------
+    function armStamp(city, country) {
+      armedSVG = buildStampSVG(city, country);
+      ghost.innerHTML = armedSVG;
+      pad.classList.add('is-armed');
+      // Always stamp on the newest page.
+      if (view !== pages.length - 1) { view = pages.length - 1; renderPage(); }
+      setStatus('Click the page to press your stamp.');
+    }
+
+    // ---------- Validation via keyless geocoding (Open-Meteo) ----------
+    // Does a geocoded result plausibly match the region the visitor typed?
+    function regionMatch(result, region) {
+      const R = region.trim().toLowerCase();
+      if (!R) return true;
+      const cc = (result.country_code || '').toLowerCase();
+      const cn = (result.country || '').toLowerCase();
+      const a1 = (result.admin1 || '').toLowerCase();
+      if (cn && (cn.includes(R) || R.includes(cn))) return true;
+      if (a1 && (a1.includes(R) || R.includes(a1))) return true;
+      if (cc === R) return true;
+      if (cc === 'us') {
+        if (['usa', 'united states', 'u.s', 'u.s.a', 'america'].some(w => R.includes(w))) return true;
+        if (US_ABBR.has(region.trim().toUpperCase())) return true;
+      }
+      if (cc === 'gb' && ['uk', 'england', 'scotland', 'wales', 'britain', 'united kingdom'].some(w => R.includes(w))) return true;
+      return false;
+    }
+
+    const normName = s => (s || '').toLowerCase().normalize('NFD')
+      .replace(/[̀-ͯ]/g, '').replace(/[.'’-]/g, ' ').replace(/\s+/g, ' ').trim();
+
+    async function placeCheck(city, region) {
+      const q = (city || '').trim();
+      if (!q) return { ok: false, msg: 'Type a city and country first.' };
+      const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=10&language=en&format=json`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const results = data.results || [];
+      // Require a result whose name actually matches what was typed (accent-insensitive),
+      // so fuzzy near-matches like "Pariss" -> "Parissieu" don't slip through.
+      const named = results.filter(r => normName(r.name) === normName(q));
+      if (!named.length) return { ok: false, msg: 'Location not found. Please try again.' };
+      if (region && !named.some(r => regionMatch(r, region)))
+        return { ok: false, msg: 'Location not found. Please try again.' };
+      return { ok: true };
+    }
+
+    let busy = false;
+    function setBusy(b) {
+      busy = b;
+      createBtn.disabled = b;
+      if (b) createBtn.textContent = 'Checking…';
+      else refreshCreateLabel();
+    }
+
+    async function armFromInput() {
+      if (busy) return;
+      const raw = locInput.value.trim();
+      if (!raw) { setStatus('Type a city and country first.', true); return; }
+      const { city, country } = parseLocation(raw);
+      setBusy(true);
+      setStatus('Checking that place…');
+      let check;
+      try {
+        check = await placeCheck(city, country);
+      } catch (e) {
+        setBusy(false);
+        setStatus('Location not found. Please try again.', true);
+        return;
+      }
+      setBusy(false);
+      if (!check.ok) { setStatus(check.msg, true); return; }
+      armStamp(city, country);
+    }
+    createBtn.addEventListener('click', armFromInput);
+    locInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') armFromInput(); });
+
+    // Button reads "Create Stamp" the first time, "Create another stamp" after.
+    function refreshCreateLabel() {
+      const any = pages.some(p => p.length > 0);
+      createBtn.textContent = any ? 'Create another stamp' : 'Create Stamp';
+    }
+
+    // ---------- Cursor-following ghost preview ----------
+    window.addEventListener('mousemove', (e) => {
+      if (!armedSVG) return;
+      ghost.style.display = 'block';
+      ghost.style.left = e.clientX + 'px';
+      ghost.style.top = e.clientY + 'px';
+    });
+
+    // ---------- Press the stamp onto the current (latest) page ----------
+    pad.addEventListener('click', (e) => {
+      if (!armedSVG) return;
+      const rect = pad.getBoundingClientRect();
+      // Keep the stamp fully inside the paper (its box is ~190px, so ~95px radius).
+      const mx = Math.min(Math.max(e.clientX - rect.left, 95), rect.width - 95);
+      const my = Math.min(Math.max(e.clientY - rect.top, 95), rect.height - 95);
+      const stamp = {
+        svg: armedSVG,
+        x: mx / rect.width,
+        y: my / rect.height,
+        rot: (Math.random() * 24 - 12).toFixed(1)
+      };
+
+      const latest = pages.length - 1;
+      pages[latest].push(stamp);
+      pad.appendChild(makeMark(stamp, true));  // animate the fresh press
+      hint.hidden = true;
+
+      // If this page just filled up, open a fresh page for the next stamp.
+      if (pages[latest].length >= CAPACITY) pages.push([]);
+      savePages();
+      updatePager();
+      refreshCreateLabel();
+
+      armedSVG = null;
+      ghost.style.display = 'none';
+      pad.classList.remove('is-armed');
+      locInput.value = '';
+      setStatus('');
+    });
+
+    // Initial paint of the stored record.
+    renderPage();
+    refreshCreateLabel();
+  </script>
 
 </body>
 </html>
