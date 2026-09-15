@@ -504,11 +504,11 @@ Texture images: Unsplash</p>
       status.classList.toggle('status--err', !!isErr);
     }
 
-    function todayStr() {
-      const d = new Date();
+    function dateStrFrom(d) {
       const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
       return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
+    function todayStr() { return dateStrFrom(new Date()); }
 
     // ---------- Emblem library (single-ink silhouettes, 100x100 box) ----------
     // Each entry is inner SVG markup; it inherits ink colour + texture from the stamp.
@@ -826,13 +826,24 @@ Texture images: Unsplash</p>
     }
 
     // ---------- Build the circular postmark SVG ----------
-    function buildStampSVG(city, country) {
-      const emblem = iconFor(city, country);
-      city = (city || 'SOMEWHERE').toUpperCase();
-      country = (country || '').toUpperCase();
-      const date = todayStr();
+    // Escape any user-supplied text before it goes into SVG markup. Stamps are
+    // shared between visitors, so a name must never be able to carry markup.
+    function escapeXml(s) {
+      return String(s).replace(/[<>&'"]/g, c =>
+        ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
+    }
 
-      // Unique filter id per stamp so multiple can coexist
+    // A `seed` makes the distressed texture identical for every viewer of a given
+    // stamp; `dateStr` is the day the stamp was pressed (not today).
+    function buildStampSVG(city, country, seed, dateStr) {
+      const emblem = iconFor(city, country); // trusted art, keyed off raw text
+      const CITY = escapeXml((city || 'SOMEWHERE').toUpperCase());
+      const COUNTRY = escapeXml((country || '').toUpperCase());
+      const date = dateStr || todayStr();
+      seed = Number.isFinite(seed) ? Math.abs(Math.floor(seed)) : Math.floor(Math.random() * 100000);
+      const s1 = seed % 100, s2 = (seed * 31 + 7) % 100;
+
+      // Unique filter id per rendered node so multiple can coexist in one document.
       const uid = 'f' + Math.random().toString(36).slice(2, 8);
 
       return `
@@ -841,11 +852,11 @@ Texture images: Unsplash</p>
           <path id="top-${uid}" d="M 100,100 m -74,0 a 74,74 0 1,1 148,0" />
           <path id="bot-${uid}" d="M 100,100 m -68,0 a 68,68 0 1,0 136,0" />
           <filter id="rough-${uid}">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${Math.floor(Math.random()*100)}" result="n"/>
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${s1}" result="n"/>
             <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
           </filter>
           <filter id="ink-${uid}">
-            <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="3" seed="${Math.floor(Math.random()*100)}" result="t"/>
+            <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="3" seed="${s2}" result="t"/>
             <feColorMatrix in="t" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.4 1.05" result="mask"/>
             <feComposite in="SourceGraphic" in2="mask" operator="in"/>
           </filter>
@@ -860,13 +871,13 @@ Texture images: Unsplash</p>
             <!-- curved city (top) -->
             <text font-family="Plus Jakarta Sans, sans-serif" font-weight="600"
                   font-size="17" letter-spacing="1.5" stroke="none">
-              <textPath href="#top-${uid}" startOffset="50%" text-anchor="middle">${city}</textPath>
+              <textPath href="#top-${uid}" startOffset="50%" text-anchor="middle">${CITY}</textPath>
             </text>
 
             <!-- curved country (bottom) -->
             <text font-family="Plus Jakarta Sans, sans-serif" font-weight="500"
                   font-size="12.5" letter-spacing="2" stroke="none">
-              <textPath href="#bot-${uid}" startOffset="50%" text-anchor="middle">${country}</textPath>
+              <textPath href="#bot-${uid}" startOffset="50%" text-anchor="middle">${COUNTRY}</textPath>
             </text>
 
             <!-- side stars -->
@@ -892,64 +903,87 @@ Texture images: Unsplash</p>
       return { city: parts[0] || '', country: '' };
     }
 
-    // ---------- Persistent, paginated record of stamps ----------
-    // Each page is an array of { svg, x, y, rot } where x/y are fractions (0..1)
-    // of the pad so stamps land correctly regardless of pad size.
-    // NOTE: prototype persistence is localStorage (this browser only). The real
-    // portfolio needs a shared backend so every visitor sees the same record.
-    const STORE_KEY = 'stamp_record_v1';
-    const CAPACITY = 12;            // stamps per page before a new page begins
-    let pages = loadPages();        // array of pages
-    let view = pages.length - 1;    // which page is currently shown
+    // ---------- Shared, persistent, paginated record of stamps ----------
+    // Stamps are stored as structured records { city, country, seed, x, y, rot, ts }
+    // (never raw markup). The artwork is rebuilt from them with trusted code.
+    // Source of truth is the /api/stamps backend; localStorage is a cache + offline
+    // fallback so the wall still renders if the backend is unreachable.
+    const API = '/api/stamps';
+    const CACHE_KEY = 'stamp_record_v2';
+    const CAPACITY = 12;            // stamps per page
+    let stamps = [];               // flat, chronological
+    let view = 0;                  // current page index
+    let armed = null;              // { city, country, seed } while a stamp is armed
+    let touched = false;           // has this visitor placed a stamp this session?
 
-    function loadPages() {
-      try {
-        const raw = localStorage.getItem(STORE_KEY);
-        const p = raw ? JSON.parse(raw) : null;
-        if (Array.isArray(p) && p.length && Array.isArray(p[0])) return p;
-      } catch (e) { /* ignore */ }
-      return [[]];
+    const pageCount = () => Math.max(1, Math.ceil(stamps.length / CAPACITY));
+    const pageSlice = (i) => stamps.slice(i * CAPACITY, i * CAPACITY + CAPACITY);
+
+    function loadCache() {
+      try { const a = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); if (Array.isArray(a)) return a; }
+      catch (e) { /* ignore */ }
+      return [];
     }
-    function savePages() {
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(pages)); } catch (e) { /* ignore */ }
+    function saveCache() {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify(stamps)); } catch (e) { /* ignore */ }
     }
 
-    function makeMark(stamp, animate) {
+    function svgFor(rec) {
+      return buildStampSVG(rec.city, rec.country, rec.seed, dateStrFrom(new Date(rec.ts || Date.now())));
+    }
+    function makeMark(rec) {
       const mark = document.createElement('div');
       mark.className = 'mark';
-      mark.style.left = (stamp.x * 100) + '%';
-      mark.style.top = (stamp.y * 100) + '%';
-      mark.style.setProperty('--rot', stamp.rot + 'deg');
-      if (!animate) mark.style.animation = 'none';
-      mark.innerHTML = stamp.svg;
+      mark.style.left = (rec.x * 100) + '%';
+      mark.style.top = (rec.y * 100) + '%';
+      mark.style.setProperty('--rot', rec.rot + 'deg');
+      mark.innerHTML = svgFor(rec);
       return mark;
     }
 
     function renderPage() {
       pad.querySelectorAll('.mark').forEach(m => m.remove());
-      const list = pages[view] || [];
-      list.forEach(s => pad.appendChild(makeMark(s, false)));
-      hint.hidden = list.length > 0;
+      pageSlice(view).forEach(s => pad.appendChild(makeMark(s)));
+      hint.hidden = stamps.length > 0;
       updatePager();
     }
-
     function updatePager() {
-      pager.hidden = pages.length <= 1;
-      pageLabel.textContent = (view + 1) + ' / ' + pages.length;
+      const pc = pageCount();
+      if (view > pc - 1) view = pc - 1;
+      pager.hidden = pc <= 1;
+      pageLabel.textContent = (view + 1) + ' / ' + pc;
       prevPage.disabled = view <= 0;
-      nextPage.disabled = view >= pages.length - 1;
+      nextPage.disabled = view >= pc - 1;
     }
 
     prevPage.addEventListener('click', () => { if (view > 0) { view--; renderPage(); } });
-    nextPage.addEventListener('click', () => { if (view < pages.length - 1) { view++; renderPage(); } });
+    nextPage.addEventListener('click', () => { if (view < pageCount() - 1) { view++; renderPage(); } });
+
+    // ---------- Backend calls (best-effort; localStorage covers failures) ----------
+    async function fetchStamps() {
+      const res = await fetch(API, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error('get ' + res.status);
+      const data = await res.json();
+      return Array.isArray(data.stamps) ? data.stamps : [];
+    }
+    async function postStamp(rec) {
+      const res = await fetch(API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city: rec.city, country: rec.country, seed: rec.seed, x: rec.x, y: rec.y, rot: rec.rot }),
+      });
+      if (!res.ok) throw new Error('post ' + res.status);
+      return res.json();
+    }
 
     // ---------- Arm a stamp (ready to press) ----------
     function armStamp(city, country) {
-      armedSVG = buildStampSVG(city, country);
+      const seed = Math.floor(Math.random() * 100000);
+      armed = { city, country, seed };
+      armedSVG = buildStampSVG(city, country, seed, todayStr());
       ghost.innerHTML = armedSVG;
       pad.classList.add('is-armed');
-      // Always stamp on the newest page.
-      if (view !== pages.length - 1) { view = pages.length - 1; renderPage(); }
+      view = pageCount() - 1;          // always stamp on the newest page
+      renderPage();
       setStatus('Click the page to press your stamp.');
     }
 
@@ -1023,8 +1057,7 @@ Texture images: Unsplash</p>
 
     // Button reads "Create Stamp" the first time, "Create another stamp" after.
     function refreshCreateLabel() {
-      const any = pages.some(p => p.length > 0);
-      createBtn.textContent = any ? 'Create another stamp' : 'Create Stamp';
+      createBtn.textContent = stamps.length ? 'Create another stamp' : 'Create Stamp';
     }
 
     // ---------- Cursor-following ghost preview ----------
@@ -1035,41 +1068,56 @@ Texture images: Unsplash</p>
       ghost.style.top = e.clientY + 'px';
     });
 
-    // ---------- Press the stamp onto the current (latest) page ----------
+    // ---------- Press the stamp onto the wall ----------
     pad.addEventListener('click', (e) => {
-      if (!armedSVG) return;
+      if (!armedSVG || !armed) return;
       const rect = pad.getBoundingClientRect();
       // Keep the stamp fully inside the paper (its box is ~190px, so ~95px radius).
       const mx = Math.min(Math.max(e.clientX - rect.left, 95), rect.width - 95);
       const my = Math.min(Math.max(e.clientY - rect.top, 95), rect.height - 95);
-      const stamp = {
-        svg: armedSVG,
-        x: mx / rect.width,
-        y: my / rect.height,
-        rot: (Math.random() * 24 - 12).toFixed(1)
+      const rec = {
+        city: armed.city, country: armed.country, seed: armed.seed,
+        x: +(mx / rect.width).toFixed(4),
+        y: +(my / rect.height).toFixed(4),
+        rot: +(Math.random() * 24 - 12).toFixed(1),
+        ts: Date.now(),
       };
 
-      const latest = pages.length - 1;
-      pages[latest].push(stamp);
-      pad.appendChild(makeMark(stamp, true));  // animate the fresh press
-      hint.hidden = true;
-
-      // If this page just filled up, open a fresh page for the next stamp.
-      if (pages[latest].length >= CAPACITY) pages.push([]);
-      savePages();
-      updatePager();
+      touched = true;
+      stamps.push(rec);
+      view = pageCount() - 1;   // reveal the page the stamp landed on
+      renderPage();
+      saveCache();
       refreshCreateLabel();
 
-      armedSVG = null;
+      armed = null; armedSVG = null;
       ghost.style.display = 'none';
       pad.classList.remove('is-armed');
       locInput.value = '';
       setStatus('');
+
+      // Persist to the shared backend; if it fails the stamp still lives in the cache.
+      postStamp(rec).catch(() => { /* offline / not configured */ });
     });
 
-    // Initial paint of the stored record.
-    renderPage();
-    refreshCreateLabel();
+    // ---------- Initial load: cache first, then reconcile with the backend ----------
+    async function init() {
+      stamps = loadCache();
+      view = pageCount() - 1;
+      renderPage();
+      refreshCreateLabel();
+      try {
+        const server = await fetchStamps();
+        if (!touched) {            // don't clobber a stamp this visitor just placed
+          stamps = server;
+          view = pageCount() - 1;
+          renderPage();
+          refreshCreateLabel();
+          saveCache();
+        }
+      } catch (e) { /* keep the cached wall */ }
+    }
+    init();
   </script>
 
 </body>
