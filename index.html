@@ -262,10 +262,11 @@
     /* ---------- FOOTER / STAMP ---------- */
     .footer {
       padding-top: 44px;
-      padding-bottom: 96px;
+      padding-bottom: 48px;
     }
     .footer__divider {
-      border: 0; height: 10px; background: var(--divider); margin: 0 0 40px;
+      border: 0; height: 10px; background: var(--divider);
+      margin: 0 0 clamp(72px, 8vw, 104px);
     }
     .footer__grid {
       display: grid;
@@ -273,9 +274,14 @@
       gap: clamp(40px, 8vw, 128px);
       align-items: stretch;
     }
+    .footer__col { display: flex; flex-direction: column; }
     .footer__col p { margin: 0; }
     .footer__lead {
-      font-size: clamp(20px, 2vw, 24px);
+      font-family: var(--font-accent);
+      font-weight: 400;
+      font-size: clamp(40px, 5vw, 72px);
+      line-height: 1.0;
+      letter-spacing: -0.05em;
       color: var(--ink);
       margin-bottom: 20px !important;
     }
@@ -283,17 +289,17 @@
       font-size: 15px; line-height: 1.5; color: var(--ink-body);
       opacity: .75; margin-bottom: 20px !important; max-width: 320px;
     }
-    /* colophon (stack / credits / copyright) sits at the foot of the column */
-    .footer__colophon { margin-top: clamp(48px, 7vw, 96px); }
+    /* colophon (stack / credits / copyright) anchored to the foot of the column */
+    .footer__colophon { margin-top: auto; }
     .footer__block {
-      font-size: clamp(16px, 1.5vw, 24px);
+      font-size: clamp(12.8px, 1.2vw, 19.2px);
       line-height: 1.46;
       color: var(--ink-body);
       margin-bottom: 28px !important;
       white-space: pre-line;
     }
     .footer__copy {
-      font-size: clamp(16px, 1.5vw, 24px);
+      font-size: clamp(12.8px, 1.2vw, 19.2px);
       color: var(--ink-body);
     }
 
@@ -373,6 +379,7 @@
       display: flex; align-items: center; justify-content: flex-end;
       gap: 6px; margin-top: 12px;
     }
+    .pager[hidden] { display: none; }
     .pager__btn {
       font-family: var(--font-body); font-size: 15px; line-height: 1;
       width: 26px; height: 26px; border-radius: 999px;
@@ -396,9 +403,16 @@
          instead of bleeding to the viewport edge. */
       .media { margin-right: 0; }
       .project__desc { margin-left: 0; }
-      .footer__grid { grid-template-columns: 1fr; }
-      .footer__lead { margin-bottom: 24px !important; }
-      .stamp { min-height: 460px; }
+      /* Flatten the two columns so the paper can sit between the controls
+         and the credits: heading, note, controls, paper, credits. */
+      .footer__grid { display: flex; flex-direction: column; gap: 0; }
+      .footer__col { display: contents; }
+      .footer__lead { margin-bottom: 24px !important; order: 1; }
+      .footer__note { order: 2; }
+      .controls { order: 3; }
+      .stamp { order: 4; min-height: 460px; margin-top: 24px; }
+      .pager { order: 5; }
+      .footer__colophon { order: 6; margin-top: 48px; }
     }
   </style>
 </head>
