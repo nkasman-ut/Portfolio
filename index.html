@@ -24,7 +24,6 @@
       --bg: #F2F0ED;
       --ink: #413D38;
       --ink-body: #423D38;
-      --divider: #DDDDDD;
       --stamp: #FEFEFE;
       --stamp-edge: #E4E1DC;
       --stamp-ink: #9E3B2E;
@@ -98,6 +97,11 @@
         opacity: 1;
         transform: none;
       }
+      .js .project {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
     }
 
     .hero__subtitle {
@@ -125,12 +129,18 @@
     .hero__bio p:last-child { margin-bottom: 0; }
 
     /* ---------- PROJECT SECTIONS ---------- */
-    .project { padding-top: 44px; }
-    .project__divider {
-      border: 0;
-      height: 10px;
-      background: var(--divider);
-      margin: 0 0 40px;
+    .project { padding-top: 88px; }
+
+    /* Fade + rise on scroll-enter. Sections are visible by default; the .js
+       guard hides them only when JS can reveal them via IntersectionObserver. */
+    .js .project {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .6s ease, transform .6s cubic-bezier(.22,.61,.36,1);
+    }
+    .js .project.is-visible {
+      opacity: 1;
+      transform: none;
     }
 
     .eyebrow {
@@ -427,6 +437,9 @@
       .footer__colophon { order: 6; margin-top: 48px; }
     }
   </style>
+  <!-- Mark JS as available before paint, so project sections can start hidden
+       for the fade-in without flashing for no-JS / slow-JS visitors. -->
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
 
@@ -444,7 +457,6 @@
 
     <!-- ================= PROJECT 1 ================= -->
     <section class="project page">
-      <hr class="project__divider" />
       <p class="eyebrow">User Interviews</p>
       <h2 class="project__title">
         <a href="case-study-research-agent.html">AI-assistant for<br />Research Project Creation</a>
@@ -461,7 +473,6 @@
 
     <!-- ================= PROJECT 2 ================= -->
     <section class="project page">
-      <hr class="project__divider" />
       <p class="eyebrow">User Interviews</p>
       <h2 class="project__title">AI-powered Research Analysis</h2>
       <div class="media">
@@ -482,7 +493,6 @@
 
     <!-- ================= PROJECT 3 ================= -->
     <section class="project page">
-      <hr class="project__divider" />
       <p class="eyebrow">Astrazeneca</p>
       <h2 class="project__title">Patient Care App</h2>
       <div class="media">
@@ -1127,6 +1137,33 @@ Texture images: Unsplash</p>
     // Initial paint of the stored record.
     renderPage();
     refreshCreateLabel();
+  </script>
+
+  <!-- Section detection: reveal each project as it scrolls into view.
+       Replaces the old grey guide-lines with a fade + rise cue. -->
+  <script>
+    (function () {
+      var projects = document.querySelectorAll('.project');
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Fallback: if IntersectionObserver is unavailable or motion is reduced,
+      // just show everything.
+      if (reduce || !('IntersectionObserver' in window)) {
+        projects.forEach(function (p) { p.classList.add('is-visible'); });
+        return;
+      }
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+
+      projects.forEach(function (p) { io.observe(p); });
+    })();
   </script>
 
 </body>
