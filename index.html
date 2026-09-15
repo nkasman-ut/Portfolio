@@ -74,6 +74,32 @@
       margin: 0;
     }
 
+    /* Wave-in: each letter rises + fades into place on load, staggered
+       left-to-right by its --i index. Letters are pre-split in the markup
+       so there's no flash of unstyled text and no JS dependency. */
+    .hero__title .ch {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(0.44em);
+      animation: hero-wave-in 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: calc(var(--i) * 55ms);
+      will-change: transform, opacity;
+    }
+    .hero__title .space { display: inline-block; width: 0.28em; }
+
+    @keyframes hero-wave-in {
+      from { opacity: 0; transform: translateY(0.44em); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero__title .ch {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+    }
+
     .hero__subtitle {
       font-family: var(--font-accent);
       font-weight: 400;
@@ -379,7 +405,7 @@
 
   <!-- ================= HERO ================= -->
   <header class="hero page" id="top">
-    <h1 class="hero__title">I'm Nathalia</h1>
+    <h1 class="hero__title" aria-label="I'm Nathalia"><span class="ch" style="--i:0">I</span><span class="ch" style="--i:1">'</span><span class="ch" style="--i:2">m</span><span class="space" aria-hidden="true"> </span><span class="ch" style="--i:3">N</span><span class="ch" style="--i:4">a</span><span class="ch" style="--i:5">t</span><span class="ch" style="--i:6">h</span><span class="ch" style="--i:7">a</span><span class="ch" style="--i:8">l</span><span class="ch" style="--i:9">i</span><span class="ch" style="--i:10">a</span></h1>
     <p class="hero__subtitle">Product Designer with 6+ years of experience designing end-to-end</p>
     <div class="hero__bio">
       <p>Currently at designing 0 to 1 products at User Interviews. (acquired by UserTesting). Previoulsy at AstraZeneca.</p>
