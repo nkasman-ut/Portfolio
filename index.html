@@ -176,6 +176,54 @@
     .media::-webkit-scrollbar { display: none; }
     .media > * { flex: 0 0 auto; scroll-snap-align: start; }
 
+    /* Grainy blur along the right edge: media rows bleed to the viewport edge,
+       so anything cut off there dissolves into a soft, gritty fade instead of a
+       hard clip. A soft base band hugs the edge; two spikes jut dramatically
+       inward. The mask on .edge-fade shapes BOTH the blur and the grain (::after)
+       at once. Every knob is a CSS var the settings toolbar writes to live. */
+    .edge-fade {
+      --edge-blur: 18px;      /* blur strength                          */
+      --edge-w: 480px;        /* canvas width = furthest a spike reaches */
+      --edge-band: 215px;     /* soft band hugging the very edge         */
+      --grain: 0.70;          /* grain opacity                           */
+      --spike: 180px;         /* how far the spikes jut in               */
+      --spike-h: 126px;       /* spike thickness                         */
+      --spike1-y: 35%;        /* vertical position of spike 1            */
+      --spike2-y: 79%;        /* vertical position of spike 2            */
+
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: var(--edge-w);
+      z-index: 40;
+      pointer-events: none;
+      -webkit-backdrop-filter: blur(var(--edge-blur));
+      backdrop-filter: blur(var(--edge-blur));
+      /* Union (default mask-composite: add) of two spikes + the base band. */
+      --edge-mask:
+        radial-gradient(var(--spike) var(--spike-h) at 100% var(--spike1-y),
+          #000 0%, #000 12%, transparent 74%),
+        radial-gradient(calc(var(--spike) * 0.72) calc(var(--spike-h) * 0.82) at 100% var(--spike2-y),
+          #000 0%, #000 12%, transparent 74%),
+        linear-gradient(to right,
+          transparent calc(100% - var(--edge-band)), #000 97%);
+      -webkit-mask-image: var(--edge-mask);
+      mask-image: var(--edge-mask);
+    }
+    /* Fine film grain (inline SVG, nothing fetched). Inherits the parent mask,
+       so the grain takes on the same spiky shape as the blur. */
+    .edge-fade::after {
+      content: "";
+      position: absolute; inset: 0;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.28  0 0 0 0 0.24  0 0 0 0 0.2  0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+      mix-blend-mode: multiply;
+      opacity: var(--grain);
+    }
+    /* On narrow screens the rows keep a right margin (no viewport bleed), so
+       there's nothing to dissolve — drop the strip. */
+    @media (max-width: 900px) { .edge-fade { display: none; } }
+
     .shot {
       height: var(--media-h);
       aspect-ratio: 1820 / 1268;
@@ -435,6 +483,9 @@
   <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
+
+  <!-- Grainy blur that softens whatever bleeds past the right edge -->
+  <div class="edge-fade" aria-hidden="true"></div>
 
   <!-- ================= HERO ================= -->
   <header class="hero page" id="top">
