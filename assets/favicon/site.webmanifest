@@ -1,0 +1,12 @@
+{
+  "name": "Nathalia Kasman — Product Designer",
+  "short_name": "Nathalia Kasman",
+  "icons": [
+    { "src": "/assets/favicon/favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/assets/favicon/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/assets/favicon/favicon-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#3a3a38",
+  "background_color": "#3a3a38",
+  "display": "standalone"
+}
