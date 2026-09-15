@@ -181,6 +181,46 @@
     }
     .media::-webkit-scrollbar { display: none; }
     .media > * { flex: 0 0 auto; scroll-snap-align: start; }
+    /* Keyboard users: focus the row, then arrow keys scroll it natively. */
+    .media:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 4px; }
+
+    /* Scroll affordance for mouse users (no visible scrollbar, no trackpad):
+       a slim warm rail with a big 9-pointed stamp-star handle. Injected + wired
+       in JS; the row stays keyboard-scrollable via tabindex regardless. */
+    .track {
+      position: relative; height: 6px; border-radius: 999px;
+      background: rgba(120, 92, 58, .22);   /* warm light-brown rail */
+      margin: 30px var(--gutter) 0 0;
+      cursor: pointer;
+    }
+    .track[hidden] { display: none; }
+    .thumb {
+      position: absolute; left: 0; top: 50%;
+      width: 46px; height: 46px;
+      transform: translateY(-50%);
+      transition: transform .2s ease;      /* hover-scale easing only */
+      display: grid; place-items: center;
+      cursor: grab;
+      filter: drop-shadow(0 2px 3px rgba(65,61,56,.22));
+    }
+    .thumb:hover, .track.is-dragging .thumb { transform: translateY(-50%) scale(1.08); }
+    .track.is-dragging .thumb { cursor: grabbing; }
+    /* Rotation is driven by scroll position (--rot), set in JS — no transition
+       so the star rolls along the rail 1:1 with the scroll. */
+    .thumb svg { width: 100%; height: 100%; display: block; transform: rotate(var(--rot, 0deg)); }
+    .thumb svg polygon {
+      fill: var(--ink); stroke: var(--ink);     /* chocolate — the dominant ink */
+      stroke-width: 2; stroke-linejoin: round;  /* ~1px softened points */
+      paint-order: stroke;
+    }
+    /* Suspend snap while dragging so the star / image tracks the cursor. */
+    .media.is-dragging { scroll-snap-type: none; }
+    /* Grab-the-image cursor (grabbable class toggled in JS when the row overflows). */
+    .media.is-grabbable { cursor: grab; }
+    .media.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+    .media.is-dragging * { pointer-events: none; }  /* don't hover/click mid-drag */
+    @media (max-width: 900px) { .track { margin-right: 0; } }
+    @media (hover: none) { .track { display: none; } }
 
     /* Grainy blur along the right edge: media rows bleed to the viewport edge,
        so anything cut off there dissolves into a soft, gritty fade instead of a
@@ -627,7 +667,7 @@
     <section class="project page">
       <p class="eyebrow">User Interviews</p>
       <h2 class="project__title">AI-assistant for<br />Research Project Creation</h2>
-      <div class="media">
+      <div class="media" tabindex="0" role="group" aria-label="Project Creation Agent — screens and walkthrough videos. Scroll horizontally to view all.">
         <div class="shot shot--left"></div>
         <div class="vid">
           <video src="assets/img/2-panel-walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
@@ -648,7 +688,7 @@
     <section class="project page">
       <p class="eyebrow">User Interviews</p>
       <h2 class="project__title">AI-powered Research Analysis</h2>
-      <div class="media">
+      <div class="media" tabindex="0" role="group" aria-label="AI-powered Research Analysis — screens and videos. Scroll horizontally to view all.">
         <div class="shot shot--insights1"></div>
         <div class="hero-card">
           <div class="hero-card__frame">
@@ -668,7 +708,7 @@
     <section class="project page">
       <p class="eyebrow">Astrazeneca</p>
       <h2 class="project__title">Patient Care App</h2>
-      <div class="media">
+      <div class="media" tabindex="0" role="group" aria-label="Patient Care App — app screens. Scroll horizontally to view all.">
         <div class="phone phone--1"></div>
         <div class="phone phone--2"></div>
         <div class="phone phone--3"></div>
@@ -1311,6 +1351,120 @@ Texture images: Unsplash</p>
     // Initial paint of the stored record.
     renderPage();
     refreshCreateLabel();
+  </script>
+
+  <!-- Media rows: slim warm rail + 9-pointed stamp-star handle, so mouse users
+       (no visible scrollbar, no trackpad) can grab and scroll. The star rolls
+       with the scroll. Rows stay keyboard-scrollable via tabindex regardless;
+       progressive enhancement — without JS the rows still scroll natively. -->
+  <script>
+    (function () {
+      var ROLL = 0.5; // degrees of star rotation per pixel scrolled
+
+      // 9-pointed star polygon (18 alternating vertices).
+      function starPoints(cx, cy, R, r, points) {
+        var pts = [], step = Math.PI / points;
+        for (var i = 0; i < points * 2; i++) {
+          var rad = (i % 2 === 0) ? R : r, a = -Math.PI / 2 + i * step;
+          pts.push((cx + rad * Math.cos(a)).toFixed(2) + ',' + (cy + rad * Math.sin(a)).toFixed(2));
+        }
+        return pts.join(' ');
+      }
+
+      document.querySelectorAll('.media').forEach(function (row) {
+        var track = document.createElement('div');
+        track.className = 'track';
+        track.hidden = true;
+        var thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        thumb.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><polygon points="' +
+          starPoints(24, 24, 22, 10.5, 9) + '"/></svg>';
+        track.appendChild(thumb);
+        row.parentNode.insertBefore(track, row.nextSibling);
+
+        function sync() {
+          var max = row.scrollWidth - row.clientWidth;
+          var tw = track.clientWidth;
+          row.classList.toggle('is-grabbable', max >= 4);   // grab cursor only when pannable
+          if (max < 4 || tw === 0) { track.hidden = max < 4; return; }
+          track.hidden = false;
+          var travel = tw - thumb.offsetWidth;
+          thumb.style.left = (row.scrollLeft / max) * travel + 'px';
+          thumb.style.setProperty('--rot', (row.scrollLeft * ROLL) + 'deg');
+        }
+        row.addEventListener('scroll', sync, { passive: true });
+        window.addEventListener('resize', sync);
+        sync();
+
+        // Drag the star.
+        var down = false, startX = 0, startLeft = 0;
+        thumb.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          down = true; startX = e.clientX; startLeft = parseFloat(thumb.style.left) || 0;
+          track.classList.add('is-dragging');
+          row.classList.add('is-dragging');   // suspend scroll-snap during drag
+          try { thumb.setPointerCapture(e.pointerId); } catch (_) {}
+        });
+        thumb.addEventListener('pointermove', function (e) {
+          if (!down) return;
+          var max = row.scrollWidth - row.clientWidth;
+          var travel = track.clientWidth - thumb.offsetWidth;
+          var left = Math.min(Math.max(startLeft + (e.clientX - startX), 0), travel);
+          thumb.style.left = left + 'px';
+          row.scrollLeft = (left / travel) * max;
+        });
+        function end(e) {
+          if (!down) return; down = false;
+          track.classList.remove('is-dragging');
+          row.classList.remove('is-dragging');
+          try { thumb.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+        thumb.addEventListener('pointerup', end);
+        thumb.addEventListener('pointercancel', end);
+
+        // Click the rail to jump.
+        track.addEventListener('pointerdown', function (e) {
+          if (e.target !== track) return;
+          var rect = track.getBoundingClientRect();
+          var max = row.scrollWidth - row.clientWidth;
+          var thumbW = thumb.offsetWidth, travel = track.clientWidth - thumbW;
+          var left = Math.min(Math.max(e.clientX - rect.left - thumbW / 2, 0), travel);
+          row.scrollTo({ left: (left / travel) * max, behavior: 'smooth' });
+        });
+
+        // Grab-the-image: drag anywhere on the row to pan it (direct
+        // manipulation). Mouse/pen only — touch already swipes natively, and
+        // the rail's click-to-jump is the non-drag alternative (WCAG 2.5.7).
+        var rowDown = false, rDownX = 0, rStart = 0, rMoved = 0;
+        row.addEventListener('pointerdown', function (e) {
+          if (e.button !== 0 || e.pointerType === 'touch') return;
+          if (row.scrollWidth - row.clientWidth < 4) return;   // nothing to pan
+          rowDown = true; rMoved = 0; rDownX = e.clientX; rStart = row.scrollLeft;
+          row.classList.add('is-dragging');    // suspend snap; sets grabbing cursor
+          try { row.setPointerCapture(e.pointerId); } catch (_) {}
+        });
+        row.addEventListener('pointermove', function (e) {
+          if (!rowDown) return;
+          var dx = e.clientX - rDownX;
+          rMoved = Math.max(rMoved, Math.abs(dx));
+          row.scrollLeft = rStart - dx;         // fires scroll -> sync moves star
+        });
+        function rowEnd(e) {
+          if (!rowDown) return; rowDown = false;
+          row.classList.remove('is-dragging');
+          try { row.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+        row.addEventListener('pointerup', rowEnd);
+        row.addEventListener('pointercancel', rowEnd);
+        // Swallow the click that follows a real drag, so dragging across the
+        // walkthrough video doesn't also open its modal.
+        row.addEventListener('click', function (e) {
+          if (rMoved > 6) { e.preventDefault(); e.stopPropagation(); }
+        }, true);
+        // Kill the browser's native image/link ghost-drag.
+        row.addEventListener('dragstart', function (e) { e.preventDefault(); });
+      });
+    })();
   </script>
 
   <!-- Section detection: reveal each project as it scrolls into view.
