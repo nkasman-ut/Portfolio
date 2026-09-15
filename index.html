@@ -270,6 +270,13 @@
       border-radius: 12px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
+    /* Wrapper that lets the behind-the-scenes button overlay the bare video */
+    .vid-bare-wrap {
+      position: relative;
+      display: inline-block;
+      height: var(--media-h);
+    }
+    .vid-bare-wrap .vid-bare { height: 100%; }
 
     /* Project 2 — colored cards with a centered video-player screenshot */
     .card {
@@ -494,45 +501,42 @@
       .footer__colophon { order: 6; margin-top: 48px; }
     }
 
-    /* ---------- Behind-the-scenes hover button ---------- */
+    /* ---------- Behind-the-scenes hover button (matches .btn) ---------- */
     .vid__cta {
       position: absolute;
       left: 50%;
-      bottom: clamp(18px, 3vw, 30px);
-      transform: translateX(-50%) translateY(8px);
+      top: 50%;
+      transform: translate(-50%, calc(-50% + 8px));
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 11px 18px;
-      border: none;
-      border-radius: 999px;
-      background: rgba(65, 61, 56, 0.86);
-      color: var(--stamp);
-      font-family: var(--font-body);
-      font-size: 14px;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      line-height: 1;
+      padding: 12px 18px;
+      border: 1px solid var(--ink);
+      border-radius: 10px;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-accent);
+      font-size: 26px;
+      font-weight: 500;
+      white-space: nowrap;
       cursor: pointer;
       opacity: 0;
       pointer-events: none;
-      -webkit-backdrop-filter: blur(6px);
-      backdrop-filter: blur(6px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
-      transition: opacity .28s ease, transform .28s ease, background .2s ease;
+      transition: opacity .28s ease, transform .28s ease;
     }
-    .vid__cta svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .vid__cta svg { width: 22px; height: 22px; flex-shrink: 0; }
     .vid--walkthrough:hover .vid__cta,
     .vid--walkthrough:focus-within .vid__cta {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
+      transform: translate(-50%, -50%);
       pointer-events: auto;
     }
-    .vid__cta:hover { background: rgba(65, 61, 56, 0.98); }
-    .vid__cta:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
+    .vid--walkthrough .vid__cta:hover { opacity: .9; }
+    .vid__cta:active { transform: translate(-50%, calc(-50% + 1px)); }
+    .vid__cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
     /* Touch devices have no hover: keep the button visible. */
     @media (hover: none) {
-      .vid__cta { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+      .vid__cta { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
     }
 
     /* ---------- Video modal ---------- */
@@ -625,14 +629,16 @@
       <h2 class="project__title">AI-assistant for<br />Research Project Creation</h2>
       <div class="media">
         <div class="shot shot--left"></div>
-        <div class="vid vid--walkthrough">
+        <div class="vid">
           <video src="assets/img/2-panel-walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
+        </div>
+        <div class="vid-bare-wrap vid--walkthrough">
+          <video class="vid-bare" src="assets/img/ProjectCreationAgent-Walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
           <button type="button" class="vid__cta" data-video="assets/img/ProjectCreationWalkthrough.mp4" aria-haspopup="dialog">
             <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
             Behind the scenes: 8min
           </button>
         </div>
-        <video class="vid-bare" src="assets/img/ProjectCreationAgent-Walkthru.mp4" autoplay loop muted playsinline preload="metadata"></video>
         <div class="shot shot--right"></div>
       </div>
       <p class="project__desc">Led design end-to-end as the sole designer of the squad, from research to shipped experience. Lifted draft-to-launch conversion to 54%, reaching 17% of all launched projects within 3 months of GA.</p>
