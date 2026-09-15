@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Motion Sampler — Text Reveal Playground</title>
+  <title>Motion Playground — Text Reveal Tool</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -152,7 +152,7 @@
     <!-- ===================== STAGE ===================== -->
     <div class="stage-wrap">
       <div class="topbar">
-        <h1>Motion Sampler</h1>
+        <h1>Motion Playground</h1>
         <span class="tag">text reveal playground</span>
       </div>
       <div class="stage">
@@ -676,7 +676,7 @@
       document.getElementById("outHtml").textContent = buildHtmlSnippet();
 
       var hint = document.getElementById("outHint");
-      if (s.js) hint.textContent = "This style needs the small JS driver from motion-sampler.html (the runJS() branch) in addition to the CSS above.";
+      if (s.js) hint.textContent = "This style needs the small JS driver from motion-playground.html (the runJS() branch) in addition to the CSS above.";
       else if (s.whole) hint.textContent = "Whole-word effect — no per-letter split needed; the CSS targets .hero__title itself.";
       else hint.textContent = "Letters are pre-split so one keyframe staggers them — no JS, no flash of unstyled text.";
     }
