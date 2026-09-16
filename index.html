@@ -1480,6 +1480,10 @@ Texture images: Unsplash</p>
         var rowDown = false, rDownX = 0, rStart = 0, rMoved = 0;
         row.addEventListener('pointerdown', function (e) {
           if (e.button !== 0 || e.pointerType === 'touch') return;
+          // Don't hijack presses on controls (e.g. the walkthrough play
+          // button). Capturing the pointer here retargets the click away
+          // from the button, so its modal never opens.
+          if (e.target.closest('button, a, [role="button"]')) return;
           if (row.scrollWidth - row.clientWidth < 4) return;   // nothing to pan
           rowDown = true; rMoved = 0; rDownX = e.clientX; rStart = row.scrollLeft;
           row.classList.add('is-dragging');    // suspend snap; sets grabbing cursor
