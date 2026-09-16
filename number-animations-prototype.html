@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Number Micro-Animations — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #F2F0ED;
+    --ink: #413D38;
+    --ink-body: #423D38;
+    --stamp-ink: #9E3B2E;    /* portfolio accent red */
+    --card-green: #D5E3B0;
+    --card-tan: #DBD1BF;
+    --card-blue: #A0B2CC;
+
+    /* Highlighter (variation 3): a slightly lighter mint than the card green
+       so dark ink over it clears WCAG AAA with comfortable margin.
+       #423D38 on #E4EEC6 = 8.87:1  (AAA needs >=7:1 for normal text). */
+    --hl-green: #E4EEC6;        /* main ink       — ink #322E2A over it = 11.1:1 */
+    --hl-green-deep: #C9DE9A;   /* pooling edges  — deeper mint,        = 9.2:1  */
+    --hl-ink: #322E2A;   /* pinned dark text — never inherits lighter body color */
+    --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+
+    /* Timing: highlight fires AFTER the project fade-in settles */
+    --fade-dur: 600ms;       /* matches the real project fade-in */
+    --hl-delay: 750ms;       /* wait for fade to finish, then emphasize */
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink-body);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 56px 24px 120px; }
+
+  header.page { margin-bottom: 40px; }
+  header.page h1 {
+    font-size: 30px; font-weight: 700; color: var(--ink);
+    letter-spacing: -0.02em; margin: 0 0 10px;
+  }
+  header.page p { font-size: 15px; color: #6f6a63; max-width: 620px; margin: 0; }
+
+  /* ---- Global controls -------------------------------------------- */
+  .controls {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 14px 0; margin-bottom: 8px;
+    background: linear-gradient(var(--bg) 70%, transparent);
+  }
+  .btn {
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    color: var(--bg); background: var(--ink);
+    border: none; border-radius: 999px; padding: 10px 18px; cursor: pointer;
+    transition: transform .12s ease, opacity .18s ease;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn--ghost { background: transparent; color: var(--ink); border: 1px solid #cfc9c0; }
+  .hint { font-size: 12px; color: #8b857c; margin-left: auto; }
+
+  /* ---- Variation card --------------------------------------------- */
+  .variation {
+    border-top: 1px solid #e0dcd4;
+    padding: 30px 0 28px;
+  }
+  .variation__head {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px;
+  }
+  .variation__num {
+    font-size: 12px; font-weight: 700; color: var(--stamp-ink);
+    letter-spacing: .04em; font-variant-numeric: tabular-nums;
+  }
+  .variation__name { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .variation__note { font-size: 13px; color: #8b857c; }
+  .replay {
+    margin-left: auto; font-size: 12px; font-weight: 600; color: var(--ink);
+    background: transparent; border: 1px solid #d7d1c8; border-radius: 999px;
+    padding: 5px 12px; cursor: pointer; transition: background .15s ease;
+  }
+  .replay:hover { background: #e8e4dc; }
+
+  /* The description reuses the real portfolio styling cues */
+  .project__desc {
+    font-size: 20px; line-height: 1.5; color: var(--ink-body);
+    max-width: 62ch; margin: 0;
+  }
+
+  /* Project fade-in emulation (matches the real site) */
+  .stage { opacity: 0; transform: translateY(18px); }
+  .stage.is-visible {
+    opacity: 1; transform: none;
+    transition: opacity var(--fade-dur) ease,
+                transform var(--fade-dur) cubic-bezier(.22,.61,.36,1);
+  }
+
+  /* A highlighted number token: base state is identical to body text,
+     so nothing looks "off" before the animation plays. */
+  .stat {
+    font-variant-numeric: tabular-nums;
+    display: inline-block;         /* isolates transforms from line flow */
+    position: relative;
+    white-space: nowrap;
+  }
+
+  /* Numbers only fire once the stage is visible AND the .play flag is set */
+
+  /* =================================================================
+     1 — COUNT UP  (odometer): number ticks from 0 to target
+     ================================================================= */
+  .v1 .stat .roll { display: inline-block; }
+
+  /* =================================================================
+     2 — COLOR BLOOM: settles to accent color with a soft scale kiss
+     ================================================================= */
+  .v2 .stat { color: inherit; transition: none; }
+  .v2.play .stage.is-visible .stat {
+    animation: v2-bloom 620ms cubic-bezier(.34,1.56,.64,1) var(--hl-delay) both;
+  }
+  @keyframes v2-bloom {
+    0%   { color: var(--ink-body); transform: scale(1); }
+    45%  { color: var(--stamp-ink); transform: scale(1.14); }
+    100% { color: var(--stamp-ink); transform: scale(1); }
+  }
+
+  /* =================================================================
+     3 — HIGHLIGHTER SWIPE: marker wipes in behind the number.
+         AAA-accessible: pinned dark ink (--hl-ink) over the mint
+         highlight (--hl-green) = 11.1:1, and 11.8:1 where a glyph
+         overshoots onto the page background. Both clear WCAG AAA (7:1).
+     ================================================================= */
+  .v3 .stat { padding: 0 4px; margin: 0 -4px; color: var(--hl-ink); }
+  .v3 .stat::before {
+    content: ""; position: absolute; z-index: -1;
+    left: -1px; right: -1px; bottom: 1px; height: 1.02em;
+    /* Irregular corners so it isn't a tidy rounded rectangle */
+    border-radius: 5px 7px 6px 8px / 7px 6px 8px 6px;
+    background:
+      /* felt-tip streaks running along the swipe (lighter = less ink) */
+      repeating-linear-gradient(89deg,
+        rgba(255,255,255,0)   0px, rgba(255,255,255,0)   5px,
+        rgba(255,255,255,.32) 6px, rgba(255,255,255,0)   8px,
+        rgba(255,255,255,0)  14px),
+      /* patchy density variation down the length */
+      repeating-linear-gradient(91deg,
+        rgba(150,176,96,.14) 0px, rgba(150,176,96,.14) 3px,
+        rgba(255,255,255,0)  4px, rgba(255,255,255,0)  11px),
+      /* ink pooling darker along the top & bottom edges */
+      linear-gradient(180deg,
+        var(--hl-green-deep) 0%, transparent 26%,
+        transparent 72%, var(--hl-green-deep) 100%),
+      /* base ink */
+      var(--hl-green);
+    /* organic bleeding edges — seed varies per swipe (set inline) */
+    filter: var(--hl-filter, url(#hl-rough-1));
+    /* each swipe sits at a slightly different angle & height */
+    transform: rotate(var(--hl-tilt, 0deg)) translateY(var(--hl-shift, 0px));
+    /* Reveal left-to-right by clipping, so the texture stays fixed in place
+       (drawn like real text highlighting, not stretched). Negative insets
+       keep the bleeding edges from being clipped. */
+    clip-path: inset(-10px calc(100% + 8px) -10px -6px);
+  }
+  .v3.play .stage.is-visible .stat::before {
+    animation: v3-swipe 620ms cubic-bezier(.42,.55,.28,1) var(--hl-delay) both;
+  }
+  @keyframes v3-swipe {
+    from { clip-path: inset(-10px calc(100% + 8px) -10px -6px); }
+    to   { clip-path: inset(-10px -8px -10px -6px); }
+  }
+
+  /* =================================================================
+     4 — POP: quick springy scale + weight bump to bold
+     ================================================================= */
+  .v4 .stat { font-weight: 400; }
+  .v4.play .stage.is-visible .stat {
+    animation: v4-pop 520ms cubic-bezier(.34,1.56,.64,1) var(--hl-delay) both;
+  }
+  @keyframes v4-pop {
+    0%   { transform: scale(1);   font-weight: 400; }
+    50%  { transform: scale(1.22); }
+    100% { transform: scale(1);   font-weight: 700; }
+  }
+
+  /* =================================================================
+     5 — UNDERLINE DRAW: a hand-drawn, wriggly accent underline that
+         draws left-to-right. The wavy path + a turbulence "roughen"
+         filter make it read like a real pen stroke, not a CSS bar.
+     ================================================================= */
+  .v5 .stat { color: var(--stamp-ink); }
+  .v5 .stat .underline {
+    position: absolute; left: -2px; right: -2px; bottom: -7px;
+    width: calc(100% + 4px); height: 12px; overflow: visible;
+    pointer-events: none;
+  }
+  .v5 .stat .underline path {
+    fill: none; stroke: var(--stamp-ink);
+    stroke-width: 2.4; stroke-linecap: round;
+    filter: url(#rough-ink);            /* organic, textured edge */
+    stroke-dasharray: 210; stroke-dashoffset: 210;
+    vector-effect: non-scaling-stroke;  /* keep width even when stretched */
+  }
+  .v5.play .stage.is-visible .stat .underline path {
+    animation: v5-draw 560ms cubic-bezier(.5,.1,.3,1) var(--hl-delay) both;
+  }
+  @keyframes v5-draw { to { stroke-dashoffset: 0; } }
+
+  /* =================================================================
+     6 — BLUR FOCUS: number resolves from blurred to sharp + accent
+     ================================================================= */
+  .v6 .stat { color: var(--stamp-ink); }
+  .v6.play .stage.is-visible .stat {
+    animation: v6-focus 600ms ease var(--hl-delay) both;
+  }
+  @keyframes v6-focus {
+    0%   { filter: blur(6px); opacity: .35; letter-spacing: .06em; }
+    100% { filter: blur(0);   opacity: 1;   letter-spacing: 0; }
+  }
+
+  /* =================================================================
+     7 — RISE & SETTLE: number nudges up and drops into place, bold
+     ================================================================= */
+  .v7 .stat { font-weight: 400; }
+  .v7.play .stage.is-visible .stat {
+    animation: v7-rise 560ms cubic-bezier(.34,1.4,.5,1) var(--hl-delay) both;
+  }
+  @keyframes v7-rise {
+    0%   { transform: translateY(0);    color: var(--ink-body); font-weight: 400; }
+    40%  { transform: translateY(-7px); }
+    100% { transform: translateY(0);    color: var(--stamp-ink); font-weight: 700; }
+  }
+
+  /* =================================================================
+     8 — CIRCLE SCRIBBLE: a hand-drawn ellipse loops around the number
+     ================================================================= */
+  .v8 .stat { padding: 0 6px; }
+  .v8 .stat .scribble {
+    position: absolute; inset: -10px -2px -8px -2px;
+    width: calc(100% + 4px); height: calc(100% + 18px);
+    overflow: visible; pointer-events: none;
+  }
+  .v8 .stat .scribble path {
+    fill: none; stroke: var(--stamp-ink); stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-dasharray: 260; stroke-dashoffset: 260;
+  }
+  .v8.play .stage.is-visible .stat .scribble path {
+    animation: v8-scribble 640ms ease var(--hl-delay) both;
+  }
+  @keyframes v8-scribble { to { stroke-dashoffset: 0; } }
+
+  /* =================================================================
+     9 — GLOW PULSE: a warm halo blooms once and fades, accent color
+     ================================================================= */
+  .v9 .stat { color: var(--stamp-ink); }
+  .v9.play .stage.is-visible .stat {
+    animation: v9-glow 900ms ease var(--hl-delay) both;
+  }
+  @keyframes v9-glow {
+    0%   { text-shadow: 0 0 0 rgba(158,59,46,0); transform: scale(1); }
+    30%  { text-shadow: 0 0 14px rgba(158,59,46,.55); transform: scale(1.06); }
+    100% { text-shadow: 0 0 0 rgba(158,59,46,0); transform: scale(1); }
+  }
+
+  /* =================================================================
+     10 — FLIP CARD: number rotates in on the X axis like a split-flap
+     ================================================================= */
+  .v10 .stat { perspective: 400px; }
+  .v10 .stat .flip {
+    display: inline-block; transform-origin: center; backface-visibility: hidden;
+  }
+  .v10.play .stage.is-visible .stat .flip {
+    animation: v10-flip 620ms cubic-bezier(.5,1.4,.5,1) var(--hl-delay) both;
+  }
+  @keyframes v10-flip {
+    0%   { transform: rotateX(-90deg); color: var(--ink-body); opacity: 0; }
+    60%  { transform: rotateX(12deg);  color: var(--stamp-ink); opacity: 1; }
+    100% { transform: rotateX(0);      color: var(--stamp-ink); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage, .stat, .stat::before, .stat::after,
+    .stat .flip, .stat .scribble path {
+      animation: none !important; transition: none !important;
+    }
+    .stage { opacity: 1; transform: none; }
+  }
+
+  @media (max-width: 640px) {
+    .project__desc { font-size: 17px; }
+    header.page h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<!-- Roughen filter: a little turbulence + displacement gives SVG strokes
+     a hand-drawn, textured edge instead of a clean vector line. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="rough-ink" x="-20%" y="-40%" width="140%" height="180%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9 0.12" numOctaves="2" seed="7" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.6"
+                       xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+
+  <!-- Highlighter edge-bleed: low-frequency turbulence in x, higher in y,
+       displaces the swipe so its top/bottom edges wave and its ends go
+       ragged — like wet ink soaking into paper fibres. Three seeds so
+       repeated swipes on a page never look identical. -->
+  <filter id="hl-rough-1" x="-12%" y="-45%" width="124%" height="190%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.014 0.09" numOctaves="2" seed="4" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="7.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="hl-rough-2" x="-12%" y="-45%" width="124%" height="190%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.018 0.11" numOctaves="2" seed="19" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="6.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="hl-rough-3" x="-12%" y="-45%" width="124%" height="190%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.011 0.13" numOctaves="2" seed="31" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="8.5" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<div class="wrap">
+  <header class="page">
+    <h1>Number micro-animations</h1>
+    <p>Ten ways to emphasize the stats in a project description. Each one waits for the
+    project’s fade-in to finish, <em>then</em> animates the numbers. Hit <strong>Play all</strong>
+    to watch the full sequence (fade-in → emphasis), or replay any single variation.</p>
+  </header>
+
+  <div class="controls">
+    <button class="btn" id="playAll">▶ Play all</button>
+    <button class="btn btn--ghost" id="reset">Reset</button>
+    <span class="hint">Emphasis fires ~750ms after fade-in settles</span>
+  </div>
+
+  <!-- Template descriptions are injected per-variation by JS -->
+  <div id="list"></div>
+</div>
+
+<script>
+(function () {
+  // The real description, with stat tokens marked up. {N} = a number span.
+  // We keep the exact copy from the portfolio.
+  var variations = [
+    { cls: "v1",  name: "Count up",          note: "Odometer — digits tick from 0 to the value." },
+    { cls: "v2",  name: "Color bloom",       note: "Settles to accent red with a soft scale kiss." },
+    { cls: "v3",  name: "Highlighter swipe", note: "Marker wipes in behind the number." },
+    { cls: "v4",  name: "Pop",               note: "Springy scale + weight bump to bold." },
+    { cls: "v5",  name: "Underline draw",    note: "Accent underline draws left-to-right." },
+    { cls: "v6",  name: "Blur to focus",     note: "Number resolves from blurred to sharp." },
+    { cls: "v7",  name: "Rise & settle",     note: "Nudges up, drops into place, turns bold." },
+    { cls: "v8",  name: "Circle scribble",   note: "Hand-drawn ellipse loops around it." },
+    { cls: "v9",  name: "Glow pulse",        note: "A warm halo blooms once and fades." },
+    { cls: "v10", name: "Split-flap",        note: "Rotates in on the X axis like a flip clock." }
+  ];
+
+  // Build the marked-up description for a given variation.
+  // Numbers highlighted: 54%, 17%, 3 months, (second desc: 12%, 10+)
+  var v3seq = 0; // rotates the three edge-bleed filters across a swipe
+
+  function desc(cls) {
+    // wrap helper depends on variation for count-up / flip / scribble inner nodes
+    function stat(text, digits) {
+      var inner = text;
+
+      // Highlighter: give each swipe its own subtle angle, height and
+      // filter seed so no two marks look mechanically identical.
+      if (cls === "v3") {
+        var tilt  = (Math.random() * 5 - 2.5).toFixed(2);   // -2.5deg .. +2.5deg
+        var shift = (Math.random() * 2 - 1).toFixed(1);     // -1px .. +1px
+        var seed  = "hl-rough-" + ((v3seq++ % 3) + 1);
+        var style = "--hl-tilt:" + tilt + "deg; --hl-shift:" + shift +
+                    "px; --hl-filter:url(#" + seed + ")";
+        return '<span class="stat" style="' + style + '">' + text + '</span>';
+      }
+
+      if (cls === "v1") {
+        var unit = /%/.test(text) ? "%" : " months";
+        inner = '<span class="roll" data-to="' + digits + '" data-unit="' + unit +
+                '" data-final="' + text + '">' + text + '</span>';
+      } else if (cls === "v5") {
+        inner = text +
+          '<svg class="underline" viewBox="0 0 100 14" preserveAspectRatio="none">' +
+          '<path d="M1 7 C 10 3, 17 11, 27 6 S 44 2, 54 7 S 71 12, 81 6 S 95 3, 99 8"/>' +
+          '</svg>';
+      } else if (cls === "v8") {
+        inner = text +
+          '<svg class="scribble" viewBox="0 0 100 46" preserveAspectRatio="none">' +
+          '<path d="M84 10 C92 20 78 38 50 40 C20 42 6 30 8 18 C10 8 34 4 56 5 C74 6 90 9 88 16"/>' +
+          '</svg>';
+      } else if (cls === "v10") {
+        inner = '<span class="flip">' + text + '</span>';
+      }
+      return '<span class="stat">' + inner + '</span>';
+    }
+
+    return 'Led design end-to-end as the sole designer of the squad, from research to ' +
+      'shipped experience. Lifted draft-to-launch conversion to ' + stat("54%", 54) +
+      ', reaching ' + stat("17%", 17) + ' of all launched projects within ' +
+      stat("3 months", 3) + ' of GA.';
+  }
+
+  var list = document.getElementById("list");
+
+  variations.forEach(function (v, i) {
+    var card = document.createElement("div");
+    card.className = "variation " + v.cls;
+    card.innerHTML =
+      '<div class="variation__head">' +
+        '<span class="variation__num">' + String(i + 1).padStart(2, "0") + '</span>' +
+        '<span class="variation__name">' + v.name + '</span>' +
+        '<span class="variation__note">' + v.note + '</span>' +
+        '<button class="replay" type="button">Replay</button>' +
+      '</div>' +
+      '<div class="stage"><p class="project__desc">' + desc(v.cls) + '</p></div>';
+    list.appendChild(card);
+
+    card.querySelector(".replay").addEventListener("click", function () {
+      playOne(card);
+    });
+  });
+
+  // ---- Count-up driver (only variation that needs JS numeric interpolation) --
+  function runCountUp(card) {
+    card.querySelectorAll(".roll").forEach(function (el) {
+      var to = parseInt(el.getAttribute("data-to"), 10);
+      var unit = el.getAttribute("data-unit");
+      var start = performance.now();
+      var dur = 900;
+      function frame(now) {
+        var t = Math.min(1, (now - start) / dur);
+        var eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+        el.textContent = Math.round(eased * to) + unit;
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  function playOne(card) {
+    // Reset
+    card.classList.remove("play");
+    var stage = card.querySelector(".stage");
+    stage.classList.remove("is-visible");
+    // reset count-up text back to zero
+    card.querySelectorAll(".roll").forEach(function (el) {
+      el.textContent = "0" + el.getAttribute("data-unit");
+    });
+    // force reflow so the fade-in replays
+    void card.offsetWidth;
+
+    // 1) project fades in
+    requestAnimationFrame(function () {
+      stage.classList.add("is-visible");
+    });
+    // 2) after fade settles, arm the highlight
+    card.classList.add("play");
+
+    // count-up needs its JS driver fired at the same delay as the CSS animations
+    if (card.classList.contains("v1")) {
+      var delay = 750; // matches --hl-delay
+      setTimeout(function () { runCountUp(card); }, delay);
+    }
+  }
+
+  var sequenceTimers = [];
+  function playAll() {
+    // Clear any in-flight sequence, then reset everything to its pre-animation state.
+    sequenceTimers.forEach(clearTimeout);
+    sequenceTimers = [];
+    reset();
+
+    var cards = document.querySelectorAll(".variation");
+    var stepGap = 1500; // beat between each variation starting
+
+    cards.forEach(function (c, i) {
+      var t = setTimeout(function () {
+        // Bring the active card into view so you can watch it play.
+        c.scrollIntoView({ behavior: "smooth", block: "center" });
+        playOne(c);
+      }, i * stepGap);
+      sequenceTimers.push(t);
+    });
+  }
+
+  function reset() {
+    sequenceTimers.forEach(clearTimeout);
+    sequenceTimers = [];
+    document.querySelectorAll(".variation").forEach(function (c) {
+      c.classList.remove("play");
+      c.querySelector(".stage").classList.remove("is-visible");
+    });
+  }
+
+  document.getElementById("playAll").addEventListener("click", playAll);
+  document.getElementById("reset").addEventListener("click", reset);
+
+  // Auto-play once on load so the page isn't blank of motion.
+  window.addEventListener("load", function () {
+    setTimeout(playAll, 350);
+  });
+})();
+</script>
+</body>
+</html>
