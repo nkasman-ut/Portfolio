@@ -38,6 +38,13 @@
       --card-tan: #DBD1BF;
       --card-blue: #A0B2CC;
 
+      /* Impact-number highlighter. Dark pinned ink over the mint reads at
+         ~11:1, and worst-case ~8.7:1 where the textured pooling deepens —
+         both clear WCAG AAA (7:1). */
+      --hl-green: #E4EEC6;        /* main ink       */
+      --hl-green-deep: #C9DE9A;   /* pooling edges  */
+      --hl-ink: #322E2A;          /* pinned dark text */
+
       --page-max: 1440px;
       --gutter: 80px;
 
@@ -380,6 +387,61 @@
       color: var(--ink-body);
     }
 
+    /* ---------- IMPACT-NUMBER HIGHLIGHTER ----------
+       A realistic marker swipe behind each impact number. It fires only
+       after the project has faded in (.is-visible) and the JS has armed it
+       (.hl-go), and the numbers light up one at a time, left to right. */
+    .project__desc .stat {
+      position: relative;
+      display: inline-block;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      padding: 0 4px; margin: 0 -4px;
+      color: var(--hl-ink);
+    }
+    .project__desc .stat::before {
+      content: ""; position: absolute; z-index: -1;
+      left: -1px; right: -1px; bottom: 1px; height: 1.02em;
+      border-radius: 5px 7px 6px 8px / 7px 6px 8px 6px;
+      background:
+        /* felt-tip streaks running along the swipe (lighter = less ink) */
+        repeating-linear-gradient(89deg,
+          rgba(255,255,255,0)   0px, rgba(255,255,255,0)   5px,
+          rgba(255,255,255,.32) 6px, rgba(255,255,255,0)   8px,
+          rgba(255,255,255,0)  14px),
+        /* patchy density variation down the length */
+        repeating-linear-gradient(91deg,
+          rgba(150,176,96,.14) 0px, rgba(150,176,96,.14) 3px,
+          rgba(255,255,255,0)  4px, rgba(255,255,255,0)  11px),
+        /* ink pooling darker along the top & bottom edges */
+        linear-gradient(180deg,
+          var(--hl-green-deep) 0%, transparent 26%,
+          transparent 72%, var(--hl-green-deep) 100%),
+        /* base ink */
+        var(--hl-green);
+      filter: var(--hl-filter, url(#hl-rough-1));
+      transform: rotate(var(--hl-tilt, 0deg)) translateY(var(--hl-shift, 0px));
+      /* Reveal left-to-right by clipping, so the texture stays fixed in
+         place (drawn, not stretched). Negative top/bottom/right insets keep
+         the bleeding edges from being clipped. Starts fully hidden. */
+      clip-path: inset(-10px calc(100% + 8px) -10px -6px);
+    }
+    /* Each number is drawn in on its own delay (set inline as --hl-seq). */
+    .project.is-visible.hl-go .project__desc .stat::before {
+      animation: hl-swipe 620ms cubic-bezier(.42,.55,.28,1) var(--hl-seq, 0ms) both;
+    }
+    @keyframes hl-swipe {
+      from { clip-path: inset(-10px calc(100% + 8px) -10px -6px); }
+      to   { clip-path: inset(-10px -8px -10px -6px); }
+    }
+    /* No motion preference: show the highlight statically, no draw. */
+    @media (prefers-reduced-motion: reduce) {
+      .project__desc .stat::before {
+        animation: none !important;
+        clip-path: inset(-10px -8px -10px -6px);
+      }
+    }
+
     /* ---------- FOOTER / STAMP ---------- */
     .footer {
       /* Layout container: the .page gutter keeps the card off the viewport
@@ -683,6 +745,32 @@
 </head>
 <body>
 
+  <!-- Highlighter edge-bleed filters: low-freq turbulence displaces each
+       marker swipe so its edges wave and its ends go ragged, like ink
+       soaking into paper. Three seeds so no two swipes look identical. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="hl-rough-1" x="-12%" y="-45%" width="124%" height="190%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.014 0.09" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="7.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="hl-rough-2" x="-12%" y="-45%" width="124%" height="190%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.11" numOctaves="2" seed="19" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="hl-rough-3" x="-12%" y="-45%" width="124%" height="190%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.011 0.13" numOctaves="2" seed="31" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="8.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="hl-rough-4" x="-14%" y="-50%" width="128%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.021 0.07" numOctaves="2" seed="47" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="9.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="hl-rough-5" x="-12%" y="-45%" width="124%" height="190%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.032 0.16" numOctaves="2" seed="63" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
+
   <!-- Grainy blur that softens whatever bleeds past the right edge -->
   <div class="edge-fade" aria-hidden="true"></div>
 
@@ -716,7 +804,7 @@
           </button>
         </div>
       </div>
-      <p class="project__desc">Led design end-to-end as the sole designer of the squad, from research to shipped experience. Lifted draft-to-launch conversion to 54%, reaching 17% of all launched projects within 3 months of GA.</p>
+      <p class="project__desc">Led design end-to-end as the sole designer of the squad, from research to shipped experience. Lifted draft-to-launch conversion to <span class="stat">54%</span>, reaching <span class="stat">17%</span> of all launched projects within <span class="stat">3 months</span> of GA.</p>
     </section>
 
     <!-- ================= PROJECT 2 ================= -->
@@ -743,7 +831,7 @@
           </button>
         </div>
       </div>
-      <p class="project__desc">Drove design and research for 0-1 product line, AI-powered research analysis, growing feature adoption to 12% across 10+ feature launches.</p>
+      <p class="project__desc">Drove design and research for 0-1 product line, AI-powered research analysis, growing feature adoption to <span class="stat">12%</span> across <span class="stat">10+</span> feature launches.</p>
     </section>
 
     <!-- ================= PROJECT 3 ================= -->
@@ -1520,18 +1608,54 @@ Texture images: Unsplash</p>
       var projects = document.querySelectorAll('.project');
       var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+      // Give each impact number its own angle, height and bleed pattern so no
+      // two swipes look alike (5 patterns to choose from). They still draw in
+      // one at a time *after* the project's ~600ms fade-in, but the order is
+      // shuffled each time — not always left-to-right.
+      var HL_START = 650;   // ms after the swipe is armed (lets the fade finish)
+      var HL_STAGGER = 260; // ms between each number
+      var HL_PATTERNS = 5;
+
+      function armHighlights(project, animate) {
+        var stats = project.querySelectorAll('.project__desc .stat');
+
+        // A shuffled list of slots decides the draw order (Fisher–Yates).
+        var order = stats.length ? Array.from({ length: stats.length }, function (_, i) { return i; }) : [];
+        for (var j = order.length - 1; j > 0; j--) {
+          var k = Math.floor(Math.random() * (j + 1));
+          var tmp = order[j]; order[j] = order[k]; order[k] = tmp;
+        }
+
+        stats.forEach(function (el, i) {
+          el.style.setProperty('--hl-tilt', (Math.random() * 5 - 2.5).toFixed(2) + 'deg');
+          el.style.setProperty('--hl-shift', (Math.random() * 2 - 1).toFixed(1) + 'px');
+          el.style.setProperty('--hl-filter',
+            'url(#hl-rough-' + (Math.floor(Math.random() * HL_PATTERNS) + 1) + ')');
+          if (animate) {
+            // order[i] = this number's position in the shuffled sequence
+            el.style.setProperty('--hl-seq', (HL_START + order[i] * HL_STAGGER) + 'ms');
+          }
+        });
+      }
+
       // Fallback: if IntersectionObserver is unavailable or motion is reduced,
-      // just show everything.
+      // just show everything (highlights render statically, no swipe).
       if (reduce || !('IntersectionObserver' in window)) {
-        projects.forEach(function (p) { p.classList.add('is-visible'); });
+        projects.forEach(function (p) {
+          p.classList.add('is-visible');
+          armHighlights(p, false);
+        });
         return;
       }
 
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            io.unobserve(entry.target);
+            var p = entry.target;
+            p.classList.add('is-visible'); // start the fade-in
+            armHighlights(p, true);        // set per-number tilt + sequence
+            p.classList.add('hl-go');      // arm the staggered swipes
+            io.unobserve(p);
           }
         });
       }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
