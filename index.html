@@ -638,8 +638,43 @@
     }
     .modal__close:hover { background: rgba(0, 0, 0, 0.82); }
     .modal__close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    /* Playback-speed pill — floats over the top-left, clear of the close
+       button (top-right) and the native controls (bottom). */
+    .modal__speed {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 2;
+      display: inline-flex;
+      gap: 2px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.55);
+    }
+    .modal__speed-btn {
+      min-width: 40px;
+      height: 28px;
+      padding: 0 8px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.72);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .2s ease, color .2s ease;
+    }
+    .modal__speed-btn:hover { color: #fff; }
+    .modal__speed-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .modal__speed-btn.is-active {
+      background: #fff;
+      color: #000;
+    }
     @media (prefers-reduced-motion: reduce) {
-      .vid__cta, .modal__overlay, .modal__dialog { transition: none; }
+      .vid__cta, .modal__overlay, .modal__dialog,
+      .modal__speed-btn { transition: none; }
     }
   </style>
   <!-- Mark JS as available before paint, so project sections can start hidden
@@ -1505,6 +1540,12 @@ Texture images: Unsplash</p>
           <path d="M6 6l12 12M18 6L6 18"/>
         </svg>
       </button>
+      <div class="modal__speed" role="group" aria-label="Playback speed">
+        <button type="button" class="modal__speed-btn is-active" data-speed="1">1x</button>
+        <button type="button" class="modal__speed-btn" data-speed="1.2">1.2x</button>
+        <button type="button" class="modal__speed-btn" data-speed="1.5">1.5x</button>
+        <button type="button" class="modal__speed-btn" data-speed="2">2x</button>
+      </div>
       <video class="modal__video" controls playsinline preload="none"></video>
     </div>
   </div>
@@ -1515,7 +1556,21 @@ Texture images: Unsplash</p>
       if (!modal) return;
       var video = modal.querySelector('.modal__video');
       var closeBtn = modal.querySelector('.modal__close');
+      var speedBtns = modal.querySelectorAll('.modal__speed-btn');
       var lastFocused = null;
+
+      function setSpeed(rate) {
+        video.playbackRate = rate;
+        speedBtns.forEach(function (b) {
+          b.classList.toggle('is-active', parseFloat(b.getAttribute('data-speed')) === rate);
+        });
+      }
+
+      speedBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          setSpeed(parseFloat(btn.getAttribute('data-speed')));
+        });
+      });
 
       function open(src) {
         lastFocused = document.activeElement;
@@ -1523,6 +1578,7 @@ Texture images: Unsplash</p>
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+        setSpeed(1);                       // each video starts at normal speed
         video.muted = false;               // play with audio
         var p = video.play();
         if (p && p.catch) p.catch(function () {});
