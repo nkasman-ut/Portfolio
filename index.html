@@ -141,6 +141,16 @@
     }
     .hero__bio p:last-child { margin-bottom: 0; }
 
+    /* Quiet dotted underline for inline links — hairline dots that darken to
+       full ink on hover. Follows the restrained, editorial link convention. */
+    .hero__bio a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 2px dotted rgba(66, 61, 56, 0.4);
+      transition: border-color 0.25s ease;
+    }
+    .hero__bio a:hover { border-bottom-color: var(--ink); }
+
     /* ── "in-between" hover: hyphen morphs into a long sketchy loop ── */
     .inbetween { white-space: nowrap; }
 
@@ -840,7 +850,7 @@
     <h1 class="hero__title" aria-label="I'm Nathalia"><span class="ch" style="--i:0">I</span><span class="ch" style="--i:1">'</span><span class="ch" style="--i:2">m</span><span class="space" aria-hidden="true"> </span><span class="ch" style="--i:3">N</span><span class="ch" style="--i:4">a</span><span class="ch" style="--i:5">t</span><span class="ch" style="--i:6">h</span><span class="ch" style="--i:7">a</span><span class="ch" style="--i:8">l</span><span class="ch" style="--i:9">i</span><span class="ch" style="--i:10">a</span></h1>
     <p class="hero__subtitle">Product Designer with 6+ years of experience designing end-to-end</p>
     <div class="hero__bio">
-      <p>Currently at designing 0 to 1 products at User Interviews. (acquired by UserTesting). Previoulsy at AstraZeneca.</p>
+      <p>Currently designing 0 to 1 products at <a href="https://www.userinterviews.com/" target="_blank" rel="noopener noreferrer">User Interviews</a>. (acquired by UserTesting). Previoulsy at <a href="https://www.astrazeneca.com/" target="_blank" rel="noopener noreferrer">AstraZeneca</a>.</p>
       <p class="bio-thrive">I thrive in the <span class="inbetween">in<span class="inbetween__dash" aria-hidden="true"><span class="inbetween__hyphen">-</span><svg class="inbetween__squiggle" viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"><path pathLength="1" d="M2 15 C 10 6, 16 6, 20 14 C 23 20, 18 24, 14 20 C 10 16, 16 9, 24 12 C 34 16, 40 4, 50 14 C 55 19, 62 19, 66 12 C 70 5, 78 5, 84 13 C 88 18, 94 20, 100 13 C 105 7, 112 8, 118 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>between</span> spaces—where ideas are still forming and close partnerships shape the strategy, direction, and outcome.</p>
     </div>
   </header>
