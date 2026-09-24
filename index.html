@@ -980,14 +980,15 @@ Texture images: Unsplash</p>
     const pageLabel = $('pageLabel');
 
     let armedSVG = null; // the SVG string ready to be pressed
+    let armedLoc = null; // { city, country } behind armedSVG
 
     function setStatus(msg, isErr) {
       status.textContent = msg || '';
       status.classList.toggle('status--err', !!isErr);
     }
 
-    function todayStr() {
-      const d = new Date();
+    function todayStr(t) {
+      const d = t ? new Date(t) : new Date();
       const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
       return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
@@ -1308,11 +1309,14 @@ Texture images: Unsplash</p>
     }
 
     // ---------- Build the circular postmark SVG ----------
-    function buildStampSVG(city, country) {
+    const escXML = s => String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    function buildStampSVG(city, country, t) {
       const emblem = iconFor(city, country);
-      city = (city || 'SOMEWHERE').toUpperCase();
-      country = (country || '').toUpperCase();
-      const date = todayStr();
+      city = escXML((city || 'SOMEWHERE').toUpperCase());
+      country = escXML((country || '').toUpperCase());
+      const date = todayStr(t);
 
       // Unique filter id per stamp so multiple can coexist
       const uid = 'f' + Math.random().toString(36).slice(2, 8);
@@ -1374,26 +1378,37 @@ Texture images: Unsplash</p>
       return { city: parts[0] || '', country: '' };
     }
 
-    // ---------- Persistent, paginated record of stamps ----------
-    // Each page is an array of { svg, x, y, rot } where x/y are fractions (0..1)
-    // of the pad so stamps land correctly regardless of pad size.
-    // NOTE: prototype persistence is localStorage (this browser only). The real
-    // portfolio needs a shared backend so every visitor sees the same record.
-    const STORE_KEY = 'stamp_record_v1';
+    // ---------- Shared, paginated guestbook of stamps ----------
+    // The record lives in /api/stamps (Upstash Redis) so every visitor sees the
+    // same board. Each stamp is plain data { id, city, country, x, y, rot, t }
+    // where x/y are fractions (0..1) of the pad; the SVG is rebuilt locally.
+    const API = '/api/stamps';
     const CAPACITY = 12;            // stamps per page before a new page begins
-    let pages = loadPages();        // array of pages
-    let view = pages.length - 1;    // which page is currently shown
+    let stamps = [];                // flat list, oldest first
+    let pages = [[]];               // stamps chunked into pages of CAPACITY
+    let view = 0;                   // which page is currently shown
 
-    function loadPages() {
-      try {
-        const raw = localStorage.getItem(STORE_KEY);
-        const p = raw ? JSON.parse(raw) : null;
-        if (Array.isArray(p) && p.length && Array.isArray(p[0])) return p;
-      } catch (e) { /* ignore */ }
-      return [[]];
+    function paginate() {
+      pages = [];
+      for (let i = 0; i < stamps.length; i += CAPACITY) pages.push(stamps.slice(i, i + CAPACITY));
+      // A full last page means the next stamp starts a fresh one.
+      if (!pages.length || pages[pages.length - 1].length >= CAPACITY) pages.push([]);
     }
-    function savePages() {
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(pages)); } catch (e) { /* ignore */ }
+
+    async function loadStamps() {
+      try {
+        const res = await fetch(API, { cache: 'no-store' });
+        if (!res.ok) throw new Error(res.status);
+        const data = await res.json();
+        stamps = Array.isArray(data.stamps) ? data.stamps : [];
+      } catch (e) {
+        stamps = [];
+      }
+      paginate();
+      // Don't yank someone mid-stamp off the page they're on.
+      if (!armedSVG) view = pages.length - 1;
+      renderPage();
+      refreshCreateLabel();
     }
 
     function makeMark(stamp, animate) {
@@ -1403,7 +1418,7 @@ Texture images: Unsplash</p>
       mark.style.top = (stamp.y * 100) + '%';
       mark.style.setProperty('--rot', stamp.rot + 'deg');
       if (!animate) mark.style.animation = 'none';
-      mark.innerHTML = stamp.svg;
+      mark.innerHTML = buildStampSVG(stamp.city, stamp.country, stamp.t);
       return mark;
     }
 
@@ -1427,6 +1442,7 @@ Texture images: Unsplash</p>
 
     // ---------- Arm a stamp (ready to press) ----------
     function armStamp(city, country) {
+      armedLoc = { city, country };
       armedSVG = buildStampSVG(city, country);
       ghost.innerHTML = armedSVG;
       pad.classList.add('is-armed');
@@ -1524,34 +1540,55 @@ Texture images: Unsplash</p>
       // Keep the stamp fully inside the paper (its box is ~190px, so ~95px radius).
       const mx = Math.min(Math.max(e.clientX - rect.left, 95), rect.width - 95);
       const my = Math.min(Math.max(e.clientY - rect.top, 95), rect.height - 95);
-      const stamp = {
-        svg: armedSVG,
+      const draft = {
+        city: armedLoc.city,
+        country: armedLoc.country,
         x: mx / rect.width,
         y: my / rect.height,
-        rot: (Math.random() * 24 - 12).toFixed(1)
+        rot: +(Math.random() * 24 - 12).toFixed(1)
       };
 
-      const latest = pages.length - 1;
-      pages[latest].push(stamp);
-      pad.appendChild(makeMark(stamp, true));  // animate the fresh press
+      // Press immediately for feel; the server confirms (or rejects) after.
+      const mark = makeMark({ ...draft, t: Date.now() }, true);
+      pad.appendChild(mark);
       hint.hidden = true;
 
-      // If this page just filled up, open a fresh page for the next stamp.
-      if (pages[latest].length >= CAPACITY) pages.push([]);
-      savePages();
-      updatePager();
-      refreshCreateLabel();
-
       armedSVG = null;
+      armedLoc = null;
       ghost.style.display = 'none';
       pad.classList.remove('is-armed');
       locInput.value = '';
       setStatus('');
+
+      saveStamp(draft, mark);
     });
 
-    // Initial paint of the stored record.
+    async function saveStamp(draft, mark) {
+      try {
+        const res = await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(draft)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.stamp) throw new Error(data.error || 'Could not save your stamp.');
+        stamps.push(data.stamp);
+        paginate();
+        // Stay on the current page (even if it just filled) so the fresh stamp
+        // stays visible; re-render only if the optimistic mark got wiped meanwhile.
+        if (mark.isConnected) updatePager(); else renderPage();
+        refreshCreateLabel();
+      } catch (e) {
+        mark.remove();
+        hint.hidden = (pages[view] || []).length > 0;
+        setStatus(e.message || 'Could not save your stamp. Please try again.', true);
+      }
+    }
+
+    // Initial paint, then fetch the shared record.
     renderPage();
     refreshCreateLabel();
+    loadStamps();
   </script>
 
   <!-- Media rows: slim warm rail + 9-pointed stamp-star handle, so mouse users
