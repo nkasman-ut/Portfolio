@@ -76,6 +76,45 @@
     }
     .back:hover { opacity: 1; }
 
+    /* ---------- Sandbox controls (only with ?sandbox) ---------- */
+    .sandbox {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--ink);
+      white-space: nowrap;
+      z-index: 10;
+    }
+    .sandbox[hidden] { display: none; }
+    .sandbox__label { font-weight: 600; }
+    .sandbox__options {
+      display: flex;
+      gap: 2px;
+      padding: 3px;
+      border-radius: 10px;
+      background: rgba(65, 61, 56, .07);
+    }
+    .sandbox__opt {
+      padding: 6px 12px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      font: 500 13px var(--font-body);
+      color: var(--ink);
+      cursor: pointer;
+      transition: background-color .15s ease, box-shadow .15s ease;
+    }
+    .sandbox__opt[aria-pressed="true"] {
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(65, 61, 56, .12);
+    }
+    .sandbox__hint { opacity: .6; }
+
     /* Stage: centered, keeps the design's aspect ratio, and shrinks to fit
        the viewport without ever exceeding native size. The app inside is
        laid out at native px and scaled to the stage width. */
@@ -159,15 +198,23 @@
     .nav__item[aria-current="page"] { background: var(--hl-nav-active); }
     .nav__item img { display: block; flex-shrink: 0; }
 
-    /* Content panel */
+    /* Content panel: holds one view per page, stacked so they can
+       transition into each other. Inactive views are hidden + inert. */
     .panel-wrap {
       position: relative;
       min-height: 0;
-      display: flex;
+      background: var(--hl-panel);
+      overflow: hidden;
     }
+    .view {
+      position: absolute;
+      inset: 0;
+    }
+    .view:not(.is-active) { visibility: hidden; }
+    .view--list { display: flex; }
+
     .panel {
       flex: 1;
-      background: var(--hl-panel);
       overflow-x: hidden;
       overflow-y: auto;
       scrollbar-width: none;
@@ -233,6 +280,131 @@
       color: var(--hl-title);
     }
 
+    /* ---------- Summary page ---------- */
+    .page-header {
+      position: absolute;
+      top: 35px;
+      left: 40px;
+      right: 0;
+    }
+    .page-back {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0;
+      border: 0;
+      background: none;
+      font-family: var(--hl-font-body);
+      font-weight: 600;
+      font-size: 16px;
+      line-height: normal;
+      letter-spacing: -0.32px;
+      color: var(--hl-heading);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .page-back__arrow {
+      font-family: var(--hl-font-ui);
+      font-variation-settings: "opsz" 14;
+      transition: transform .2s cubic-bezier(.2, 0, 0, 1);
+    }
+    .page-back:hover .page-back__arrow { transform: translateX(-2px); }
+    .page-updated {
+      position: absolute;
+      top: 0;
+      left: 664px; /* 704px in the frame, minus the header's 40px inset */
+      margin: 0;
+      font-family: var(--hl-font-body);
+      font-size: 14px;
+      line-height: normal;
+      letter-spacing: -0.28px;
+      color: #72716F;
+      white-space: nowrap;
+    }
+
+    .summary {
+      position: absolute;
+      top: 98px;
+      left: 88px;
+      width: 700px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      color: var(--hl-heading);
+      overflow-wrap: break-word;
+    }
+    .summary__title {
+      margin: 0;
+      font-family: var(--hl-font-display);
+      font-weight: 500;
+      font-size: 24px;
+      line-height: normal;
+      transform-origin: 0 0;
+    }
+    .summary__title:focus { outline: none; }
+    .summary__body {
+      margin: 0;
+      font-family: var(--hl-font-body);
+      font-size: 16px;
+      line-height: 26px;
+    }
+
+    /* Prompt box. States:
+       rest     send button dimmed
+       hover    border darkens a touch
+       focus    Figma's active state: full send button, blinking caret
+       filled   typed text in ink color */
+    .prompt {
+      position: absolute;
+      left: 88px;
+      bottom: 41px;
+      width: 700px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px 12px 24px;
+      background: var(--hl-panel);
+      border: 1px solid #F3F3EB;
+      border-radius: 126px;
+      box-shadow: 0 1px 8px 0 rgba(0, 0, 0, .06);
+      cursor: text;
+      transition: border-color .15s ease, box-shadow .2s ease;
+    }
+    .prompt:hover { border-color: #E9E8DE; }
+    .prompt:focus-within { border-color: #F3F3EB; }
+    .prompt__input {
+      flex: 1;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      font-family: var(--hl-font-body);
+      font-size: 16px;
+      line-height: normal;
+      letter-spacing: -0.32px;
+      color: var(--hl-heading);
+      caret-color: var(--hl-heading);
+    }
+    .prompt__input::placeholder { color: #B6B6B3; opacity: 1; }
+    .prompt__send {
+      flex-shrink: 0;
+      display: block;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      cursor: pointer;
+      opacity: .3;
+      transition: opacity .15s ease, transform .12s ease;
+    }
+    .prompt__send img { display: block; }
+    .prompt:focus-within .prompt__send,
+    .prompt.is-filled .prompt__send { opacity: 1; }
+    .prompt__send:active { transform: scale(.92); }
+    .prompt__send:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+
     .memory-list {
       list-style: none;
       margin: 0;
@@ -294,10 +466,16 @@
 <body>
   <a class="back" href="/highlight-takehome">← Back</a>
 
+  <div class="sandbox" hidden>
+    <span class="sandbox__label">Transition</span>
+    <div class="sandbox__options" role="group" aria-label="Transition variant"></div>
+    <span class="sandbox__hint">Click “Summary”, then “← Memory” to go back</span>
+  </div>
+
   <div class="stage" aria-label="Prototype">
     <div class="app">
       <nav class="nav" aria-label="Settings">
-        <img class="nav__window-controls" src="assets/highlight/window-controls.svg" width="58" height="14" alt="" />
+        <img class="nav__window-controls" src="/assets/highlight/window-controls.svg" width="58" height="14" alt="" />
 
         <div class="nav__groups">
           <div class="nav__items" aria-hidden="true">
@@ -311,7 +489,7 @@
             <p class="nav__label">Context</p>
             <div class="nav__items">
               <button class="nav__item" type="button" aria-current="page">
-                <img src="assets/highlight/lightbulb.svg" width="16" height="16" alt="" />
+                <img src="/assets/highlight/lightbulb.svg" width="16" height="16" alt="" />
                 Memory
               </button>
               <div class="nav__skeleton nav__skeleton--sm" aria-hidden="true"></div>
@@ -344,23 +522,48 @@
       </nav>
 
       <div class="panel-wrap">
-        <main class="panel">
-          <div class="panel__inner">
-            <h1 class="panel__title">Memory</h1>
-            <ul class="memory-list" id="memoryList"></ul>
+        <section class="view view--list is-active" data-view="list">
+          <main class="panel">
+            <div class="panel__inner">
+              <h1 class="panel__title">Memory</h1>
+              <ul class="memory-list" id="memoryList"></ul>
+            </div>
+          </main>
+          <div class="panel__blur" aria-hidden="true">
+            <div></div><div></div><div></div><div></div><div></div>
           </div>
-        </main>
-        <div class="panel__blur" aria-hidden="true">
-          <div></div><div></div><div></div><div></div><div></div>
-        </div>
+        </section>
+
+        <section class="view view--summary" data-view="summary" inert>
+          <header class="page-header">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              Memory
+            </button>
+            <p class="page-updated">Last updated: 1h</p>
+          </header>
+
+          <article class="summary">
+            <h1 class="summary__title" tabindex="-1">Summary</h1>
+            <p class="summary__body">You’re a senior product manager at Fernwood, a grocery delivery app, with seven years in product and a background in analytics. You enjoy turning messy customer data into clear decisions, and you work most closely with design and engineering. Right now you’re leading the checkout redesign and the Q1 loyalty pilot, with cart abandonment as your main success metric. You prefer written updates to meetings, plan your week on Monday mornings, and write detailed specs before kickoff. Outside of core projects, you’re interested in experimentation and pricing strategy, and you’ve been building your SQL skills so you can answer more of your own data questions. You work best in small teams with clear owners, and you tend to push for scoped, shippable first versions over big launches.</p>
+          </article>
+
+          <form class="prompt" autocomplete="off">
+            <input class="prompt__input" type="text" placeholder="Rewrite your context with a prompt..." aria-label="Rewrite your context with a prompt" />
+            <button class="prompt__send" type="submit" aria-label="Send">
+              <img src="/assets/highlight/send.svg" width="36" height="36" alt="" />
+            </button>
+          </form>
+        </section>
       </div>
     </div>
   </div>
 
   <script>
-    // Memory categories shown on the settings page.
+    // Memory categories shown on the settings page. Rows with a `view`
+    // open that page; the rest aren't built yet.
     const memories = [
-      { title: 'Summary', desc: 'An overview of what Highlight knows about you.' },
+      { title: 'Summary', desc: 'An overview of what Highlight knows about you.', view: 'summary' },
       { title: 'Always remember', desc: '4 rules and 6 items that never expire, like “Write in short paragraphs” and “Checkout beta is Nov 14”.' },
       { title: 'Profile', desc: 'Senior product manager at Fernwood · 7 years in product · background in analytics.' },
       { title: 'How you work', desc: 'Prefers written updates over meetings, plans the week on Monday mornings, writes detailed specs before kickoff.' },
@@ -373,24 +576,292 @@
     const list = document.getElementById('memoryList');
     list.innerHTML = memories.map(m => `
       <li>
-        <button class="memory" type="button">
+        <button class="memory" type="button"${m.view ? ` data-open="${m.view}"` : ''}>
           <span class="memory__text">
             <span class="memory__title">${m.title}</span>
             <span class="memory__desc">${m.desc}</span>
           </span>
-          <img class="memory__chevron" src="assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
+          <img class="memory__chevron" src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
         </button>
       </li>
-      <li aria-hidden="true"><img class="memory-list__divider" src="assets/highlight/divider.svg" width="700" height="1" alt="" /></li>
+      <li aria-hidden="true"><img class="memory-list__divider" src="/assets/highlight/divider.svg" width="700" height="1" alt="" /></li>
     `).join('');
 
     // Scale the native-size app to fit the stage.
     const stage = document.querySelector('.stage');
     const app = document.querySelector('.app');
     const screenW = 1105;
-    const fit = () => app.style.setProperty('--scale', stage.clientWidth / screenW);
+    let scale = 1;
+    const fit = () => {
+      scale = stage.clientWidth / screenW;
+      app.style.setProperty('--scale', scale);
+    };
     new ResizeObserver(fit).observe(stage);
     fit();
+
+    // ---------- Prompt box ----------
+    const prompt = document.querySelector('.prompt');
+    const promptInput = prompt.querySelector('.prompt__input');
+    prompt.addEventListener('pointerdown', e => {
+      if (e.target === prompt) { e.preventDefault(); promptInput.focus(); }
+    });
+    promptInput.addEventListener('input', () => {
+      prompt.classList.toggle('is-filled', promptInput.value.trim() !== '');
+    });
+    prompt.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!promptInput.value.trim()) { promptInput.focus(); return; }
+      promptInput.value = '';
+      prompt.classList.remove('is-filled');
+    });
+
+    // ---------- Navigation + transitions ----------
+    const wrap = document.querySelector('.panel-wrap');
+    const views = {
+      list: wrap.querySelector('[data-view="list"]'),
+      summary: wrap.querySelector('[data-view="summary"]'),
+    };
+    const sum = {
+      header: views.summary.querySelector('.page-header'),
+      title: views.summary.querySelector('.summary__title'),
+      body: views.summary.querySelector('.summary__body'),
+      prompt,
+    };
+    const summaryRow = list.querySelector('[data-open="summary"]');
+    const rowTitle = summaryRow.querySelector('.memory__title');
+
+    const EASE_OUT = 'cubic-bezier(.2, 0, 0, 1)';
+    const EASE_IN = 'cubic-bezier(.4, 0, 1, 1)';
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+    let current = 'list';
+    let busy = false;
+    const running = [];
+
+    // Element rect in the app's native (unscaled) px, relative to the panel.
+    function rect(el) {
+      const r = el.getBoundingClientRect();
+      const w = wrap.getBoundingClientRect();
+      return { x: (r.left - w.left) / scale, y: (r.top - w.top) / scale, w: r.width / scale, h: r.height / scale };
+    }
+
+    function play(el, keyframes, opts = {}) {
+      const a = el.animate(keyframes, { duration: 300, easing: EASE_OUT, fill: 'both', ...opts });
+      running.push(a);
+      return a.finished;
+    }
+
+    const fadeUp = (el, delay, dist = 8, duration = 320) => play(el, [
+      { opacity: 0, transform: `translateY(${dist}px)` },
+      { opacity: 1, transform: 'none' },
+    ], { delay, duration });
+
+    const fadeOut = (el, duration = 160) => play(el, [{ opacity: 1 }, { opacity: 0 }], { duration, easing: EASE_IN });
+
+    // A floating copy of a text element, used to morph between two titles.
+    function ghostOf(el) {
+      const r = rect(el);
+      const g = el.cloneNode(true);
+      g.removeAttribute('tabindex');
+      Object.assign(g.style, {
+        position: 'absolute', left: r.x + 'px', top: r.y + 'px', margin: 0,
+        whiteSpace: 'nowrap', transformOrigin: '0 0', pointerEvents: 'none', zIndex: 5,
+      });
+      wrap.appendChild(g);
+      return g;
+    }
+
+    // Each variant gets (from, to) view names and returns a promise.
+    const variants = {
+      // Row title morphs into the page heading; everything else hands off around it.
+      morph: {
+        label: 'Morph title',
+        async run(from, to) {
+          const forward = to === 'summary';
+          const a = forward ? rowTitle : sum.title;
+          const b = forward ? sum.title : rowTitle;
+          const ra = rect(a), rb = rect(b);
+          const s = rb.h / ra.h;
+          const dx = rb.x - ra.x, dy = rb.y - ra.y;
+          const ghost = ghostOf(a);
+          a.style.opacity = 0;
+          const D = 440;
+          const jobs = [
+            play(ghost, [
+              { transform: 'none', opacity: 1 },
+              { opacity: 0, offset: .6 },
+              { transform: `translate(${dx}px, ${dy}px) scale(${s})`, opacity: 0 },
+            ], { duration: D }),
+            play(b, [
+              { transform: `translate(${-dx}px, ${-dy}px) scale(${1 / s})`, opacity: 0 },
+              { opacity: 0, offset: .3 },
+              { transform: 'none', opacity: 1 },
+            ], { duration: D }),
+          ];
+          if (forward) {
+            jobs.push(
+              fadeOut(views.list, 180),
+              fadeUp(sum.header, 140, -4, 280),
+              fadeUp(sum.body, 160, 8, 360),
+              fadeUp(sum.prompt, 220, 16, 380),
+            );
+          } else {
+            jobs.push(
+              fadeOut(sum.header, 140), fadeOut(sum.body, 140), fadeOut(sum.prompt, 140),
+              play(views.list, [{ opacity: 0 }, { opacity: 1 }], { delay: 120, duration: 320 }),
+            );
+          }
+          await Promise.all(jobs);
+          ghost.remove();
+          a.style.opacity = '';
+        },
+      },
+
+      // Pages slide sideways, like a navigation stack.
+      push: {
+        label: 'Push',
+        run(from, to) {
+          const dir = to === 'summary' ? 1 : -1;
+          const D = 340;
+          return Promise.all([
+            play(views[from], [
+              { transform: 'none', opacity: 1 },
+              { transform: `translateX(${-48 * dir}px)`, opacity: 0 },
+            ], { duration: D }),
+            play(views[to], [
+              { transform: `translateX(${48 * dir}px)`, opacity: 0 },
+              { transform: 'none', opacity: 1 },
+            ], { duration: D }),
+          ]);
+        },
+      },
+
+      // In: old page fades out, new page's pieces rise in one after another.
+      // Back: a plain dissolve, since returning shouldn't feel like an event.
+      fade: {
+        label: 'Fade through',
+        run(from, to) {
+          if (to === 'summary') {
+            return Promise.all([
+              play(views.list, [
+                { opacity: 1, transform: 'none' },
+                { opacity: 0, transform: 'scale(.985)' },
+              ], { duration: 150, easing: EASE_IN }),
+              fadeUp(sum.header, 120, 10, 300),
+              fadeUp(sum.title, 170, 10, 300),
+              fadeUp(sum.body, 220, 10, 300),
+              fadeUp(sum.prompt, 270, 10, 300),
+            ]);
+          }
+          return Promise.all([
+            play(views[from], [{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-out' }),
+            play(views[to], [{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: 'ease-out' }),
+          ]);
+        },
+      },
+
+      // The hovered row's surface grows to fill the panel, then the page fills in.
+      expand: {
+        label: 'Expand row',
+        async run(from, to) {
+          const forward = to === 'summary';
+          const r = rect(summaryRow);
+          const W = wrap.offsetWidth, H = wrap.offsetHeight;
+          const rowClip = `inset(${r.y}px ${W - r.x - r.w}px ${H - r.y - r.h}px ${r.x}px round 8px)`;
+          const fullClip = 'inset(0px 0px 0px 0px round 0px)';
+          const surface = document.createElement('div');
+          Object.assign(surface.style, { position: 'absolute', inset: 0, pointerEvents: 'none' });
+          wrap.insertBefore(surface, views.summary);
+          const D = 420;
+          const jobs = [];
+          if (forward) {
+            jobs.push(
+              fadeOut(views.list, 160),
+              play(surface, [
+                { clipPath: rowClip, backgroundColor: 'var(--hl-row-hover)' },
+                { backgroundColor: 'var(--hl-row-hover)', offset: .5 },
+                { clipPath: fullClip, backgroundColor: 'var(--hl-panel)' },
+              ], { duration: D }),
+              fadeUp(sum.header, 200, -4, 280),
+              fadeUp(sum.title, 200, 8, 320),
+              fadeUp(sum.body, 240, 8, 320),
+              fadeUp(sum.prompt, 280, 16, 340),
+            );
+          } else {
+            jobs.push(
+              fadeOut(sum.header, 140), fadeOut(sum.title, 140), fadeOut(sum.body, 140), fadeOut(sum.prompt, 140),
+              play(surface, [
+                { clipPath: fullClip, backgroundColor: 'var(--hl-panel)', opacity: 1 },
+                { backgroundColor: 'var(--hl-row-hover)', opacity: 1, offset: .6 },
+                { clipPath: rowClip, backgroundColor: 'var(--hl-row-hover)', opacity: 0 },
+              ], { delay: 80, duration: D }),
+              play(views.list, [{ opacity: 0 }, { opacity: 1 }], { delay: 200, duration: 300 }),
+            );
+          }
+          await Promise.all(jobs);
+          surface.remove();
+        },
+      },
+    };
+
+    const reduced = {
+      run: (from, to) => Promise.all([
+        play(views[from], [{ opacity: 1 }, { opacity: 0 }], { duration: 150 }),
+        play(views[to], [{ opacity: 0 }, { opacity: 1 }], { duration: 150 }),
+      ]),
+    };
+
+    const params = new URLSearchParams(location.search);
+    const isSandbox = params.has('sandbox') || /\/sandbox\/?$/.test(location.pathname);
+    let variant = 'fade';
+
+    async function go(to) {
+      if (busy || to === current) return;
+      busy = true;
+      const from = current;
+      views[to].classList.add('is-active');
+      views[to].inert = false;
+      views[from].inert = true;
+
+      try {
+        await (reduceMotion.matches ? reduced : variants[variant]).run(from, to);
+      } catch (e) { /* animation cancelled */ }
+
+      views[from].classList.remove('is-active');
+      running.splice(0).forEach(a => a.cancel());
+      current = to;
+      busy = false;
+
+      if (to === 'summary') sum.title.focus({ preventScroll: true });
+      else summaryRow.focus({ preventScroll: true });
+    }
+
+    list.addEventListener('click', e => {
+      const row = e.target.closest('[data-open]');
+      if (row) go(row.dataset.open);
+    });
+    views.summary.querySelector('[data-back]').addEventListener('click', () => go('list'));
+    document.querySelector('.nav__item[aria-current="page"]').addEventListener('click', () => go('list'));
+    addEventListener('keydown', e => {
+      if (e.key === 'Escape' && current === 'summary' && document.activeElement !== promptInput) go('list');
+    });
+
+    // ---------- Sandbox: compare transition variants ----------
+    if (isSandbox) {
+      document.title = 'Highlight Sandbox — Nathalia Kasman';
+      const bar = document.querySelector('.sandbox');
+      bar.hidden = false;
+      const opts = bar.querySelector('.sandbox__options');
+      opts.innerHTML = Object.entries(variants).map(([key, v]) =>
+        `<button type="button" class="sandbox__opt" data-variant="${key}" aria-pressed="${key === variant}">${v.label}</button>`
+      ).join('');
+      opts.addEventListener('click', e => {
+        const btn = e.target.closest('[data-variant]');
+        if (!btn) return;
+        variant = btn.dataset.variant;
+        opts.querySelectorAll('[data-variant]').forEach(b => b.setAttribute('aria-pressed', b === btn));
+      });
+    }
   </script>
 </body>
 </html>
