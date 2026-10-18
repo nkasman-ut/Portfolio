@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Highlight Prototype — Nathalia Kasman</title>
+  <link rel="icon" href="/assets/favicon/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/favicon/site.webmanifest" />
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,500&family=Hepta+Slab:wght@500&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #F2F0EC;
+      --ink: #413D38;
+      --ink-body: #423D38;
+
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+
+      /* Native size of the Figma frame ("Initial release"). */
+      --screen-w: 1105;
+      --screen-h: 801;
+      --gutter: 48px;
+
+      /* Highlight app tokens (from Figma) */
+      --hl-window: #F7F7F3;
+      --hl-panel: #FFFEFA;
+      --hl-nav: #FFFDF5;
+      --hl-nav-border: #DEDEDE;
+      --hl-skeleton: #FFFAE7;
+      --hl-nav-active: #ECE8DA;
+      --hl-nav-label: #939393;
+      --hl-nav-text: #2E2E25;
+      --hl-title: #2C2C25;
+      --hl-heading: #2C2C25;
+      --hl-muted: #676561;
+      --hl-row-hover: #F5F2EB;
+
+      --hl-font-display: "Hepta Slab", Georgia, serif;
+      --hl-font-ui: "DM Sans", system-ui, sans-serif;
+      --hl-font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink-body);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--gutter);
+    }
+
+    .back {
+      position: fixed;
+      top: 20px;
+      left: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink);
+      text-decoration: none;
+      opacity: .7;
+      transition: opacity .18s ease;
+    }
+    .back:hover { opacity: 1; }
+
+    /* Stage: centered, keeps the design's aspect ratio, and shrinks to fit
+       the viewport without ever exceeding native size. The app inside is
+       laid out at native px and scaled to the stage width. */
+    .stage {
+      position: relative;
+      width: min(
+        calc(var(--screen-w) * 1px),
+        calc(100vw - var(--gutter) * 2),
+        calc((100vh - var(--gutter) * 2) * var(--screen-w) / var(--screen-h))
+      );
+      aspect-ratio: var(--screen-w) / var(--screen-h);
+      border-radius: 16px;
+      box-shadow: 0 1px 2px rgba(65, 61, 56, .06), 0 12px 40px rgba(65, 61, 56, .10);
+    }
+
+    /* ---------- Highlight app ---------- */
+    .app {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: calc(var(--screen-w) * 1px);
+      height: calc(var(--screen-h) * 1px);
+      transform-origin: 0 0;
+      transform: scale(var(--scale, 1));
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      background: var(--hl-window);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .nav {
+      background: var(--hl-nav);
+      border-right: 1px solid var(--hl-nav-border);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      overflow: hidden;
+    }
+    .nav__window-controls { display: block; }
+    .nav__groups { display: flex; flex-direction: column; gap: 24px; }
+    .nav__group { display: flex; flex-direction: column; gap: 16px; }
+    .nav__label {
+      margin: 0;
+      font-family: var(--hl-font-ui);
+      font-variation-settings: "opsz" 14;
+      font-weight: 500;
+      font-size: 12px;
+      color: var(--hl-nav-label);
+    }
+    .nav__items { display: flex; flex-direction: column; gap: 10px; }
+
+    /* Placeholder rows for sections outside the scope of this exercise */
+    .nav__skeleton {
+      height: 32px;
+      border-radius: 8px;
+      background: var(--hl-skeleton);
+      opacity: .3;
+    }
+    .nav__skeleton--sm { border-radius: 4px; }
+    .nav__skeleton--square { border-radius: 0; }
+
+    .nav__item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0 8px 8px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      font-family: var(--hl-font-ui);
+      font-variation-settings: "opsz" 14;
+      font-weight: 500;
+      font-size: 12px;
+      color: var(--hl-nav-text);
+      text-align: left;
+      cursor: pointer;
+    }
+    .nav__item[aria-current="page"] { background: var(--hl-nav-active); }
+    .nav__item img { display: block; flex-shrink: 0; }
+
+    /* Content panel */
+    .panel-wrap {
+      position: relative;
+      min-height: 0;
+      display: flex;
+    }
+    .panel {
+      flex: 1;
+      background: var(--hl-panel);
+      overflow-x: hidden;
+      overflow-y: auto;
+      scrollbar-width: none;
+      padding: 55px 0 55px 88px;
+    }
+
+    /* Progressive blur over the top of the panel: stacked backdrop blurs,
+       each masked to a band so blur strength ramps up toward the top edge,
+       plus a fade into the panel color. */
+    .panel__blur {
+      --blur-h: 30px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--blur-h);
+      pointer-events: none;
+    }
+    .panel__blur > div {
+      position: absolute;
+      inset: 0;
+    }
+    .panel__blur > div:nth-child(1) {
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+      mask-image: linear-gradient(to top, transparent 0%, #000 25%, #000 50%, transparent 75%);
+      -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 25%, #000 50%, transparent 75%);
+    }
+    .panel__blur > div:nth-child(2) {
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      mask-image: linear-gradient(to top, transparent 25%, #000 50%, #000 75%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to top, transparent 25%, #000 50%, #000 75%, transparent 100%);
+    }
+    .panel__blur > div:nth-child(3) {
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      mask-image: linear-gradient(to top, transparent 50%, #000 75%);
+      -webkit-mask-image: linear-gradient(to top, transparent 50%, #000 75%);
+    }
+    .panel__blur > div:nth-child(4) {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      mask-image: linear-gradient(to top, transparent 75%, #000 100%);
+      -webkit-mask-image: linear-gradient(to top, transparent 75%, #000 100%);
+    }
+    .panel__blur > div:nth-child(5) {
+      background: linear-gradient(to bottom, var(--hl-panel) 0%, rgb(255 254 250 / 0) 100%);
+    }
+
+    .panel__inner {
+      width: 700px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .panel__title {
+      margin: 0;
+      font-family: var(--hl-font-display);
+      font-weight: 500;
+      font-size: 24px;
+      line-height: normal;
+      color: var(--hl-title);
+    }
+
+    .memory-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .memory-list__divider { display: block; height: 1px; }
+
+    .memory {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      font-family: var(--hl-font-body);
+      line-height: normal;
+      overflow-wrap: break-word;
+      transition: background-color .15s ease;
+    }
+    .memory:hover,
+    .memory:focus-visible { background: var(--hl-row-hover); }
+    .memory:focus-visible { outline: none; }
+
+    .memory__text {
+      flex: 1 0 0;
+      min-width: 1px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .memory__chevron {
+      display: block;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity .15s ease;
+    }
+    .memory:hover .memory__chevron,
+    .memory:focus-visible .memory__chevron { opacity: 1; }
+    .memory__title {
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: -0.32px;
+      color: var(--hl-heading);
+    }
+    .memory__desc {
+      font-weight: 400;
+      font-size: 14px;
+      color: var(--hl-muted);
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="/highlight-takehome">← Back</a>
+
+  <div class="stage" aria-label="Prototype">
+    <div class="app">
+      <nav class="nav" aria-label="Settings">
+        <img class="nav__window-controls" src="assets/highlight/window-controls.svg" width="58" height="14" alt="" />
+
+        <div class="nav__groups">
+          <div class="nav__items" aria-hidden="true">
+            <div class="nav__skeleton nav__skeleton--sm"></div>
+            <div class="nav__skeleton nav__skeleton--sm"></div>
+            <div class="nav__skeleton nav__skeleton--sm"></div>
+            <div class="nav__skeleton nav__skeleton--sm"></div>
+          </div>
+
+          <div class="nav__group">
+            <p class="nav__label">Context</p>
+            <div class="nav__items">
+              <button class="nav__item" type="button" aria-current="page">
+                <img src="assets/highlight/lightbulb.svg" width="16" height="16" alt="" />
+                Memory
+              </button>
+              <div class="nav__skeleton nav__skeleton--sm" aria-hidden="true"></div>
+              <div class="nav__skeleton nav__skeleton--sm" aria-hidden="true"></div>
+              <div class="nav__skeleton nav__skeleton--sm" aria-hidden="true"></div>
+              <div class="nav__skeleton nav__skeleton--sm" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <div class="nav__group">
+            <p class="nav__label">Customization</p>
+            <div class="nav__items" aria-hidden="true">
+              <div class="nav__skeleton"></div>
+              <div class="nav__skeleton"></div>
+              <div class="nav__skeleton"></div>
+              <div class="nav__skeleton"></div>
+            </div>
+          </div>
+
+          <div class="nav__group">
+            <p class="nav__label">Advanced</p>
+            <div class="nav__items" aria-hidden="true">
+              <div class="nav__skeleton nav__skeleton--square"></div>
+              <div class="nav__skeleton nav__skeleton--square"></div>
+              <div class="nav__skeleton nav__skeleton--square"></div>
+              <div class="nav__skeleton nav__skeleton--square"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div class="panel-wrap">
+        <main class="panel">
+          <div class="panel__inner">
+            <h1 class="panel__title">Memory</h1>
+            <ul class="memory-list" id="memoryList"></ul>
+          </div>
+        </main>
+        <div class="panel__blur" aria-hidden="true">
+          <div></div><div></div><div></div><div></div><div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Memory categories shown on the settings page.
+    const memories = [
+      { title: 'Summary', desc: 'An overview of what Highlight knows about you.' },
+      { title: 'Always remember', desc: '4 rules and 6 items that never expire, like “Write in short paragraphs” and “Checkout beta is Nov 14”.' },
+      { title: 'Profile', desc: 'Senior product manager at Fernwood · 7 years in product · background in analytics.' },
+      { title: 'How you work', desc: 'Prefers written updates over meetings, plans the week on Monday mornings, writes detailed specs before kickoff.' },
+      { title: 'Writing', desc: 'Direct and concise , uses bullet points in updates, more casual with the design team.' },
+      { title: 'Active projects', desc: '3 projects. Checkout redesign, Q1 loyalty pilot, vendor onboarding' },
+      { title: 'People you work with', desc: 'Regular collaborators: Mike DeWolf, Alex Caltieri, Eric Chiang' },
+      { title: 'Learning', desc: 'Building SQL skills, interested in experimentation and pricing strategy.' },
+    ];
+
+    const list = document.getElementById('memoryList');
+    list.innerHTML = memories.map(m => `
+      <li>
+        <button class="memory" type="button">
+          <span class="memory__text">
+            <span class="memory__title">${m.title}</span>
+            <span class="memory__desc">${m.desc}</span>
+          </span>
+          <img class="memory__chevron" src="assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
+        </button>
+      </li>
+      <li aria-hidden="true"><img class="memory-list__divider" src="assets/highlight/divider.svg" width="700" height="1" alt="" /></li>
+    `).join('');
+
+    // Scale the native-size app to fit the stage.
+    const stage = document.querySelector('.stage');
+    const app = document.querySelector('.app');
+    const screenW = 1105;
+    const fit = () => app.style.setProperty('--scale', stage.clientWidth / screenW);
+    new ResizeObserver(fit).observe(stage);
+    fit();
+  </script>
+</body>
+</html>
