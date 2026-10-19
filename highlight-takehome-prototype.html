@@ -811,6 +811,124 @@
       color: var(--hl-heading);
       overflow-wrap: break-word;
     }
+    /* Memory page content scrolls under the fixed header; the bottom padding
+       keeps the last rows clear of the pinned prompt box. */
+    [data-view="memory"] .detail {
+      top: 98px;
+      bottom: 0;
+      left: 0;
+      width: auto;
+      right: 0;
+      padding: 0 87px 140px 88px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      /* Rows fade out before they reach the prompt box. */
+      mask-image: linear-gradient(to bottom, #000 calc(100% - 150px), transparent calc(100% - 80px));
+      -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 150px), transparent calc(100% - 80px));
+    }
+    [data-view="memory"] .detail::-webkit-scrollbar { display: none; }
+
+    /* Moment page scrolls the same way, without a prompt box below. */
+    [data-view="moment"] .detail {
+      top: 94px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: auto;
+      padding: 0 87px 64px 88px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      gap: 32px;
+    }
+    [data-view="moment"] .detail::-webkit-scrollbar { display: none; }
+
+    /* Future release: moments behind this memory (Figma moment rows). */
+    .page-moments[hidden] { display: none; }
+    .page-moments { display: flex; flex-direction: column; gap: 24px; }
+    .page-moments__title {
+      margin: 0;
+      font: 600 16px/normal var(--hl-font-body);
+      letter-spacing: -0.32px;
+      color: var(--hl-heading);
+    }
+    .page-moments__count { font-weight: 400; margin-left: 4px; }
+    .page-moments__list { list-style: none; margin: -16px 0 0; padding: 0; }
+    .page-moment {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+      padding: 16px;
+      border: 0;
+      border-radius: 16px;
+      background: transparent;
+      font: 16px/normal var(--hl-font-body);
+      color: var(--hl-heading);
+      text-align: left;
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .page-moment__main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .page-moment__main .moment__icon { margin: 0; }
+    /* Hover (Figma "State=Hover"): beige fill, medium title, chevron replaces the date. */
+    .page-moment:hover,
+    .page-moment:focus-visible { background: var(--hl-row-hover); outline: none; }
+    .page-moment:hover .page-moment__title,
+    .page-moment:focus-visible .page-moment__title { font-weight: 500; }
+    .page-moment__end { flex-shrink: 0; display: grid; justify-items: end; align-items: center; }
+    .page-moment__end > * { grid-area: 1 / 1; }
+    .page-moment__date { font-size: 14px; color: #6D6D62; white-space: nowrap; transition: opacity .12s ease; }
+    .page-moment__chevron { display: block; opacity: 0; transition: opacity .12s ease; }
+    .page-moment:hover .page-moment__date,
+    .page-moment:focus-visible .page-moment__date { opacity: 0; }
+    .page-moment:hover .page-moment__chevron,
+    .page-moment:focus-visible .page-moment__chevron { opacity: 1; }
+
+    /* ---------- Moment page (Figma "Raw data page") ---------- */
+    .icon-btn {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 1px solid #DEDEDE;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      transition: background-color .15s ease, border-color .15s ease, transform .12s ease;
+    }
+    .icon-btn:hover { background: var(--hl-btn-hover); border-color: var(--hl-btn-hover-border); }
+    .icon-btn:active { transform: scale(.97); }
+    .icon-btn:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .icon-btn img { display: block; }
+
+    .moment-head { display: flex; flex-direction: column; gap: 8px; }
+    .moment-head .detail__title { min-height: 34px; }
+    .moment-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font: 16px/normal var(--hl-font-body);
+      color: var(--hl-heading);
+    }
+    /* A saved note or the editor takes the full width under the date. */
+    .moment-meta .note-area:has(.note-card, .note-editor) { flex-basis: 100%; margin-top: 16px; }
+
+    .transcript { display: flex; flex-direction: column; gap: 24px; margin: 0; padding: 0; list-style: none; }
+    .transcript li { display: flex; flex-direction: column; gap: 4px; font: 16px/normal var(--hl-font-body); }
+    .transcript__meta { display: flex; align-items: center; gap: 8px; color: #72716F; }
+    .transcript__text { color: var(--hl-heading); }
+    .moment-doc { display: flex; flex-direction: column; gap: 16px; font: 16px/26px var(--hl-font-body); color: var(--hl-heading); }
+    .moment-doc p { margin: 0; }
+    .moment-doc ul { margin: 0; padding-left: 24px; }
+
+    /* Simple confirm (deleting a single moment): no moments review. */
+    .dialog--simple .moments-toggle,
+    .dialog--simple .moments,
+    .dialog--simple .review { display: none !important; }
+
     .detail__title {
       margin: 0;
       font-family: var(--hl-font-display);
@@ -1100,6 +1218,11 @@
             <h1 class="detail__title" tabindex="-1" data-field="title"></h1>
             <p class="detail__body" data-field="summary"></p>
             <div class="note-area"></div>
+            <section class="page-moments" aria-labelledby="pageMomentsTitle" hidden>
+              <img class="memory-list__divider" src="/assets/highlight/divider.svg" width="700" height="1" alt="" />
+              <h2 class="page-moments__title" id="pageMomentsTitle">Moments <span class="page-moments__count"></span></h2>
+              <ul class="page-moments__list"></ul>
+            </section>
           </article>
 
           <form class="prompt" autocomplete="off" data-prompt="rewrite">
@@ -1108,6 +1231,29 @@
               <img src="/assets/highlight/send.svg" width="36" height="36" alt="" />
             </button>
           </form>
+        </section>
+
+        <section class="view view--detail" data-view="moment" inert>
+          <header class="page-header page-header--actions">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              <span data-field="parent"></span>
+            </button>
+            <button class="icon-btn" type="button" data-delete-moment aria-label="Delete this moment">
+              <img src="/assets/highlight/trashcan.svg" width="16" height="16" alt="" />
+            </button>
+          </header>
+
+          <article class="detail">
+            <div class="moment-head">
+              <h1 class="detail__title" tabindex="-1" data-field="title"></h1>
+              <div class="moment-meta">
+                <span data-field="meta"></span>
+                <div class="note-area"></div>
+              </div>
+            </div>
+            <div class="detail__body" data-field="content"></div>
+          </article>
         </section>
       </div>
 
@@ -1315,6 +1461,7 @@
         title: v.querySelector('.detail__title'),
         body: v.querySelector('.detail__body'),
         notes: v.querySelector('.note-area'),
+        moments: v.querySelector('.page-moments:not([hidden])'),
         prompt: v.querySelector('.prompt'),
       };
     }
@@ -1436,18 +1583,18 @@
       fade: {
         label: 'Fade through',
         run(from, to) {
-          if (from === 'list') {
+          if (DEPTH[to] > DEPTH[from]) {
             const d = partsOf(to);
+            const parts = [
+              [d.header, 120], [d.title, 170], [d.body, 220],
+              [d.notes, 245], [d.moments, 260], [d.prompt, 270],
+            ].filter(([el]) => el);
             return Promise.all([
-              play(views.list, [
+              play(views[from], [
                 { opacity: 1, transform: 'none' },
                 { opacity: 0, transform: 'scale(.985)' },
               ], { duration: 150, easing: EASE_IN }),
-              fadeUp(d.header, 120, 10, 300),
-              fadeUp(d.title, 170, 10, 300),
-              fadeUp(d.body, 220, 10, 300),
-              ...(d.notes ? [fadeUp(d.notes, 245, 10, 300)] : []),
-              fadeUp(d.prompt, 270, 10, 300),
+              ...parts.map(([el, delay]) => fadeUp(el, delay, 10, 300)),
             ]);
           }
           return Promise.all([
@@ -1503,6 +1650,10 @@
       },
     };
 
+    // How deep each view sits: deeper views "open", shallower ones "go back".
+    const DEPTH = { list: 0, summary: 1, 'always-remember': 1, memory: 1, moment: 2 };
+    const parentOf = view => (view === 'moment' ? 'memory' : 'list');
+
     const reduced = {
       run: (from, to) => Promise.all([
         play(views[from], [{ opacity: 1 }, { opacity: 0 }], { duration: 150 }),
@@ -1519,16 +1670,20 @@
       busy = true;
       const from = current;
       if (key) activeKey = key;
-      if (to === 'memory') fillMemory(memoryByKey[activeKey]);
+      // Coming back from a moment keeps the memory page as it was (scroll included).
+      if (to === 'memory' && from !== 'moment') fillMemory(memoryByKey[activeKey]);
       views[to].classList.add('is-active');
       views[to].inert = false;
       views[from].inert = true;
 
       // Never let a stalled animation (e.g. a backgrounded tab that stops
       // painting) leave the UI locked: give up after 1s and snap to the end.
+      // Moment pages only exist in the Fade through flow.
+      const runner = reduceMotion.matches ? reduced
+        : (from === 'moment' || to === 'moment') ? variants.fade : variants[variant];
       try {
         await Promise.race([
-          (reduceMotion.matches ? reduced : variants[variant]).run(from, to),
+          runner.run(from, to),
           new Promise(r => setTimeout(r, 1000)),
         ]);
       } catch (e) { /* animation cancelled */ }
@@ -1542,19 +1697,46 @@
       updateReleaseNote();
 
       if (to === 'list') rowFor()?.focus({ preventScroll: true });
+      else if (from === 'moment' && activeMoment) memView.querySelector(`[data-moment="${activeMoment.id}"]`)?.focus({ preventScroll: true });
       else partsOf(to).title.focus({ preventScroll: true });
     }
 
 
     // ---------- Memory page: content, notes, delete ----------
     const memView = views.memory;
-    const noteArea = memView.querySelector('.note-area');
+    const memNoteArea = memView.querySelector('.note-area');
+    let noteArea = memNoteArea;
     const NOTE_ICON = '<img src="/assets/highlight/note.svg" width="20" height="20" alt="" />';
 
     function fillMemory(m) {
       memView.querySelector('[data-field="title"]').textContent = m.title;
       memView.querySelector('[data-field="summary"]').textContent = m.summary;
-      renderNote(m, 'view');
+      renderNote(m, 'view', false, memNoteArea);
+      renderPageMoments(m);
+      memView.querySelector('.detail').scrollTop = 0;
+    }
+
+    // Future release: list every moment this memory came from, newest first.
+    function renderPageMoments(m) {
+      const section = memView.querySelector('.page-moments');
+      section.hidden = !isFuture;
+      if (!isFuture) return;
+      const { kept, deleted } = buildMoments(m.key);
+      const all = [...kept, ...deleted].sort((a, b) => b.t - a.t);
+      section.querySelector('.page-moments__count').textContent = all.length;
+      section.querySelector('.page-moments__list').innerHTML = all.map(x => `
+        <li>
+          <button class="page-moment" type="button" data-moment="${x.id}">
+            <span class="page-moment__main">
+              <span class="moment__icon">${SOURCE_ICONS[x.source]}</span>
+              <span class="page-moment__title">${escapeHtml(x.title)}</span>
+            </span>
+            <span class="page-moment__end">
+              <span class="page-moment__date">${x.date}, 2026</span>
+              <img class="page-moment__chevron" src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
+            </span>
+          </button>
+        </li>`).join('');
     }
 
     const swapIn = el => el.animate(
@@ -1563,8 +1745,10 @@
     );
 
     // mode: 'view' shows the note (or "Add a note"); 'edit' shows the editor.
-    function renderNote(m, mode, animate = false) {
-      noteArea.replaceChildren();
+    // m: anything with a `note` (a memory or a moment). area: where to draw it.
+    function renderNote(m, mode, animate = false, area = noteArea) {
+      noteArea = area;
+      area.replaceChildren();
       if (mode === 'edit') {
         const editor = document.createElement('div');
         editor.className = 'note-editor';
@@ -1595,10 +1779,10 @@
         function finish(action) {
           if (action === 'save') m.note = field.value.trim();
           if (action === 'remove') m.note = null;
-          renderNote(m, 'view', true);
-          noteArea.firstElementChild.focus({ preventScroll: true });
+          renderNote(m, 'view', true, area);
+          area.firstElementChild.focus({ preventScroll: true });
         }
-        noteArea.append(editor);
+        area.append(editor);
         if (animate) swapIn(editor);
         field.focus({ preventScroll: true });
         field.setSelectionRange(field.value.length, field.value.length);
@@ -1616,10 +1800,122 @@
         btn.className = 'note-add';
         btn.innerHTML = '<img src="/assets/highlight/plus.svg" width="8" height="8" alt="" />Add a note';
       }
-      btn.addEventListener('click', () => renderNote(m, 'edit', true));
-      noteArea.append(btn);
+      btn.addEventListener('click', () => renderNote(m, 'edit', true, area));
+      area.append(btn);
       if (animate) swapIn(btn);
     }
+
+    // ---------- Moment page (Future release) ----------
+    const momentView = views.moment;
+    const SOURCE_LABELS = { notes: 'Notes', audio: 'Audio note', zoom: 'Zoom meeting', meet: 'Google Meet meeting' };
+    const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    let activeMoment = null;
+
+    const findMoment = (key, id) => {
+      const { kept, deleted } = buildMoments(key);
+      return [...kept, ...deleted].find(x => x.id === id);
+    };
+
+    // Placeholder content by memory: what a meeting, audio note or typed
+    // note behind it might plausibly say.
+    const CONTENT = {
+      default: {
+        meeting: [
+          ['You', 'Thanks for joining. Let’s go through {title}.'],
+          ['Mike DeWolf', 'Sounds good. I pulled the latest numbers this morning.'],
+          ['Alex Caltieri', 'I have a couple of design updates to share too.'],
+          ['You', 'Great, let’s start with the numbers.'],
+          ['Mike DeWolf', 'Cart abandonment is down a little since the last change.'],
+          ['Eric Chiang', 'Engineering is on track for the checkout beta on Nov 14.'],
+          ['You', 'Nice. Let’s keep the first version scoped and shippable.'],
+          ['Alex Caltieri', 'Agreed. I’ll send the updated flows after this.'],
+          ['You', 'Perfect. I’ll write up the decisions and share them in the doc.'],
+        ],
+        audio: [
+          'Quick note on {title}.',
+          'Main thing: keep the first version small and get it in front of people.',
+          'I need to check the numbers with analytics before Thursday.',
+          'Follow up with Mike on the open questions from last week.',
+          'Write this up as a short update instead of setting up a meeting.',
+        ],
+        notes: ['{title}', ['Decision: keep the first version scoped and shippable', 'Open question: confirm the numbers with analytics', 'Next step: share a written update by Friday']],
+      },
+      'health-data': {
+        meeting: [
+          ['You', 'Hi, just confirming {title}.'],
+          ['Front desk', 'Yes, you’re booked for Thursday at 8:30am.'],
+          ['You', 'Great, I’ll block my calendar until 10.'],
+        ],
+        audio: [
+          'Reminder about {title}.',
+          'Physical therapy is Thursday at 8:30am.',
+          'Keep the morning clear until 10.',
+          'Do the knee exercises every evening this week.',
+        ],
+        notes: ['{title}', ['Physical therapy: Thursdays at 8:30am', 'No meetings before 10am on Thursdays', 'Exercises: 3 sets each evening']],
+      },
+      learning: {
+        meeting: [
+          ['You', 'Thanks for making time for {title}.'],
+          ['Mike DeWolf', 'Happy to. What are you working on?'],
+          ['You', 'A cohort retention query. The joins are tripping me up.'],
+          ['Mike DeWolf', 'Try building it one step at a time with a CTE for each cohort.'],
+          ['You', 'That helps a lot. I’ll try it this afternoon.'],
+        ],
+        audio: [
+          'Notes from {title}.',
+          'Window functions make the retention query much simpler.',
+          'Try a small pricing experiment on delivery fees next quarter.',
+          'Read the chapter on holdout groups before Friday.',
+        ],
+        notes: ['{title}', ['Practice: cohort retention with window functions', 'Read: holdout groups and experiment sizing', 'Idea: test delivery fee pricing in one region']],
+      },
+    };
+
+    function momentContent(key, x) {
+      const set = CONTENT[key] || CONTENT.default;
+      // Mid-sentence titles start lowercase, unless they start with an acronym ("SQL").
+      const inline = /^[A-Z][a-z]/.test(x.title) ? x.title.charAt(0).toLowerCase() + x.title.slice(1) : x.title;
+      const fill = t => escapeHtml(t === '{title}' ? x.title : t.replace('{title}', inline));
+      const time = i => {
+        const base = x.source === 'audio' ? 15 * 60 + 31 : 10 * 60;   // 3:31 PM or 10:00 AM
+        const mins = base + (x.source === 'audio' ? 0 : i * 2);
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+      };
+      if (x.source === 'notes') {
+        const [heading, bullets] = set.notes;
+        return `<div class="moment-doc"><p>${fill(heading)}</p><ul>${bullets.map(b => `<li>${fill(b)}</li>`).join('')}</ul></div>`;
+      }
+      const lines = x.source === 'audio' ? set.audio.map(t => ['You', t]) : set.meeting;
+      return `<ul class="transcript">${lines.map(([who, text], i) => `
+        <li>
+          <span class="transcript__meta"><span>${escapeHtml(who)}</span><span aria-hidden="true">•</span><span>${time(i)}</span></span>
+          <span class="transcript__text">${fill(text)}</span>
+        </li>`).join('')}</ul>`;
+    }
+
+    function fillMoment(key, id) {
+      const x = findMoment(key, id);
+      const [mon, day] = x.date.split(' ');
+      const noteKey = `${key}:${id}`;
+      const holder = momentNotes[noteKey] || (momentNotes[noteKey] = { note: null });
+      momentView.querySelector('[data-field="parent"]').textContent = memoryByKey[key].title;
+      momentView.querySelector('[data-field="title"]').textContent = x.title;
+      momentView.querySelector('[data-field="meta"]').textContent =
+        `${SOURCE_LABELS[x.source]} · ${MONTHS_LONG[MONTHS.indexOf(mon)]} ${day}, 2026`;
+      momentView.querySelector('[data-field="content"]').innerHTML = momentContent(key, x);
+      renderNote(holder, 'view', false, momentView.querySelector('.note-area'));
+      momentView.querySelector('.detail').scrollTop = 0;
+      activeMoment = { key, id, title: x.title };
+    }
+
+    memView.querySelector('.page-moments__list').addEventListener('click', e => {
+      const btn = e.target.closest('[data-moment]');
+      if (!btn) return;
+      fillMoment(activeKey, Number(btn.dataset.moment));
+      go('moment');
+    });
 
     // Delete: confirm in a dialog, then go back and collapse the row.
     const dialog = document.querySelector('.dialog');
@@ -1695,11 +1991,17 @@
       } else {
         deleted = deletedMoments(mo);
       }
+      const removed = removedMoments[key] || new Set();
       return {
-        kept: kept.map(x => ({ id: id++, ...x })),
-        deleted: deleted.map(x => ({ id: id++, ...x })),
+        kept: kept.map(x => ({ id: id++, ...x })).filter(x => !removed.has(x.id)),
+        deleted: deleted.map(x => ({ id: id++, ...x })).filter(x => !removed.has(x.id)),
       };
     }
+
+    // Moments the person deleted one by one (Future release), per memory.
+    const removedMoments = {};
+    // Notes added to individual moments, keyed "memoryKey:id".
+    const momentNotes = {};
 
     // Which moments this delete would keep vs. remove. Reset each time the dialog opens.
     let momentState = { kept: [], deleted: [] };
@@ -1931,17 +2233,15 @@
     }
     applyReleaseToDialog();
 
-    function openDialog() {
-      const m = memoryByKey[activeKey];
-      momentState = buildMoments(activeKey);
-      dialog.querySelector('#deleteTitle').textContent = `Delete & forget ${m.title}`;
-      if (isFuture) {
-        resetReview();
-      } else {
-        renderMoments();
-        momentsScroll.scrollTop = 0;
-        setMomentsOpen(false);
-      }
+    // 'memory' deletes a whole memory (with the moments review);
+    // 'moment' deletes one moment (simple confirm).
+    let dialogMode = 'memory';
+    const DIALOG_TEXT = {
+      title: dialog.querySelector('#deleteTitle'),
+      text: dialog.querySelector('#deleteText'),
+    };
+
+    function showDialog() {
       dialogReturn = document.activeElement;
       dialog.hidden = false;
       appRegions.forEach(el => { el.inert = true; });
@@ -1952,6 +2252,32 @@
       );
       dialog.querySelector('[data-dialog-cancel]').focus();
       updateReleaseNote();
+    }
+
+    function openMomentDialog() {
+      dialogMode = 'moment';
+      dialog.classList.add('dialog--simple');
+      DIALOG_TEXT.title.textContent = 'Delete this moment?';
+      DIALOG_TEXT.text.textContent =
+        `Highlight will forget “${activeMoment.title}” and stop using it in answers. This can’t be undone.`;
+      showDialog();
+    }
+    momentView.querySelector('[data-delete-moment]').addEventListener('click', openMomentDialog);
+
+    function openDialog() {
+      dialogMode = 'memory';
+      dialog.classList.remove('dialog--simple');
+      const m = memoryByKey[activeKey];
+      momentState = buildMoments(activeKey);
+      dialog.querySelector('#deleteTitle').textContent = `Delete & forget ${m.title}`;
+      if (isFuture) {
+        resetReview();
+      } else {
+        renderMoments();
+        momentsScroll.scrollTop = 0;
+        setMomentsOpen(false);
+      }
+      showDialog();
     }
 
     // Wait for an animation, but never longer than `ms` (a backgrounded tab
@@ -1987,7 +2313,27 @@
         btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
       }
     });
+    async function deleteActiveMoment() {
+      const { key, id } = activeMoment;
+      await closeDialog();
+      await go('memory');
+      const btn = memView.querySelector(`[data-moment="${id}"]`);
+      const li = btn?.closest('li');
+      if (li) {
+        await settle(li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out', fill: 'forwards' }));
+        li.style.overflow = 'hidden';
+        await settle(li.animate([{ height: li.offsetHeight + 'px' }, { height: '0px' }], { duration: 220, easing: EASE_OUT, fill: 'forwards' }));
+      }
+      (removedMoments[key] || (removedMoments[key] = new Set())).add(id);
+      const scroller = memView.querySelector('.detail');
+      const top = scroller.scrollTop;
+      renderPageMoments(memoryByKey[key]);
+      scroller.scrollTop = top;
+      activeMoment = null;
+    }
+
     dialog.querySelector('[data-dialog-confirm]').addEventListener('click', async () => {
+      if (dialogMode === 'moment') return deleteActiveMoment();
       const row = rowFor();
       const m = memoryByKey[activeKey];
       // The row's own divider (Initial) or, if it's the last row in its
@@ -2018,24 +2364,30 @@
       const row = e.target.closest('[data-open]');
       if (row) go(row.dataset.open, row.dataset.key);
     });
-    wrap.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => go('list')));
+    wrap.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => go(parentOf(current))));
     document.querySelector('.nav__item[aria-current="page"]').addEventListener('click', () => go('list'));
     addEventListener('keydown', e => {
-      if (e.key === 'Escape' && current !== 'list' && dialog.hidden && !e.target.matches('input, textarea')) go('list');
+      if (e.key === 'Escape' && current !== 'list' && dialog.hidden && !e.target.matches('input, textarea')) go(parentOf(current));
     });
 
     // ---------- Release switcher ----------
     // Switches in place, keeping the current screen and any edits, so each
-    // screen can be compared one-to-one. The Memory list and delete dialog differ;
+    // screen can be compared one-to-one. See CHANGES for the screens that differ;
     // every other screen is labeled "Remains unchanged" in the Future release.
     // URLs — deployed: /highlight-takehome/prototype and /highlight-takehome/future;
     // locally (served as .html): the same file with ?release=future.
     const releaseLinks = document.querySelectorAll('[data-release]');
     const releaseNotes = document.querySelector('.release-notes');
     const CHANGES = {
+      moment: [
+        'New page: open any moment to read its transcript or note',
+        'Add a note to a single moment, or delete just that moment',
+      ],
+      memory: [
+        'Lists every moment this memory came from (meetings, notes and audio), newest first',
+      ],
       list: [
         'Memories are grouped into categories: About you, How you work and Your work',
-        'Always remember has a clearer description',
       ],
       dialog: [
         'Built for hundreds of moments instead of dozens',
@@ -2050,12 +2402,13 @@
       future: localFile ? `${location.pathname}?release=future` : '/highlight-takehome/future',
     };
 
-    // Screens that differ in the Future release: the Memory list (categories)
-    // and the delete dialog. Everything else is labeled unchanged.
+    // Screens that differ in the Future release: the Memory list (categories),
+    // memory pages (moments) and the delete dialog. Everything else is labeled
+    // unchanged.
     function updateReleaseNote() {
       releaseNotes.hidden = !isFuture;
       if (!isFuture) return;
-      const changes = !dialog.hidden ? CHANGES.dialog : current === 'list' ? CHANGES.list : null;
+      const changes = !dialog.hidden && dialogMode === 'memory' ? CHANGES.dialog : CHANGES[current] || null;
       releaseNotes.innerHTML = changes
         ? `<p class="release-notes__title">What changed</p>
            <ul class="release-notes__list">${changes.map(c => `<li>${c}</li>`).join('')}</ul>`
@@ -2072,11 +2425,21 @@
         ? 'Highlight Prototype (Future release) — Nathalia Kasman'
         : 'Highlight Prototype — Nathalia Kasman';
       applyReleaseToDialog();
+      // Moment pages don't exist in the Initial release: fall back to the memory page.
+      if (!isFuture && current === 'moment') {
+        if (!dialog.hidden) { dialog.hidden = true; appRegions.forEach(el => { el.inert = false; }); }
+        views.moment.classList.remove('is-active');
+        views.moment.inert = true;
+        views.memory.classList.add('is-active');
+        views.memory.inert = false;
+        current = 'memory';
+      }
+      if (current === 'memory') renderPageMoments(memoryByKey[activeKey]);
       const scrollTop = document.querySelector('.panel').scrollTop;
       renderList();
       document.querySelector('.panel').scrollTop = scrollTop;
       // An open delete dialog swaps to the other release's version.
-      if (!dialog.hidden) {
+      if (!dialog.hidden && dialogMode === 'memory') {
         momentState = buildMoments(activeKey);
         if (isFuture) {
           resetReview();
