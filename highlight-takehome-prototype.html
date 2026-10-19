@@ -879,6 +879,21 @@
     }
     .memory-list__divider { display: block; height: 1px; }
 
+    /* Future release: Summary + Always remember, then categories. */
+    .memory-list--future { gap: 48px; }
+    .memory-group,
+    .memory-group__body { display: flex; flex-direction: column; gap: 12px; }
+    .memory-group--category { gap: 24px; }
+    .memory-list__rows { list-style: none; margin: 0; padding: 0; }
+    .memory-group__title {
+      margin: 0;
+      font-family: var(--hl-font-display);
+      font-weight: 500;
+      font-size: 18px;
+      line-height: normal;
+      color: var(--hl-title);
+    }
+
     .memory {
       display: flex;
       align-items: center;
@@ -1181,19 +1196,53 @@
       ], pool: [['notes', 'SQL practice'], ['notes', 'Experimentation reading notes'], ['audio', 'Pricing course notes'], ['meet', 'Query help with analytics']] },
     };
 
-    const list = document.getElementById('memoryList');
-    list.innerHTML = memories.map(m => `
+    // Future release groups the memories into categories under Summary and
+    // Always remember (and words Always remember's subtext differently).
+    const categories = [
+      { title: 'About you', keys: ['profile', 'health-data', 'learning'] },
+      { title: 'How you work', keys: ['how-you-work', 'writing'] },
+      { title: 'Your work', keys: ['active-projects', 'people'] },
+    ];
+    const FUTURE_DESC = {
+      'always-remember': 'Rules and preferences that apply across everything you do, plus items that never expire.',
+    };
+    const DIVIDER = '<img class="memory-list__divider" src="/assets/highlight/divider.svg" width="700" height="1" alt="" />';
+
+    const memoryRow = m => `
       <li>
         <button class="memory" type="button" data-open="${m.view || 'memory'}" data-key="${m.key}">
           <span class="memory__text">
             <span class="memory__title">${m.title}</span>
-            <span class="memory__desc">${m.desc}</span>
+            <span class="memory__desc">${(isFuture && FUTURE_DESC[m.key]) || m.desc}</span>
           </span>
           <img class="memory__chevron" src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
         </button>
-      </li>
-      <li aria-hidden="true"><img class="memory-list__divider" src="/assets/highlight/divider.svg" width="700" height="1" alt="" /></li>
-    `).join('');
+      </li>`;
+
+    const list = document.getElementById('memoryList');
+    function renderList() {
+      const live = memories.filter(m => !m.deleted);
+      list.classList.toggle('memory-list--future', isFuture);
+      if (!isFuture) {
+        list.innerHTML = live.map(m => memoryRow(m) +
+          `<li class="memory-list__sep" aria-hidden="true">${DIVIDER}</li>`).join('');
+        return;
+      }
+      const block = rows => `
+        <ul class="memory-list__rows">${rows.map(memoryRow).join('')}</ul>
+        <div class="memory-list__sep" aria-hidden="true">${DIVIDER}</div>`;
+      const top = live.filter(m => m.view);
+      list.innerHTML = `<li class="memory-group">${block(top)}</li>` + categories.map(c => {
+        const rows = c.keys.map(k => live.find(m => m.key === k)).filter(Boolean);
+        if (!rows.length) return '';
+        return `
+          <li class="memory-group memory-group--category">
+            <h2 class="memory-group__title">${c.title}</h2>
+            <div class="memory-group__body">${block(rows)}</div>
+          </li>`;
+      }).join('');
+    }
+    renderList();
 
     // Scale the native-size app to fit the stage.
     const stage = document.querySelector('.stage');
@@ -1473,6 +1522,7 @@
       running.splice(0).forEach(a => a.cancel());
       current = to;
       busy = false;
+      updateReleaseNote();
 
       if (to === 'list') rowFor()?.focus({ preventScroll: true });
       else partsOf(to).title.focus({ preventScroll: true });
@@ -1887,9 +1937,13 @@
       updateReleaseNote();
     }
 
+    // Wait for an animation, but never longer than `ms` (a backgrounded tab
+    // can stop painting, and its animations never finish).
+    const settle = (anim, ms = 600) => Promise.race([anim.finished, new Promise(r => setTimeout(r, ms))]);
+
     async function closeDialog() {
       appRegions.forEach(el => { el.inert = false; });
-      await dialog.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in' }).finished;
+      await settle(dialog.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in' }));
       dialog.hidden = true;
       updateReleaseNote();
     }
@@ -1918,22 +1972,29 @@
     });
     dialog.querySelector('[data-dialog-confirm]').addEventListener('click', async () => {
       const row = rowFor();
-      const li = row.closest('li');
-      const divider = li.nextElementSibling;
+      const m = memoryByKey[activeKey];
+      // The row's own divider (Initial) or, if it's the last row in its
+      // category, the whole category (Future).
+      let li = row.closest('li');
+      const group = li.closest('.memory-group--category');
+      if (group && group.querySelectorAll('.memory').length === 1) li = group;
+      const els = [li];
+      if (li.nextElementSibling?.matches('.memory-list__sep')) els.push(li.nextElementSibling);
+      const gap = parseFloat(getComputedStyle(li.parentElement).rowGap) || 0;
       await closeDialog();
       await go('list');
       // Fade the row, then close the gap it leaves.
-      await li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out' }).finished;
-      li.style.overflow = 'hidden';
-      divider.style.overflow = 'hidden';
-      await Promise.all([li, divider].map(el => el.animate(
-        [{ height: el.offsetHeight + 'px' }, { height: '0px', marginTop: '-12px' }],
-        { duration: 220, easing: EASE_OUT }
-      ).finished));
-      li.remove();
-      divider.remove();
-      delete memoryByKey[activeKey];
+      await settle(li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out', fill: 'forwards' }));
+      await Promise.all(els.map(el => {
+        el.style.overflow = 'hidden';
+        return settle(el.animate(
+          [{ height: el.offsetHeight + 'px' }, { height: '0px', marginTop: `-${gap}px` }],
+          { duration: 220, easing: EASE_OUT, fill: 'forwards' }
+        ));
+      }));
+      m.deleted = true;
       activeKey = null;
+      renderList();
     });
 
     list.addEventListener('click', e => {
@@ -1948,7 +2009,7 @@
 
     // ---------- Release switcher ----------
     // Switches in place, keeping the current screen and any edits, so each
-    // screen can be compared one-to-one. Only the delete dialog differs today;
+    // screen can be compared one-to-one. The Memory list and delete dialog differ;
     // every other screen is labeled "Remains unchanged" in the Future release.
     // URLs — deployed: /highlight-takehome/prototype and /highlight-takehome/future;
     // locally (served as .html): the same file with ?release=future.
@@ -1960,8 +2021,10 @@
       future: localFile ? `${location.pathname}?release=future` : '/highlight-takehome/future',
     };
 
+    // Screens that differ in the Future release: the Memory list (categories)
+    // and the delete dialog. Everything else is labeled unchanged.
     function updateReleaseNote() {
-      releaseNote.hidden = !(isFuture && dialog.hidden);
+      releaseNote.hidden = !(isFuture && dialog.hidden && current !== 'list');
     }
 
     function setRelease(future) {
@@ -1974,6 +2037,9 @@
         ? 'Highlight Prototype (Future release) — Nathalia Kasman'
         : 'Highlight Prototype — Nathalia Kasman';
       applyReleaseToDialog();
+      const scrollTop = document.querySelector('.panel').scrollTop;
+      renderList();
+      document.querySelector('.panel').scrollTop = scrollTop;
       // An open delete dialog swaps to the other release's version.
       if (!dialog.hidden) {
         momentState = buildMoments(activeKey);
