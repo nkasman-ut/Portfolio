@@ -106,6 +106,8 @@
       background: #fff;
       box-shadow: 0 1px 2px rgba(65, 61, 56, .12);
     }
+    /* Screens that only exist in the Future release can't switch to Initial. */
+    .release a[aria-disabled="true"] { opacity: .4; cursor: not-allowed; }
 
     /* "Remains unchanged" label, just above the prototype window, on Future
        release screens that match Initial. */
@@ -851,7 +853,7 @@
       letter-spacing: -0.32px;
       color: var(--hl-heading);
     }
-    .page-moments__count { font-weight: 400; margin-left: 4px; }
+    .page-moments__count { font-weight: 400; }
     .page-moments__list { list-style: none; margin: -16px 0 0; padding: 0; }
     .page-moment {
       display: flex;
@@ -942,6 +944,62 @@
       pointer-events: none;
     }
     .toast[hidden] { display: none; }
+
+
+    /* ---------- Moments and sources ---------- */
+    .page-moment__end { display: flex; align-items: center; gap: 16px; }
+    .page-moment__sources { display: flex; align-items: center; gap: 6px; }
+    .page-moment__sources .moment__icon { width: 18px; height: 18px; }
+    .page-moment__sources .moment__icon img { width: 16px; height: 16px; }
+    /* Memory list rows keep the date on hover (no chevron there). */
+    .page-moments__list .page-moment:not(:has(.page-moment__chevron)):hover .page-moment__date,
+    .page-moments__list .page-moment:not(:has(.page-moment__chevron)):focus-visible .page-moment__date { opacity: 1; }
+    .page-moment__date { min-width: 52px; text-align: right; }
+
+    [data-view="source"] .detail {
+      top: 94px; bottom: 0; left: 0; right: 0; width: auto;
+      padding: 0 87px 64px 88px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      gap: 32px;
+    }
+    [data-view="source"] .detail::-webkit-scrollbar { display: none; }
+    .moment-body { display: flex; flex-direction: column; gap: 32px; }
+    .moment-section { display: flex; flex-direction: column; gap: 12px; }
+    .moment-section .page-moments__list { margin-top: -4px; }
+    .moment-section__title {
+      margin: 0;
+      font: 600 16px/normal var(--hl-font-body);
+      letter-spacing: -0.32px;
+      color: var(--hl-heading);
+    }
+    .moment-summary { margin: 0; font: 16px/26px var(--hl-font-body); color: var(--hl-heading); }
+
+    .dialog__check {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 0 0 4px;
+      font: 14px/20px var(--hl-font-body);
+      color: var(--hl-heading);
+      cursor: pointer;
+    }
+    .dialog__check[hidden] { display: none; }
+    .dialog__check input { margin: 2px 0 0; width: 16px; height: 16px; accent-color: #2C2C25; flex-shrink: 0; }
+
+    .toast { display: flex; align-items: center; gap: 8px; }
+    .toast.has-action { pointer-events: auto; }
+    .toast__action {
+      padding: 0;
+      border: 0;
+      background: none;
+      font: 600 14px/20px var(--hl-font-body);
+      color: #F7D154;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .toast__action:focus-visible { outline: 2px solid #F7D154; outline-offset: 2px; }
 
     /* Simple confirm (deleting a single moment): no moments review. */
     .dialog--simple .moments-toggle,
@@ -1301,6 +1359,38 @@
                 <div class="note-area"></div>
               </div>
             </div>
+            <div class="detail__body moment-body">
+              <section class="moment-section" aria-labelledby="mOverview">
+                <h2 class="moment-section__title" id="mOverview">Overview</h2>
+                <p class="moment-summary" data-field="overview"></p>
+              </section>
+              <section class="moment-section" aria-labelledby="mSources">
+                <h2 class="page-moments__title" id="mSources">Sources <span class="page-moments__count" data-field="source-count"></span></h2>
+                <ul class="page-moments__list" data-field="sources"></ul>
+              </section>
+            </div>
+          </article>
+        </section>
+
+        <section class="view view--detail" data-view="source" inert>
+          <header class="page-header page-header--actions">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              <span data-field="parent"></span>
+            </button>
+            <button class="icon-btn" type="button" data-delete-source aria-label="Delete this source">
+              <img src="/assets/highlight/trashcan.svg" width="16" height="16" alt="" />
+            </button>
+          </header>
+
+          <article class="detail">
+            <div class="moment-head">
+              <h1 class="detail__title" tabindex="-1" data-field="title"></h1>
+              <div class="moment-meta">
+                <span data-field="meta"></span>
+                <div class="note-area"></div>
+              </div>
+            </div>
             <div class="detail__body" data-field="content"></div>
           </article>
         </section>
@@ -1312,6 +1402,10 @@
         <div class="dialog__card">
           <h2 class="dialog__title" id="deleteTitle"></h2>
           <p class="dialog__text" id="deleteText"></p>
+          <label class="dialog__check" hidden>
+            <input type="checkbox" data-sensitive />
+            <span>This is sensitive. Skip similar sources in the future.</span>
+          </label>
           <button class="moments-toggle" type="button" aria-expanded="false" aria-controls="momentsPanel">
             <img src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
             <span>Show moments</span>
@@ -1361,6 +1455,10 @@
         summary: 'You work most often with Mike DeWolf, Alex Caltieri and Eric Chiang. Most of your day-to-day collaboration is with design and engineering, usually in writing rather than meetings.' },
       { key: 'health-data', title: 'Health data', desc: 'Physical therapy for a knee injury on Thursday mornings, so you avoid booking meetings before 10am that day.',
         summary: 'You have physical therapy for a knee injury on Thursday mornings. You keep those mornings clear until 10am, so Highlight avoids suggesting earlier meeting times that day.' },
+      { key: 'checkout-redesign', title: 'Checkout redesign', desc: 'Payment form first, guest checkout moved to v2. Beta on Nov 14 with Maya, Priya and Marcus.',
+        summary: 'You’re leading the checkout redesign with Maya (design), Priya (engineering) and Marcus (data). The first release focuses on the payment form, where most people drop off. Guest checkout moved to v2 pending a legal review, and the beta is planned for Nov 14.' },
+      { key: 'q4-priorities', title: 'Q4 priorities', desc: 'Two bets this quarter: the checkout redesign and the loyalty pilot. Vendor onboarding moves to Q1.',
+        summary: 'Leadership funded two bets for Q4: the checkout redesign and the Q1 loyalty pilot. Vendor onboarding moved to Q1. You keep the roadmap in Notion and update it after each planning session.' },
       { key: 'learning', title: 'Learning', desc: 'Building SQL skills, interested in experimentation and pricing strategy.',
         summary: 'You’re building your SQL skills so you can answer more of your own data questions. You’re also interested in experimentation and pricing strategy.' },
     ];
@@ -1405,6 +1503,16 @@
       'health-data': { deleted: 6, kept: [
         ['notes', 'Calendar: PT on Thursday 8:30am', 'Oct 9', 'How you work'],
       ], pool: [['notes', 'PT appointment reminder'], ['notes', 'Calendar hold: physical therapy'], ['audio', 'Knee exercises reminder']] },
+      'checkout-redesign': { deleted: 34, kept: [
+        ['zoom', 'Checkout sync', 'Oct 12', 'Q4 priorities'],
+        ['notes', 'Checkout spec: v1 scope', 'Oct 9', 'Q4 priorities'],
+        ['meet', 'Payment form review with Maya', 'Oct 8', 'Active projects'],
+        ['notes', 'Abandonment deep dive with Marcus', 'Oct 6', 'Learning'],
+      ], pool: [['zoom', 'Checkout sync'], ['meet', 'Payment form review with Maya'], ['notes', 'Checkout spec: v1 scope'], ['audio', 'Abandonment deep dive with Marcus']] },
+      'q4-priorities': { deleted: 18, kept: [
+        ['zoom', 'Q4 planning with leadership', 'Oct 10', 'Checkout redesign'],
+        ['notes', 'Roadmap update', 'Oct 7', 'Checkout redesign'],
+      ], pool: [['zoom', 'Q4 planning with leadership'], ['notes', 'Roadmap update']] },
       learning: { deleted: 14, kept: [
         ['notes', 'SQL practice: cohort retention', 'Oct 11', 'Active projects'],
         ['audio', 'Pricing strategy podcast notes', 'Oct 2', 'Active projects'],
@@ -1416,7 +1524,7 @@
     const categories = [
       { title: 'About you', keys: ['profile', 'health-data', 'learning'] },
       { title: 'How you work', keys: ['how-you-work', 'writing'] },
-      { title: 'Your work', keys: ['active-projects', 'people'] },
+      { title: 'Your work', keys: ['checkout-redesign', 'q4-priorities', 'active-projects', 'people'] },
     ];
     const FUTURE_DESC = {
       'always-remember': 'Rules and preferences that apply across everything you do, plus items that never expire.',
@@ -1515,6 +1623,7 @@
         // Moment pages keep their note inside the "type · date" line, so that
         // whole line animates as one piece, right after the title.
         meta: v.querySelector('.moment-meta'),
+        actions: v.querySelector('.moment-actions'),
         notes: v.querySelector('.moment-meta') ? null : v.querySelector('.note-area'),
         moments: v.querySelector('.page-moments:not([hidden])'),
         prompt: v.querySelector('.prompt'),
@@ -1641,7 +1750,7 @@
           if (DEPTH[to] > DEPTH[from]) {
             const d = partsOf(to);
             const parts = [
-              [d.header, 120], [d.title, 170], [d.meta, 195], [d.body, 220],
+              [d.header, 120], [d.title, 170], [d.meta, 195], [d.actions, 207], [d.body, 220],
               [d.notes, 245], [d.moments, 260], [d.prompt, 270],
             ].filter(([el]) => el);
             return Promise.all([
@@ -1706,8 +1815,8 @@
     };
 
     // How deep each view sits: deeper views "open", shallower ones "go back".
-    const DEPTH = { list: 0, summary: 1, 'always-remember': 1, excluded: 1, memory: 1, moment: 2 };
-    const parentOf = view => (view === 'moment' ? 'memory' : 'list');
+    const DEPTH = { list: 0, summary: 1, 'always-remember': 1, excluded: 1, memory: 1, moment: 2, source: 3 };
+    const parentOf = view => ({ moment: 'memory', source: 'moment' })[view] || 'list';
 
     const reduced = {
       run: (from, to) => Promise.all([
@@ -1726,7 +1835,14 @@
       const from = current;
       if (key) activeKey = key;
       // Coming back from a moment keeps the memory page as it was (scroll included).
-      if (to === 'memory' && from !== 'moment') fillMemory(memoryByKey[activeKey]);
+      if (to === 'memory' && (from !== 'moment' || key)) fillMemory(memoryByKey[activeKey]);
+      // Back from a moment: redraw the rows (source icons may have changed) but keep the scroll.
+      else if (to === 'memory') {
+        const scroller = memView.querySelector('.detail');
+        const top = scroller.scrollTop;
+        renderPageMoments(memoryByKey[activeKey]);
+        scroller.scrollTop = top;
+      }
       views[to].classList.add('is-active');
       views[to].inert = false;
       views[from].inert = true;
@@ -1735,7 +1851,7 @@
       // painting) leave the UI locked: give up after 1s and snap to the end.
       // Moment pages only exist in the Fade through flow.
       const runner = reduceMotion.matches ? reduced
-        : (from === 'moment' || to === 'moment') ? variants.fade : variants[variant];
+        : [from, to].some(v => v === 'moment' || v === 'source') ? variants.fade : variants[variant];
       try {
         await Promise.race([
           runner.run(from, to),
@@ -1752,7 +1868,8 @@
       updateReleaseNote();
 
       if (to === 'list') rowFor()?.focus({ preventScroll: true });
-      else if (from === 'moment' && activeMoment) memView.querySelector(`[data-moment="${activeMoment.id}"]`)?.focus({ preventScroll: true });
+      else if (from === 'source' && activeSource != null) momentView.querySelector(`[data-source="${activeSource}"]`)?.focus({ preventScroll: true });
+      else if (from === 'moment' && activeMoment && !key) memView.querySelector(`[data-moment="${activeMoment.id}"]`)?.focus({ preventScroll: true });
       else partsOf(to).title.focus({ preventScroll: true });
     }
 
@@ -1769,29 +1886,6 @@
       renderNote(m, 'view', false, memNoteArea);
       renderPageMoments(m);
       memView.querySelector('.detail').scrollTop = 0;
-    }
-
-    // Future release: list every moment this memory came from, newest first.
-    function renderPageMoments(m) {
-      const section = memView.querySelector('.page-moments');
-      section.hidden = !isFuture;
-      if (!isFuture) return;
-      const { kept, deleted } = buildMoments(m.key);
-      const all = [...kept, ...deleted].sort((a, b) => b.t - a.t);
-      section.querySelector('.page-moments__count').textContent = all.length;
-      section.querySelector('.page-moments__list').innerHTML = all.map(x => `
-        <li>
-          <button class="page-moment" type="button" data-moment="${x.id}">
-            <span class="page-moment__main">
-              <span class="moment__icon">${SOURCE_ICONS[x.source]}</span>
-              <span class="page-moment__title">${escapeHtml(x.title)}</span>
-            </span>
-            <span class="page-moment__end">
-              <span class="page-moment__date">${x.date}, 2026</span>
-              <img class="page-moment__chevron" src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
-            </span>
-          </button>
-        </li>`).join('');
     }
 
     const swapIn = el => el.animate(
@@ -1860,106 +1954,263 @@
       if (animate) swapIn(btn);
     }
 
-    // ---------- Moment page (Future release) ----------
+    // ---------- Moments ----------
+    // A moment is one context on one day (e.g. "Checkout sync: cut guest
+    // checkout"). It holds its sources: the individual meetings, audio notes
+    // and notes Highlight captured for that context that day.
     const momentView = views.moment;
-    const SOURCE_LABELS = { notes: 'Notes', audio: 'Audio note', zoom: 'Zoom meeting', meet: 'Google Meet meeting' };
+    const sourceView = views.source;
     const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    let activeMoment = null;
-
-    const findMoment = (key, id) => {
-      const { kept, deleted } = buildMoments(key);
-      return [...kept, ...deleted].find(x => x.id === id);
+    const SOURCE_TYPE = {
+      zoom: 'Zoom meeting', meet: 'Google Meet meeting', audio: 'Audio note', notes: 'Notes',
     };
+    const fmtTime = d => {
+      const h = d.getHours(), m = d.getMinutes();
+      return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+    };
+    const addMins = (d, n) => new Date(+d + n * 60000);
+    const longDate = d => `${MONTHS_LONG[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 
-    // Placeholder content by memory: what a meeting, audio note or typed
-    // note behind it might plausibly say.
-    const CONTENT = {
-      default: {
-        meeting: [
-          ['You', 'Thanks for joining. Let’s go through {title}.'],
-          ['Mike DeWolf', 'Sounds good. I pulled the latest numbers this morning.'],
-          ['Alex Caltieri', 'I have a couple of design updates to share too.'],
-          ['You', 'Great, let’s start with the numbers.'],
-          ['Mike DeWolf', 'Cart abandonment is down a little since the last change.'],
-          ['Eric Chiang', 'Engineering is on track for the checkout beta on Nov 14.'],
-          ['You', 'Nice. Let’s keep the first version scoped and shippable.'],
-          ['Alex Caltieri', 'Agreed. I’ll send the updated flows after this.'],
-          ['You', 'Perfect. I’ll write up the decisions and share them in the doc.'],
+    // Source helpers. Meetings and audio have a transcript ([who, minute, line]);
+    // notes have text (a heading and bullets).
+    const meeting = (type, title, at, mins, people, transcript) => ({ type, title, at, mins, people, transcript });
+    const audioNote = (title, at, mins, transcript) => ({ type: 'audio', title, at, mins, people: [], transcript });
+    const note = (title, at, heading, bullets) => ({ type: 'notes', title, at, mins: 0, people: [], doc: [heading, bullets] });
+
+    // Contexts per memory. `hero` appears once, as the newest moment; the
+    // `recurring` ones repeat back through the last few months.
+    const MOMENT_CONTEXTS = {
+      'checkout-redesign': {
+        count: 38,
+        hero: {
+          title: 'Checkout sync: cut guest checkout', day: [2026, 9, 19],
+          overview: 'The team agreed to cut guest checkout from the first release so the redesign can ship for the Nov 14 beta. Marcus’s funnel data showed most drop-off happens at the payment step, not at account creation, and Priya flagged that guest checkout needs a legal review of stored card data. You updated the spec the same day.',
+          sources: [
+            meeting('zoom', 'Checkout sync', [10, 0], 45, ['Maya', 'Priya', 'Marcus'], [
+              ['You', 0, 'Let’s decide on guest checkout today. We need scope locked for the Nov 14 beta.'],
+              ['Marcus', 3, 'I pulled the funnel. 62% of drop-off is at the payment step. Account creation is only 9%.'],
+              ['Maya', 6, 'So guest checkout isn’t where we’re losing people. The payment form is.'],
+              ['Priya', 9, 'And guest checkout isn’t free on our side. Storing cards without an account needs a legal review.'],
+              ['You', 13, 'How long would that review take?'],
+              ['Priya', 14, 'Legal said four to six weeks. That pushes us past the beta.'],
+              ['Maya', 18, 'Then let’s cut it from v1 and put the time into the payment form.'],
+              ['Marcus', 22, 'I can run an experiment on the new payment form so we see the impact fast.'],
+              ['You', 26, 'Agreed. Guest checkout moves to v2, pending legal review. I’ll update the spec and the Q4 roadmap.'],
+              ['Priya', 41, 'I’ll open the legal ticket today so v2 isn’t blocked.'],
+            ]),
+            note('Checkout spec: v1 scope', [11, 15], 'Checkout v1 scope', [
+              'In: payment form, saved cards, error states',
+              'Out: guest checkout (v2, pending legal review)',
+              'Success metric: payment step drop-off under 45%',
+            ]),
+            meeting('meet', 'Payment form review with Maya', [14, 0], 30, ['Maya'], [
+              ['Maya', 0, 'With guest checkout out, I can simplify the payment form further.'],
+              ['You', 3, 'Good. Can we drop billing address for saved cards?'],
+              ['Maya', 5, 'Yes, it only applies when the card is already on file.'],
+              ['You', 9, 'Let’s also test inline validation on the expiry field.'],
+            ]),
+            audioNote('Reminder: legal ticket', [16, 30], 2, [
+              ['You', 0, 'Check with Priya that the legal ticket for guest checkout is open.'],
+              ['You', 1, 'Add the v2 note to the Q4 roadmap before Friday.'],
+            ]),
+          ],
+        },
+        recurring: [
+          {
+            title: 'Checkout sync', overview: 'Weekly checkout sync. The team reviewed beta readiness and open bugs, and agreed the payment form is still the riskiest part of the release.',
+            sources: [
+              meeting('zoom', 'Checkout sync', [10, 0], 30, ['Maya', 'Priya', 'Marcus'], [
+                ['You', 0, 'Quick status round. Where are we on the beta checklist?'],
+                ['Priya', 2, 'Two payment bugs left. Both are in review.'],
+                ['Maya', 5, 'Error states for the card form are ready in Figma.'],
+                ['Marcus', 9, 'Abandonment is flat this week. No surprises.'],
+              ]),
+              note('Beta checklist', [10, 40], 'Beta checklist', ['14 of 16 items done', 'Two payment bugs in review']),
+            ],
+          },
+          {
+            title: 'Payment form review', overview: 'You and Maya reviewed the new payment form, cut the billing address step for saved cards and agreed to test inline card validation.',
+            sources: [
+              meeting('meet', 'Payment form review with Maya', [14, 0], 40, ['Maya'], [
+                ['Maya', 0, 'Here’s v3 of the payment form. I removed billing address for saved cards.'],
+                ['You', 4, 'Nice. People fail on the expiry field a lot, can we validate inline?'],
+                ['Maya', 7, 'I’ll mock it up and send it over tomorrow.'],
+              ]),
+              audioNote('Thoughts on the payment form', [15, 0], 2, [
+                ['You', 0, 'Expiry field drop-off is 18%. Inline validation should help.'],
+              ]),
+            ],
+          },
+          {
+            title: 'Abandonment deep dive', overview: 'Marcus walked you through where people leave checkout. Mobile users drop off at the card form far more than desktop users, so payment form work starts with mobile.',
+            sources: [
+              meeting('meet', 'Abandonment deep dive with Marcus', [15, 30], 25, ['Marcus'], [
+                ['Marcus', 0, 'Splitting by device changes the picture a lot.'],
+                ['Marcus', 3, 'On mobile, 71% of payment drop-off is on the card form.'],
+                ['You', 7, 'So mobile first for the payment form.'],
+              ]),
+              note('Abandonment notes', [16, 0], 'Abandonment by device', ['Mobile: 71% of payment drop-off on the card form', 'Desktop: drop-off spread across steps']),
+              audioNote('Follow-up for Marcus', [16, 20], 1, [['You', 0, 'Ask Marcus for the query so I can rerun it.']]),
+            ],
+          },
         ],
-        audio: [
-          'Quick note on {title}.',
-          'Main thing: keep the first version small and get it in front of people.',
-          'I need to check the numbers with analytics before Thursday.',
-          'Follow up with Mike on the open questions from last week.',
-          'Write this up as a short update instead of setting up a meeting.',
+      },
+      'q4-priorities': {
+        count: 20,
+        recurring: [
+          {
+            title: 'Q4 planning', overview: 'Leadership confirmed the checkout redesign and the loyalty pilot as the two Q4 bets. Vendor onboarding moves to Q1, and you updated the roadmap afterwards.',
+            sources: [
+              meeting('zoom', 'Q4 planning with leadership', [11, 0], 60, ['Dana', 'Maya', 'Priya'], [
+                ['Dana', 0, 'We can fund two bets this quarter, not three.'],
+                ['You', 4, 'Checkout and the loyalty pilot have the clearest revenue impact.'],
+                ['Dana', 9, 'Agreed. Vendor onboarding waits until Q1.'],
+              ]),
+              note('Q4 roadmap update', [13, 0], 'Q4 roadmap', ['Checkout redesign: beta Nov 14', 'Loyalty pilot: launch in December', 'Vendor onboarding: moved to Q1']),
+            ],
+          },
         ],
-        notes: ['{title}', ['Decision: keep the first version scoped and shippable', 'Open question: confirm the numbers with analytics', 'Next step: share a written update by Friday']],
       },
       'health-data': {
-        meeting: [
-          ['You', 'Hi, just confirming {title}.'],
-          ['Front desk', 'Yes, you’re booked for Thursday at 8:30am.'],
-          ['You', 'Great, I’ll block my calendar until 10.'],
-        ],
-        audio: [
-          'Reminder about {title}.',
-          'Physical therapy is Thursday at 8:30am.',
-          'Keep the morning clear until 10.',
-          'Do the knee exercises every evening this week.',
-        ],
-        notes: ['{title}', ['Physical therapy: Thursdays at 8:30am', 'No meetings before 10am on Thursdays', 'Exercises: 3 sets each evening']],
+        count: 6,
+        recurring: [{
+          title: 'Physical therapy', overview: 'You confirmed your Thursday physical therapy appointment and kept your morning clear until 10am.',
+          sources: [
+            meeting('meet', 'Call with the PT clinic', [8, 0], 10, ['Front desk'], [
+              ['Front desk', 0, 'You’re booked for Thursday at 8:30am.'],
+              ['You', 1, 'Great, I’ll keep my morning clear until 10.'],
+            ]),
+            note('PT exercises', [19, 0], 'Knee exercises', ['3 sets each evening', 'Ice after the session']),
+          ],
+        }],
       },
       learning: {
-        meeting: [
-          ['You', 'Thanks for making time for {title}.'],
-          ['Mike DeWolf', 'Happy to. What are you working on?'],
-          ['You', 'A cohort retention query. The joins are tripping me up.'],
-          ['Mike DeWolf', 'Try building it one step at a time with a CTE for each cohort.'],
-          ['You', 'That helps a lot. I’ll try it this afternoon.'],
+        count: 10,
+        recurring: [{
+          title: 'SQL practice: cohort retention', overview: 'A practice session on a cohort retention query. Window functions made the query much simpler, and Marcus confirmed the approach.',
+          sources: [
+            audioNote('Thinking through the query', [16, 0], 3, [
+              ['You', 0, 'Trying a CTE per cohort first.'],
+              ['You', 2, 'Window functions are cleaner. Switching.'],
+            ]),
+            note('Retention query notes', [16, 45], 'Cohort retention', ['Use ROW_NUMBER() per user', 'Group by signup week']),
+            meeting('meet', 'Query help from Marcus', [17, 15], 15, ['Marcus'], [
+              ['Marcus', 0, 'That’s the right approach. Add a filter for test accounts.'],
+            ]),
+          ],
+        }],
+      },
+      default: {
+        count: 16,
+        recurring: [
+          {
+            title: 'Weekly planning', overview: 'Your Monday planning session. You set the week’s priorities and wrote a short update instead of scheduling a meeting.',
+            sources: [
+              audioNote('Planning the week', [9, 0], 4, [
+                ['You', 0, 'Top three for the week: payment form, legal ticket, loyalty pilot metrics.'],
+                ['You', 3, 'Write the update instead of booking a meeting.'],
+              ]),
+              note('Weekly update', [9, 30], 'This week', ['Payment form', 'Legal ticket for guest checkout', 'Loyalty pilot metrics']),
+            ],
+          },
+          {
+            title: '1:1 with Maya', overview: 'A regular 1:1. You and Maya talked through design priorities and agreed to share progress in writing.',
+            sources: [
+              meeting('meet', '1:1 with Maya', [13, 0], 30, ['Maya'], [
+                ['Maya', 0, 'I’d rather post progress in the doc than demo every week.'],
+                ['You', 3, 'Works for me. Let’s try it for a month.'],
+              ]),
+            ],
+          },
         ],
-        audio: [
-          'Notes from {title}.',
-          'Window functions make the retention query much simpler.',
-          'Try a small pricing experiment on delivery fees next quarter.',
-          'Read the chapter on holdout groups before Friday.',
-        ],
-        notes: ['{title}', ['Practice: cohort retention with window functions', 'Read: holdout groups and experiment sizing', 'Idea: test delivery fee pricing in one region']],
       },
     };
 
-    function momentContent(key, x) {
-      const set = CONTENT[key] || CONTENT.default;
-      // Mid-sentence titles start lowercase, unless they start with an acronym ("SQL").
-      const inline = /^[A-Z][a-z]/.test(x.title) ? x.title.charAt(0).toLowerCase() + x.title.slice(1) : x.title;
-      const fill = t => escapeHtml(t === '{title}' ? x.title : t.replace('{title}', inline));
-      const time = i => {
-        const base = x.source === 'audio' ? 15 * 60 + 31 : 10 * 60;   // 3:31 PM or 10:00 AM
-        const mins = base + (x.source === 'audio' ? 0 : i * 2);
-        const h = Math.floor(mins / 60), m = mins % 60;
-        return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
-      };
-      if (x.source === 'notes') {
-        const [heading, bullets] = set.notes;
-        return `<div class="moment-doc"><p>${fill(heading)}</p><ul>${bullets.map(b => `<li>${fill(b)}</li>`).join('')}</ul></div>`;
+    // All moments for a memory, newest first, minus deleted ones.
+    const momentCache = {};
+    function momentsFor(key) {
+      if (!momentCache[key]) {
+        const ctx = MOMENT_CONTEXTS[key] || MOMENT_CONTEXTS.default;
+        const list = [];
+        const day = new Date(2026, 9, 19);
+        if (ctx.hero) {
+          list.push({ ...ctx.hero, day: new Date(...ctx.hero.day) });
+          day.setDate(day.getDate() - 1);
+        }
+        for (let i = 0; list.length < ctx.count; i++) {
+          if (i) day.setDate(day.getDate() - (i % 3 === 0 ? 2 : 1));
+          list.push({ ...ctx.recurring[i % ctx.recurring.length], day: new Date(day) });
+        }
+        momentCache[key] = list.map((m, id) => ({
+          ...m,
+          id,
+          sources: m.sources.map((s, sid) => {
+            const start = new Date(m.day.getFullYear(), m.day.getMonth(), m.day.getDate(), s.at[0], s.at[1]);
+            return { ...s, sid, start, end: addMins(start, s.mins) };
+          }),
+        }));
       }
-      const lines = x.source === 'audio' ? set.audio.map(t => ['You', t]) : set.meeting;
-      return `<ul class="transcript">${lines.map(([who, text], i) => `
-        <li>
-          <span class="transcript__meta"><span>${escapeHtml(who)}</span><span aria-hidden="true">•</span><span>${time(i)}</span></span>
-          <span class="transcript__text">${fill(text)}</span>
-        </li>`).join('')}</ul>`;
+      const removed = removedMoments[key] || new Set();
+      return momentCache[key].filter(x => !removed.has(x.id));
     }
 
+    // Sources deleted one by one, keyed "memoryKey:momentId".
+    const removedSources = {};
+    const sourcesOf = (key, m) => {
+      const removed = removedSources[`${key}:${m.id}`];
+      return removed ? m.sources.filter(s => !removed.has(s.sid)) : m.sources;
+    };
+    const currentSource = () =>
+      momentsFor(activeMoment.key).find(m => m.id === activeMoment.id).sources.find(s => s.sid === activeSource);
+
+    // Distinct source types in a moment, in a stable order.
+    const typesIn = (key, m) => ['zoom', 'meet', 'audio', 'notes'].filter(t => sourcesOf(key, m).some(s => s.type === t));
+
+    function renderPageMoments(m) {
+      const section = memView.querySelector('.page-moments');
+      section.hidden = !isFuture;
+      if (!isFuture) return;
+      const all = momentsFor(m.key);
+      section.querySelector('.page-moments__count').textContent = `· ${all.length}`;
+      section.querySelector('.page-moments__list').innerHTML = all.map(x => `
+        <li>
+          <button class="page-moment" type="button" data-moment="${x.id}">
+            <span class="page-moment__main">
+              <span class="page-moment__title">${escapeHtml(x.title)}</span>
+            </span>
+            <span class="page-moment__end">
+              <span class="page-moment__sources">${typesIn(m.key, x).map(t => `<span class="moment__icon">${SOURCE_ICONS[t]}</span>`).join('')}</span>
+              <span class="page-moment__date">${MONTHS[x.day.getMonth()]} ${x.day.getDate()}</span>
+            </span>
+          </button>
+        </li>`).join('');
+    }
+
+    // ---------- Moment page ----------
+    let activeMoment = null;
+
     function fillMoment(key, id) {
-      const x = findMoment(key, id);
-      const [mon, day] = x.date.split(' ');
-      const noteKey = `${key}:${id}`;
-      const holder = momentNotes[noteKey] || (momentNotes[noteKey] = { note: null });
+      const x = momentsFor(key).find(m => m.id === id);
+      const holder = momentNotes[`${key}:${id}`] || (momentNotes[`${key}:${id}`] = { note: null });
       momentView.querySelector('[data-field="parent"]').textContent = memoryByKey[key].title;
       momentView.querySelector('[data-field="title"]').textContent = x.title;
-      momentView.querySelector('[data-field="meta"]').textContent =
-        `${SOURCE_LABELS[x.source]} · ${MONTHS_LONG[MONTHS.indexOf(mon)]} ${day}, 2026`;
-      momentView.querySelector('[data-field="content"]').innerHTML = momentContent(key, x);
+      momentView.querySelector('[data-field="meta"]').textContent = longDate(x.day);
+      momentView.querySelector('[data-field="overview"]').textContent = x.overview;
+      const sources = sourcesOf(key, x);
+      momentView.querySelector('[data-field="source-count"]').textContent = sources.length;
+      momentView.querySelector('[data-field="sources"]').innerHTML = sources.map(s => `
+        <li>
+          <button class="page-moment" type="button" data-source="${s.sid}">
+            <span class="page-moment__main">
+              <span class="moment__icon">${SOURCE_ICONS[s.type]}</span>
+              <span class="page-moment__title">${escapeHtml(s.title)}</span>
+            </span>
+            <span class="page-moment__end">
+              <span class="page-moment__date">${fmtTime(s.start)}</span>
+              <img class="page-moment__chevron" src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
+            </span>
+          </button>
+        </li>`).join('');
       renderNote(holder, 'view', false, momentView.querySelector('.note-area'));
       momentView.querySelector('.detail').scrollTop = 0;
       activeMoment = { key, id, title: x.title };
@@ -1970,6 +2221,47 @@
       if (!btn) return;
       fillMoment(activeKey, Number(btn.dataset.moment));
       go('moment');
+    });
+
+    // ---------- Source page (one meeting, audio note or note) ----------
+    let activeSource = null;
+
+    function sourceContent(s) {
+      if (s.doc) {
+        const [heading, bullets] = s.doc;
+        return `<div class="moment-doc"><p>${escapeHtml(heading)}</p><ul>${bullets.map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul></div>`;
+      }
+      return `<ul class="transcript">${s.transcript.map(([who, at, text]) => `
+        <li>
+          <span class="transcript__meta"><span>${escapeHtml(who)}</span><span aria-hidden="true">•</span><span>${fmtTime(addMins(s.start, at))}</span></span>
+          <span class="transcript__text">${escapeHtml(text)}</span>
+        </li>`).join('')}</ul>`;
+    }
+
+    function fillSource(key, id, sid) {
+      const m = momentsFor(key).find(x => x.id === id);
+      const s = m.sources.find(x => x.sid === sid);
+      const holder = momentNotes[`${key}:${id}:${sid}`] || (momentNotes[`${key}:${id}:${sid}`] = { note: null });
+      // "10:00–10:45 AM" when both ends share AM/PM, else "11:30 AM–12:15 PM".
+      const sameHalf = (s.start.getHours() < 12) === (s.end.getHours() < 12);
+      const time = s.mins
+        ? `${sameHalf ? fmtTime(s.start).slice(0, -3) : fmtTime(s.start)}–${fmtTime(s.end)}`
+        : fmtTime(s.start);
+      sourceView.querySelector('[data-field="parent"]').textContent = m.title;
+      sourceView.querySelector('[data-field="title"]').textContent = s.title;
+      sourceView.querySelector('[data-field="meta"]').textContent =
+        [SOURCE_TYPE[s.type], longDate(s.start), time, ...(s.people.length ? [s.people.join(', ')] : [])].join(' · ');
+      sourceView.querySelector('[data-field="content"]').innerHTML = sourceContent(s);
+      renderNote(holder, 'view', false, sourceView.querySelector('.note-area'));
+      sourceView.querySelector('.detail').scrollTop = 0;
+      activeSource = sid;
+    }
+
+    momentView.querySelector('[data-field="sources"]').addEventListener('click', e => {
+      const btn = e.target.closest('[data-source]');
+      if (!btn) return;
+      fillSource(activeMoment.key, activeMoment.id, Number(btn.dataset.source));
+      go('source');
     });
 
     // Delete: confirm in a dialog, then go back and collapse the row.
@@ -1987,6 +2279,8 @@
       people: { deleted: 124, kept: 9 },
       'health-data': { deleted: 34, kept: 3 },
       learning: { deleted: 88, kept: 5 },
+      'checkout-redesign': { deleted: 34, kept: 4 },
+      'q4-priorities': { deleted: 18, kept: 2 },
     };
 
     const SOURCE_ICONS = {
@@ -2315,19 +2609,38 @@
       updateReleaseNote();
     }
 
+    const sensitiveRow = dialog.querySelector('.dialog__check');
+    const sensitiveBox = dialog.querySelector('[data-sensitive]');
     function openMomentDialog() {
       dialogMode = 'moment';
       dialog.classList.add('dialog--simple');
-      setDialogButtons('Cancel', 'Delete and forget');
+      setDialogButtons('Cancel', 'Delete');
       DIALOG_TEXT.title.textContent = 'Delete this moment?';
-      DIALOG_TEXT.text.textContent =
-        `Highlight will forget “${activeMoment.title}” and stop using it in answers. This can’t be undone.`;
+      DIALOG_TEXT.text.textContent = 'Highlight will forget everything captured here: meetings, audio notes and notes.';
+      sensitiveRow.hidden = true;
       showDialog();
     }
+
+    // Deleting one source is where people mark it sensitive, so Highlight
+    // learns which kinds of sources to skip for this person.
+    function openSourceDialog() {
+      dialogMode = 'source';
+      dialog.classList.add('dialog--simple');
+      setDialogButtons('Cancel', 'Delete');
+      const src = currentSource();
+      DIALOG_TEXT.title.textContent = 'Delete this source?';
+      DIALOG_TEXT.text.textContent =
+        `Highlight will forget this ${{ zoom: 'Zoom meeting', meet: 'Google Meet meeting', audio: 'audio note', notes: 'note' }[src.type]} and stop using it in answers.`;
+      sensitiveRow.hidden = false;
+      sensitiveBox.checked = false;
+      showDialog();
+    }
+    sourceView.querySelector('[data-delete-source]').addEventListener('click', openSourceDialog);
     momentView.querySelector('[data-delete-moment]').addEventListener('click', openMomentDialog);
 
     function openDialog() {
       dialogMode = 'memory';
+      sensitiveRow.hidden = true;
       dialog.classList.remove('dialog--simple');
       setDialogButtons('Cancel', 'Delete and forget');
       const m = memoryByKey[activeKey];
@@ -2356,8 +2669,6 @@
 
     memView.querySelector('[data-delete]').addEventListener('click', openDialog);
     dialog.querySelector('[data-dialog-cancel]').addEventListener('click', async () => {
-      // "Not now" on the flag step: the moment is still deleted, just not flagged.
-      if (dialogMode === 'flag') return deleteActiveMoment(false);
       await closeDialog();
       dialogReturn?.focus({ preventScroll: true });
     });
@@ -2386,56 +2697,48 @@
       'active-projects': 'your projects',
       people: 'the people you work with',
       'health-data': 'physical therapy',
+      'checkout-redesign': 'the checkout redesign',
+      'q4-priorities': 'Q4 planning',
       learning: 'what you’re learning',
     };
 
-    // Step 2 after deleting a moment: offer to flag it as sensitive, so
-    // Highlight stops recording moments like it. The delete already happened.
-    function showFlagStep() {
-      dialogMode = 'flag';
-      const swap = () => {
-        DIALOG_TEXT.title.textContent = 'Flag as a sensitive moment?';
-        DIALOG_TEXT.text.textContent =
-          'Highlight will learn not to record moments like this in the future, ' +
-          `such as notes and calls about ${SENSITIVE_TOPICS[activeMoment.key]}.`;
-        setDialogButtons('Not now', 'Flag as sensitive');
-      };
-      settle(dialogCard.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 100, easing: 'ease-in' }), 200)
-        .then(() => {
-          swap();
-          dialogCard.animate(
-            [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }],
-            { duration: 180, easing: EASE_OUT }
-          );
-          DIALOG_TEXT.cancel.focus();
-        });
-    }
-
     // Flagged moments become an entry on the Excluded page (once per topic).
+    // Returns the new list item (or null if it was already there), so Undo can remove it.
     function addExclusion(text) {
       const ul = views.excluded.querySelector('ul.detail__body');
-      if ([...ul.children].some(li => li.textContent === text)) return;
+      if ([...ul.children].some(li => li.textContent === text)) return null;
       const li = document.createElement('li');
       li.textContent = text;
       ul.appendChild(li);
+      return li;
     }
 
-    // Toast on the memory page (e.g. after flagging).
+    // Toast, optionally with an action button (e.g. Undo).
     const toast = document.querySelector('.toast');
     let toastTimer;
-    function showToast(text) {
-      toast.textContent = text;
+    function showToast(text, action) {
+      toast.innerHTML = `<span></span>${action ? '<span aria-hidden="true">·</span><button class="toast__action" type="button"></button>' : ''}`;
+      toast.firstElementChild.textContent = text;
+      toast.classList.toggle('has-action', !!action);
+      if (action) {
+        const btn = toast.querySelector('.toast__action');
+        btn.textContent = action.label;
+        btn.addEventListener('click', () => { hideToast(); action.run(); });
+      }
       toast.hidden = false;
       toast.animate([{ opacity: 0, transform: 'translate(-50%, 6px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }],
         { duration: 200, easing: EASE_OUT });
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(async () => {
-        await settle(toast.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-in' }));
-        toast.hidden = true;
-      }, 3500);
+      toastTimer = setTimeout(hideToast, action ? 6000 : 3500);
+    }
+    async function hideToast() {
+      clearTimeout(toastTimer);
+      if (toast.hidden) return;
+      await settle(toast.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-in' }));
+      toast.hidden = true;
     }
 
-    async function deleteActiveMoment(flagged) {
+    async function deleteActiveMoment() {
       const { key, id } = activeMoment;
       await closeDialog();
       await go('memory');
@@ -2448,19 +2751,74 @@
       }
       (removedMoments[key] || (removedMoments[key] = new Set())).add(id);
       const scroller = memView.querySelector('.detail');
-      const top = scroller.scrollTop;
-      renderPageMoments(memoryByKey[key]);
-      scroller.scrollTop = top;
+      const rerender = () => {
+        const top = scroller.scrollTop;
+        renderPageMoments(memoryByKey[key]);
+        scroller.scrollTop = top;
+      };
+      rerender();
       activeMoment = null;
-      if (flagged) {
-        addExclusion(`Notes and calls about ${SENSITIVE_TOPICS[key]}`);
-        showToast('Flagged as sensitive and added to Excluded.');
+      showToast('Moment deleted · Summary updated', {
+        label: 'Undo',
+        run: () => {
+          removedMoments[key].delete(id);
+          if (current === 'memory' && activeKey === key) {
+            rerender();
+            const row = memView.querySelector(`[data-moment="${id}"]`);
+            row?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+            row?.focus({ preventScroll: false });
+          }
+          showToast('Moment restored');
+        },
+      });
+    }
+
+    const SOURCE_PLURAL = { zoom: 'Zoom meetings', meet: 'Google Meet meetings', audio: 'Audio notes', notes: 'Notes' };
+
+    async function deleteActiveSource(sensitive) {
+      const { key, id } = activeMoment;
+      const sid = activeSource;
+      const src = currentSource();
+      await closeDialog();
+      await go('moment');
+      const list = momentView.querySelector('[data-field="sources"]');
+      const li = list.querySelector(`[data-source="${sid}"]`)?.closest('li');
+      if (li) {
+        await settle(li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out', fill: 'forwards' }));
+        li.style.overflow = 'hidden';
+        await settle(li.animate([{ height: li.offsetHeight + 'px' }, { height: '0px' }], { duration: 220, easing: EASE_OUT, fill: 'forwards' }));
       }
+      const removed = removedSources[`${key}:${id}`] || (removedSources[`${key}:${id}`] = new Set());
+      removed.add(sid);
+      // Sensitive sources teach Highlight a kind of source to skip.
+      const exclusion = sensitive ? addExclusion(`${SOURCE_PLURAL[src.type]} like “${src.title}”`) : null;
+      const rerender = () => {
+        const scroller = momentView.querySelector('.detail');
+        const top = scroller.scrollTop;
+        fillMoment(key, id);
+        scroller.scrollTop = top;
+      };
+      rerender();
+      activeSource = null;
+      showToast(sensitive ? 'Source deleted · Marked sensitive' : 'Source deleted · Summary updated', {
+        label: 'Undo',
+        run: () => {
+          removed.delete(sid);
+          exclusion?.remove();
+          if (current === 'moment' && activeMoment?.key === key && activeMoment?.id === id) {
+            rerender();
+            const row = momentView.querySelector(`[data-source="${sid}"]`);
+            row?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+            row?.focus({ preventScroll: false });
+          }
+          showToast('Source restored');
+        },
+      });
     }
 
     dialog.querySelector('[data-dialog-confirm]').addEventListener('click', async () => {
-      if (dialogMode === 'moment') return showFlagStep();
-      if (dialogMode === 'flag') return deleteActiveMoment(true);
+      if (dialogMode === 'moment') return deleteActiveMoment();
+      if (dialogMode === 'source') return deleteActiveSource(sensitiveBox.checked);
       const row = rowFor();
       const m = memoryByKey[activeKey];
       // The row's own divider (Initial) or, if it's the last row in its
@@ -2507,12 +2865,16 @@
     const releaseNotes = document.querySelector('.release-notes');
     const CHANGES = {
       moment: [
-        'New page: open any moment to read its transcript or note',
-        'Add a note to a single moment, or delete just that moment',
-        'After deleting a moment, you can flag it as sensitive so Highlight stops recording moments like it; flagged topics are added to Excluded',
+        'A moment is one context on one day, with an overview and its sources (meetings, audio notes, notes)',
+        'Open any source to read its transcript or note',
+        'Delete a whole moment in one step, with Undo from the toast',
+      ],
+      source: [
+        'New page for a single source: a meeting, audio note or note, with its transcript or text',
+        'Delete a single source and mark it sensitive, so Highlight learns which kinds of sources to skip',
       ],
       memory: [
-        'Lists every moment this memory came from (meetings, notes and audio), newest first',
+        'Moments are named for what happened, with icons for the kinds of sources inside',
       ],
       list: [
         'Memories are grouped into categories: About you, How you work and Your work',
@@ -2533,7 +2895,14 @@
     // Screens that differ in the Future release: the Memory list (categories),
     // memory pages (moments) and the delete dialog. Everything else is labeled
     // unchanged.
+    // Screens with no Initial release equivalent.
+    const FUTURE_ONLY = new Set(['moment', 'source']);
+
     function updateReleaseNote() {
+      const initialLink = document.querySelector('[data-release="initial"]');
+      const futureOnly = isFuture && FUTURE_ONLY.has(current);
+      initialLink.setAttribute('aria-disabled', futureOnly);
+      initialLink.title = futureOnly ? 'This screen isn’t in the Initial release' : '';
       releaseNotes.hidden = !isFuture;
       if (!isFuture) return;
       const changes = !dialog.hidden && dialogMode === 'memory' ? CHANGES.dialog : CHANGES[current] || null;
@@ -2554,10 +2923,10 @@
         : 'Highlight Prototype — Nathalia Kasman';
       applyReleaseToDialog();
       // Moment pages don't exist in the Initial release: fall back to the memory page.
-      if (!isFuture && current === 'moment') {
+      if (!isFuture && (current === 'moment' || current === 'source')) {
         if (!dialog.hidden) { dialog.hidden = true; appRegions.forEach(el => { el.inert = false; }); }
-        views.moment.classList.remove('is-active');
-        views.moment.inert = true;
+        views[current].classList.remove('is-active');
+        views[current].inert = true;
         views.memory.classList.add('is-active');
         views.memory.inert = false;
         current = 'memory';
@@ -2585,7 +2954,7 @@
       a.addEventListener('click', e => {
         e.preventDefault();
         const future = a.dataset.release === 'future';
-        if (future === isFuture) return;
+        if (future === isFuture || a.getAttribute('aria-disabled') === 'true') return;
         history.replaceState(null, '', releaseHrefs[a.dataset.release] + location.hash);
         setRelease(future);
       });
