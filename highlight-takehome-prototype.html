@@ -1224,6 +1224,33 @@
           </form>
         </section>
 
+        <section class="view view--detail" data-view="excluded" inert>
+          <header class="page-header">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              Memory
+            </button>
+            <p class="page-updated">Last updated: 1h</p>
+          </header>
+
+          <article class="detail">
+            <h1 class="detail__title" tabindex="-1">Excluded</h1>
+            <ul class="detail__body">
+              <li>Personal banking and finances</li>
+              <li>Private and incognito browser windows</li>
+              <li>Messages with family</li>
+              <li>Password managers and sign-in screens</li>
+            </ul>
+          </article>
+
+          <form class="prompt" autocomplete="off" data-prompt="add">
+            <input class="prompt__input" type="text" placeholder="Add things Highlight should never record..." aria-label="Add things Highlight should never record" />
+            <button class="prompt__send" type="submit" aria-label="Send">
+              <img src="/assets/highlight/send.svg" width="36" height="36" alt="" />
+            </button>
+          </form>
+        </section>
+
         <section class="view view--detail" data-view="memory" inert>
           <header class="page-header page-header--actions">
             <button class="page-back" type="button" data-back>
@@ -1321,6 +1348,7 @@
     const memories = [
       { key: 'summary', view: 'summary', title: 'Summary', desc: 'An overview of what Highlight knows about you.' },
       { key: 'always-remember', view: 'always-remember', title: 'Always remember', desc: '4 rules and 6 items that never expire, like “Write in short paragraphs” and “Checkout beta is Nov 14”.' },
+      { key: 'excluded', view: 'excluded', title: 'Excluded', desc: 'Things Highlight never records, like personal banking and private browser windows.' },
       { key: 'profile', title: 'Profile', desc: 'Senior product manager at Fernwood · 7 years in product · background in analytics.',
         summary: 'You’re a senior product manager at Fernwood, a grocery delivery app, with seven years in product. You came up through analytics, so you’re comfortable in the data and tend to back decisions with numbers. You work most closely with design and engineering.' },
       { key: 'how-you-work', title: 'How you work', desc: 'Prefers written updates over meetings, plans the week on Monday mornings, writes detailed specs before kickoff.',
@@ -1484,7 +1512,10 @@
         header: v.querySelector('.page-header'),
         title: v.querySelector('.detail__title'),
         body: v.querySelector('.detail__body'),
-        notes: v.querySelector('.note-area'),
+        // Moment pages keep their note inside the "type · date" line, so that
+        // whole line animates as one piece, right after the title.
+        meta: v.querySelector('.moment-meta'),
+        notes: v.querySelector('.moment-meta') ? null : v.querySelector('.note-area'),
         moments: v.querySelector('.page-moments:not([hidden])'),
         prompt: v.querySelector('.prompt'),
       };
@@ -1610,7 +1641,7 @@
           if (DEPTH[to] > DEPTH[from]) {
             const d = partsOf(to);
             const parts = [
-              [d.header, 120], [d.title, 170], [d.body, 220],
+              [d.header, 120], [d.title, 170], [d.meta, 195], [d.body, 220],
               [d.notes, 245], [d.moments, 260], [d.prompt, 270],
             ].filter(([el]) => el);
             return Promise.all([
@@ -1675,7 +1706,7 @@
     };
 
     // How deep each view sits: deeper views "open", shallower ones "go back".
-    const DEPTH = { list: 0, summary: 1, 'always-remember': 1, memory: 1, moment: 2 };
+    const DEPTH = { list: 0, summary: 1, 'always-remember': 1, excluded: 1, memory: 1, moment: 2 };
     const parentOf = view => (view === 'moment' ? 'memory' : 'list');
 
     const reduced = {
@@ -2380,6 +2411,15 @@
         });
     }
 
+    // Flagged moments become an entry on the Excluded page (once per topic).
+    function addExclusion(text) {
+      const ul = views.excluded.querySelector('ul.detail__body');
+      if ([...ul.children].some(li => li.textContent === text)) return;
+      const li = document.createElement('li');
+      li.textContent = text;
+      ul.appendChild(li);
+    }
+
     // Toast on the memory page (e.g. after flagging).
     const toast = document.querySelector('.toast');
     let toastTimer;
@@ -2412,7 +2452,10 @@
       renderPageMoments(memoryByKey[key]);
       scroller.scrollTop = top;
       activeMoment = null;
-      if (flagged) showToast('Flagged as sensitive. Highlight won’t record moments like this.');
+      if (flagged) {
+        addExclusion(`Notes and calls about ${SENSITIVE_TOPICS[key]}`);
+        showToast('Flagged as sensitive and added to Excluded.');
+      }
     }
 
     dialog.querySelector('[data-dialog-confirm]').addEventListener('click', async () => {
@@ -2466,7 +2509,7 @@
       moment: [
         'New page: open any moment to read its transcript or note',
         'Add a note to a single moment, or delete just that moment',
-        'After deleting a moment, you can flag it as sensitive so Highlight stops recording moments like it',
+        'After deleting a moment, you can flag it as sensitive so Highlight stops recording moments like it; flagged topics are added to Excluded',
       ],
       memory: [
         'Lists every moment this memory came from (meetings, notes and audio), newest first',
