@@ -27,6 +27,8 @@
       --screen-w: 1105;
       --screen-h: 801;
       --gutter: 48px;
+      /* Room above the window for the release switcher and the "Remains unchanged" label. */
+      --gutter-top: 100px;
 
       /* Highlight app tokens (from Figma) */
       --hl-window: #F7F7F3;
@@ -41,6 +43,8 @@
       --hl-heading: #2C2C25;
       --hl-muted: #676561;
       --hl-row-hover: #F5F2EB;
+      --hl-btn-hover: #FFF4C2; /* pastel yellow; #2C2C25 text on it is 12.7:1 (AAA) */
+      --hl-btn-hover-border: #EEDF9E;
 
       --hl-font-display: "Hepta Slab", Georgia, serif;
       --hl-font-ui: "DM Sans", system-ui, sans-serif;
@@ -60,7 +64,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: var(--gutter);
+      padding: var(--gutter-top) var(--gutter) var(--gutter);
     }
 
     .back {
@@ -76,10 +80,57 @@
     }
     .back:hover { opacity: 1; }
 
+    /* ---------- Release switcher (Initial / Future) ---------- */
+    .release {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 2px;
+      padding: 3px;
+      border-radius: 10px;
+      background: rgba(65, 61, 56, .07);
+      z-index: 10;
+    }
+    .release a {
+      padding: 6px 12px;
+      border-radius: 7px;
+      font: 500 13px var(--font-body);
+      color: var(--ink);
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background-color .15s ease, box-shadow .15s ease;
+    }
+    .release a[aria-current="page"] {
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(65, 61, 56, .12);
+    }
+
+    /* "Remains unchanged" label, just above the prototype window, on Future
+       release screens that match Initial. */
+    .release-note {
+      position: absolute;
+      bottom: calc(100% + 12px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      margin: 0;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #FFF4C2;
+      border: 1px solid #EEDF9E;
+      font: 500 12px/16px var(--font-body);
+      color: #2C2C25;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .release-note[hidden] { display: none; }
+
     /* ---------- Sandbox controls (only with ?sandbox) ---------- */
     .sandbox {
       position: fixed;
-      top: 14px;
+      bottom: 14px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -123,7 +174,7 @@
       width: min(
         calc(var(--screen-w) * 1px),
         calc(100vw - var(--gutter) * 2),
-        calc((100vh - var(--gutter) * 2) * var(--screen-w) / var(--screen-h))
+        calc((100vh - var(--gutter-top) - var(--gutter)) * var(--screen-w) / var(--screen-h))
       );
       aspect-ratio: var(--screen-w) / var(--screen-h);
       border-radius: 16px;
@@ -281,11 +332,15 @@
     }
 
     /* ---------- Summary page ---------- */
+    /* Page header sits 40px in from both side edges of the panel. */
     .page-header {
       position: absolute;
       top: 35px;
       left: 40px;
-      right: 0;
+      right: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .page-back {
       display: flex;
@@ -310,9 +365,6 @@
     }
     .page-back:hover .page-back__arrow { transform: translateX(-2px); }
     .page-updated {
-      position: absolute;
-      top: 0;
-      left: 664px; /* 704px in the frame, minus the header's 40px inset */
       margin: 0;
       font-family: var(--hl-font-body);
       font-size: 14px;
@@ -322,7 +374,422 @@
       white-space: nowrap;
     }
 
-    .summary {
+    /* Header variant with a Delete button: row aligns to the button,
+       which sits at 32px from the top as in Figma. */
+    .page-header--actions { top: 32px; }
+    .page-actions {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /* Outlined and filled small buttons (Delete, Cancel, Save) */
+    .hl-btn {
+      padding: 8px 16px;
+      border: 1px solid #DEDEDE;
+      border-radius: 8px;
+      background: transparent;
+      font-family: var(--hl-font-body);
+      font-size: 14px;
+      line-height: normal;
+      color: var(--hl-heading);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .12s ease;
+    }
+    .hl-btn:hover { background: var(--hl-btn-hover); border-color: var(--hl-btn-hover-border); }
+    .hl-btn:active { transform: scale(.97); }
+    /* Cancel buttons hover grey (same as chip hover) instead of yellow. */
+    .hl-btn--cancel:hover { background: #F3F3EB; border-color: #D3D1C8; }
+    .hl-btn:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .hl-btn--primary {
+      background: var(--hl-heading);
+      border-color: var(--hl-heading);
+      color: var(--hl-panel);
+    }
+    .hl-btn--primary:hover { background: #3E3E35; border-color: #3E3E35; }
+    .hl-btn--primary:disabled { opacity: .3; cursor: default; transform: none; }
+    /* Yellow accent (Save, confirm Delete). Ink text on #F7D154 is 9.5:1, on the hover #F2C53A 8.6:1 (both AAA). */
+    .hl-btn--accent {
+      background: #F7D154;
+      border-color: #F7D154;
+      color: var(--hl-heading);
+    }
+    .hl-btn--accent:hover { background: #F2C53A; border-color: #F2C53A; }
+    .hl-btn--quiet { border-color: transparent; color: var(--hl-muted); padding-left: 0; padding-right: 0; }
+    .hl-btn--quiet:hover { background: none; border-color: transparent; color: var(--hl-heading); }
+
+    /* ---------- Notes on a memory ---------- */
+    .note-add {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border: 0;
+      border-radius: 38px;
+      background: transparent;
+      font-family: var(--hl-font-body);
+      font-size: 14px;
+      line-height: normal;
+      color: var(--hl-heading);
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .note-add:hover { background: var(--hl-btn-hover); }
+    .note-add img { display: block; }
+    .note-add:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+
+    .note-card,
+    .note-editor {
+      width: 100%;
+      padding: 16px;
+      background: #FCFCFC;
+      border: 1px solid #DEDEDE;
+      border-radius: 16px;
+    }
+    .note-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-family: var(--hl-font-body);
+      font-size: 14px;
+      line-height: 26px;
+      color: var(--hl-heading);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .15s ease;
+    }
+    .note-card:hover { border-color: #CFCDC4; }
+    .note-card:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .note-card img { display: block; flex-shrink: 0; margin-top: 3px; }
+    .note-card span { overflow-wrap: anywhere; }
+
+    .note-editor { display: flex; flex-direction: column; gap: 12px; }
+    .note-editor:focus-within { border-color: #CFCDC4; }
+    .note-editor__field {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .note-editor__field img { display: block; flex-shrink: 0; margin-top: 3px; }
+    .note-editor textarea {
+      flex: 1;
+      min-height: 26px;
+      padding: 0;
+      border: 0;
+      outline: none;
+      resize: none;
+      background: transparent;
+      font-family: var(--hl-font-body);
+      font-size: 14px;
+      line-height: 26px;
+      color: var(--hl-heading);
+      caret-color: var(--hl-heading);
+      field-sizing: content;
+    }
+    .note-editor textarea::placeholder { color: #B6B6B3; opacity: 1; }
+    .note-editor__actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .note-editor__actions .hl-btn--quiet { margin-right: auto; }
+
+    /* ---------- Delete confirmation ---------- */
+    .dialog {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      background: rgba(44, 44, 37, .18);
+    }
+    .dialog[hidden] { display: none; }
+    .dialog__card {
+      width: 480px;
+      padding: 24px;
+      background: var(--hl-panel);
+      border: 1px solid #F3F3EB;
+      border-radius: 16px;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, .06), 0 16px 40px rgba(44, 44, 37, .12);
+      font-family: var(--hl-font-body);
+      color: var(--hl-heading);
+    }
+    .dialog__title {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.32px;
+    }
+    .dialog__text {
+      margin: 0 0 16px;
+      font-size: 14px;
+      line-height: 22px;
+      color: var(--hl-muted);
+    }
+
+    /* "Show moments" disclosure */
+    .moments-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 4px -8px;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      font: 500 14px/normal var(--hl-font-body);
+      color: var(--hl-heading);
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .moments-toggle:hover { background: var(--hl-btn-hover); }
+    .moments-toggle:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .moments-toggle img { display: block; transition: transform .2s cubic-bezier(.2, 0, 0, 1); }
+    .moments-toggle[aria-expanded="true"] img { transform: rotate(90deg); }
+
+    .moments {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows .24s cubic-bezier(.2, 0, 0, 1);
+    }
+    .moments.is-open { grid-template-rows: 1fr; }
+    .moments__clip { min-height: 0; overflow: hidden; }
+    .moments__scroll {
+      max-height: 260px;
+      overflow-y: auto;
+      margin-top: 8px;
+      padding-right: 8px;
+      border-top: 1px solid #EBEBE0;
+      border-bottom: 1px solid #EBEBE0;
+    }
+    .moments__group { padding: 12px 0 4px; }
+    .moments__heading {
+      margin: 0 0 4px;
+      padding: 0 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: var(--hl-muted);
+    }
+    .moments__list { list-style: none; margin: 0; padding: 0; }
+    .moment {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 20px;
+      transition: background-color .15s ease;
+    }
+    .moment:hover,
+    .moment:focus-within { background: var(--hl-row-hover); }
+    .moment__icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+    }
+    .moment__icon img { display: block; }
+    .moment__icon .is-logo { width: 16px; height: 16px; object-fit: cover; }
+    .moment__icon .is-round { border-radius: 50%; }
+    .moment__main { flex: 1; min-width: 0; }
+    .moment__title { display: block; }
+    .moment__also { display: block; font-size: 13px; color: var(--hl-muted); }
+    /* Date and the Keep/Delete button share a slot; the button takes
+       over on hover or keyboard focus. */
+    .moment__end {
+      flex-shrink: 0;
+      display: grid;
+      justify-items: end;
+    }
+    .moment__end > * { grid-area: 1 / 1; }
+    /* Once faded, the date gets its own layer and would sit over the
+       button, so it never takes the pointer and the button stays on top. */
+    .moment__date {
+      font-size: 13px;
+      color: #6D6D62;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .moment__move {
+      position: relative;
+      z-index: 1;
+      margin: -3px 0;
+      padding: 2px 10px;
+      border: 1px solid #DEDEDE;
+      border-radius: 6px;
+      background: var(--hl-panel);
+      font: 13px/normal var(--hl-font-body);
+      color: var(--hl-heading);
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .12s ease, background-color .15s ease, border-color .15s ease;
+    }
+    .moment__move:hover { background: var(--hl-btn-hover); border-color: var(--hl-btn-hover-border); }
+    .moment__move:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .moment:hover .moment__move,
+    .moment:focus-within .moment__move { opacity: 1; }
+    .moment:hover .moment__date,
+    .moment:focus-within .moment__date { opacity: 0; }
+    .dialog__actions { margin-top: 24px; }
+
+    /* ---------- Future release: bigger dialog with search, chips, groups ---------- */
+    .dialog--future .dialog__card { width: 680px; }
+    .dialog--future .moments-toggle,
+    .dialog--future .moments { display: none; }
+    .review[hidden] { display: none; }
+    .review__search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 1px solid #DEDEDE;
+      border-radius: 8px;
+      background: var(--hl-panel);
+      transition: border-color .15s ease;
+    }
+    .review__search:focus-within { border-color: #B6B6B3; }
+    .review__search svg { flex-shrink: 0; }
+    .review__search input {
+      flex: 1;
+      min-width: 0;
+      padding: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      font: 14px/20px var(--hl-font-body);
+      color: var(--hl-heading);
+      caret-color: var(--hl-heading);
+    }
+    .review__search input::placeholder { color: #8A8985; }
+    .review__search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+    .review__clear {
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .review__clear[hidden] { display: none; }
+    .review__clear:hover { background: #F3F3EB; }
+    .review__clear:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .review__chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0 0;
+    }
+    .chip {
+      padding: 4px 12px;
+      border: 1px solid #DEDEDE;
+      border-radius: 999px;
+      background: transparent;
+      font: 13px/18px var(--hl-font-body);
+      color: var(--hl-heading);
+      cursor: pointer;
+      transition: background-color .15s ease, border-color .15s ease;
+    }
+    .chip:hover { background: #F3F3EB; }
+    /* Selected: the Save yellow; ink text on it is 9.5:1 (AAA). */
+    .chip[aria-pressed="true"] { background: #F7D154; border-color: #F7D154; }
+    .chip:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .chip__count { opacity: .7; margin-left: 4px; }
+
+    .review__list {
+      height: 340px;
+      overflow-y: auto;
+      margin-top: 12px;
+      padding-right: 8px;
+      border-top: 1px solid #EBEBE0;
+      border-bottom: 1px solid #EBEBE0;
+    }
+    .rgroup { border-bottom: 1px solid #F3F3EB; }
+    .rgroup:last-child { border-bottom: 0; }
+    .rgroup__head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      background: var(--hl-panel);
+    }
+    .rgroup__toggle {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      font: 600 14px/20px var(--hl-font-body);
+      color: var(--hl-heading);
+      text-align: left;
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .rgroup__toggle:hover { background: var(--hl-row-hover); }
+    .rgroup__toggle:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .rgroup__toggle img { display: block; transition: transform .2s cubic-bezier(.2, 0, 0, 1); }
+    .rgroup__toggle[aria-expanded="true"] img { transform: rotate(90deg); }
+    .rgroup__meta { font-weight: 400; color: var(--hl-muted); }
+    .rgroup__bulk {
+      padding: 4px 10px;
+      border: 1px solid #DEDEDE;
+      border-radius: 6px;
+      background: transparent;
+      font: 13px/normal var(--hl-font-body);
+      color: var(--hl-heading);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color .15s ease, border-color .15s ease;
+    }
+    .rgroup__bulk:hover { background: var(--hl-btn-hover); border-color: var(--hl-btn-hover-border); }
+    .rgroup__bulk:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .rgroup__bulk:disabled { opacity: .35; cursor: default; background: transparent; border-color: #DEDEDE; }
+    .rgroup .moments__list { padding-bottom: 8px; }
+    .rgroup__sub { padding-top: 8px; }
+    .rgroup__head--static { padding: 8px 0 8px 8px; }
+    .rgroup__title {
+      flex: 1;
+      margin: 0;
+      font: 600 14px/20px var(--hl-font-body);
+      color: var(--hl-heading);
+    }
+    .review__empty {
+      margin: 0;
+      padding: 32px 16px;
+      text-align: center;
+      font-size: 14px;
+      color: var(--hl-muted);
+    }
+    .dialog__totals {
+      margin: 0 auto 0 0;
+      font-size: 13px;
+      color: var(--hl-muted);
+    }
+    .dialog__totals strong { font-weight: 600; color: var(--hl-heading); }
+    .dialog--future .dialog__actions { align-items: center; margin-top: 16px; }
+    .dialog__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* Memory detail pages (Summary, Always remember, ...) */
+    .detail {
       position: absolute;
       top: 98px;
       left: 88px;
@@ -333,7 +800,7 @@
       color: var(--hl-heading);
       overflow-wrap: break-word;
     }
-    .summary__title {
+    .detail__title {
       margin: 0;
       font-family: var(--hl-font-display);
       font-weight: 500;
@@ -341,13 +808,16 @@
       line-height: normal;
       transform-origin: 0 0;
     }
-    .summary__title:focus { outline: none; }
-    .summary__body {
+    .detail__title:focus { outline: none; }
+    .detail__body {
       margin: 0;
+      padding: 0;
       font-family: var(--hl-font-body);
       font-size: 16px;
       line-height: 26px;
     }
+    ul.detail__body { list-style: disc; }
+    ul.detail__body li { margin-left: 24px; }
 
     /* Prompt box. States:
        rest     send button dimmed
@@ -466,6 +936,11 @@
 <body>
   <a class="back" href="/highlight-takehome">← Back</a>
 
+  <nav class="release" aria-label="Prototype version">
+    <a data-release="initial">Initial release</a>
+    <a data-release="future">Future release</a>
+  </nav>
+
   <div class="sandbox" hidden>
     <span class="sandbox__label">Transition</span>
     <div class="sandbox__options" role="group" aria-label="Transition variant"></div>
@@ -473,6 +948,7 @@
   </div>
 
   <div class="stage" aria-label="Prototype">
+    <p class="release-note" role="status" hidden>Remains unchanged</p>
     <div class="app">
       <nav class="nav" aria-label="Settings">
         <img class="nav__window-controls" src="/assets/highlight/window-controls.svg" width="58" height="14" alt="" />
@@ -534,7 +1010,7 @@
           </div>
         </section>
 
-        <section class="view view--summary" data-view="summary" inert>
+        <section class="view view--detail" data-view="summary" inert>
           <header class="page-header">
             <button class="page-back" type="button" data-back>
               <span class="page-back__arrow" aria-hidden="true">←</span>
@@ -543,12 +1019,64 @@
             <p class="page-updated">Last updated: 1h</p>
           </header>
 
-          <article class="summary">
-            <h1 class="summary__title" tabindex="-1">Summary</h1>
-            <p class="summary__body">You’re a senior product manager at Fernwood, a grocery delivery app, with seven years in product and a background in analytics. You enjoy turning messy customer data into clear decisions, and you work most closely with design and engineering. Right now you’re leading the checkout redesign and the Q1 loyalty pilot, with cart abandonment as your main success metric. You prefer written updates to meetings, plan your week on Monday mornings, and write detailed specs before kickoff. Outside of core projects, you’re interested in experimentation and pricing strategy, and you’ve been building your SQL skills so you can answer more of your own data questions. You work best in small teams with clear owners, and you tend to push for scoped, shippable first versions over big launches.</p>
+          <article class="detail">
+            <h1 class="detail__title" tabindex="-1">Summary</h1>
+            <p class="detail__body">You’re a senior product manager at Fernwood, a grocery delivery app, with seven years in product and a background in analytics. You enjoy turning messy customer data into clear decisions, and you work most closely with design and engineering. Right now you’re leading the checkout redesign and the Q1 loyalty pilot, with cart abandonment as your main success metric. You prefer written updates to meetings, plan your week on Monday mornings, and write detailed specs before kickoff. Outside of core projects, you’re interested in experimentation and pricing strategy, and you’ve been building your SQL skills so you can answer more of your own data questions. You work best in small teams with clear owners, and you tend to push for scoped, shippable first versions over big launches.</p>
           </article>
 
-          <form class="prompt" autocomplete="off">
+          <form class="prompt" autocomplete="off" data-prompt="rewrite">
+            <input class="prompt__input" type="text" placeholder="Rewrite your context with a prompt..." aria-label="Rewrite your context with a prompt" />
+            <button class="prompt__send" type="submit" aria-label="Send">
+              <img src="/assets/highlight/send.svg" width="36" height="36" alt="" />
+            </button>
+          </form>
+        </section>
+
+        <section class="view view--detail" data-view="always-remember" inert>
+          <header class="page-header">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              Memory
+            </button>
+            <p class="page-updated">Last updated: 1h</p>
+          </header>
+
+          <article class="detail">
+            <h1 class="detail__title" tabindex="-1">Always remember</h1>
+            <ul class="detail__body">
+              <li>Use “Fernwood” instead of “FW” in external emails</li>
+              <li>Write in short paragraphs, and use bullets for updates</li>
+              <li>Present decisions in Recap first</li>
+            </ul>
+          </article>
+
+          <form class="prompt" autocomplete="off" data-prompt="add">
+            <input class="prompt__input" type="text" placeholder="Add items for Highlight to remember across sessions..." aria-label="Add items for Highlight to remember across sessions" />
+            <button class="prompt__send" type="submit" aria-label="Send">
+              <img src="/assets/highlight/send.svg" width="36" height="36" alt="" />
+            </button>
+          </form>
+        </section>
+
+        <section class="view view--detail" data-view="memory" inert>
+          <header class="page-header page-header--actions">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              Memory
+            </button>
+            <div class="page-actions">
+              <p class="page-updated">Last updated: 1h</p>
+              <button class="hl-btn" type="button" data-delete>Delete</button>
+            </div>
+          </header>
+
+          <article class="detail">
+            <h1 class="detail__title" tabindex="-1" data-field="title"></h1>
+            <p class="detail__body" data-field="summary"></p>
+            <div class="note-area"></div>
+          </article>
+
+          <form class="prompt" autocomplete="off" data-prompt="rewrite">
             <input class="prompt__input" type="text" placeholder="Rewrite your context with a prompt..." aria-label="Rewrite your context with a prompt" />
             <button class="prompt__send" type="submit" aria-label="Send">
               <img src="/assets/highlight/send.svg" width="36" height="36" alt="" />
@@ -556,27 +1084,114 @@
           </form>
         </section>
       </div>
+
+      <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteText" hidden>
+        <div class="dialog__card">
+          <h2 class="dialog__title" id="deleteTitle"></h2>
+          <p class="dialog__text" id="deleteText"></p>
+          <button class="moments-toggle" type="button" aria-expanded="false" aria-controls="momentsPanel">
+            <img src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
+            <span>Show moments</span>
+          </button>
+          <div class="moments" id="momentsPanel">
+            <div class="moments__clip">
+              <div class="moments__scroll" tabindex="-1"></div>
+            </div>
+          </div>
+          <div class="review" hidden>
+            <label class="review__search">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.75" stroke="#676561" stroke-width="1.5"/><path d="M10.5 10.5L13.5 13.5" stroke="#676561" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <input type="search" placeholder="Search moments" aria-label="Search moments" />
+              <button class="review__clear" type="button" aria-label="Clear search" hidden>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="#676561" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </label>
+            <div class="review__chips" role="group" aria-label="Filter by source"></div>
+            <div class="review__list" tabindex="-1"></div>
+          </div>
+          <div class="dialog__actions">
+            <p class="dialog__totals" aria-live="polite" hidden></p>
+            <button class="hl-btn hl-btn--cancel" type="button" data-dialog-cancel>Cancel</button>
+            <button class="hl-btn hl-btn--primary hl-btn--accent" type="button" data-dialog-confirm>Delete and forget</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    // Memory categories shown on the settings page. Rows with a `view`
-    // open that page; the rest aren't built yet.
+    // Memory categories shown on the settings page. Summary and Always
+    // remember have their own pages; the rest share the "memory" page,
+    // filled from `summary` (and the user's `note`, if any).
     const memories = [
-      { title: 'Summary', desc: 'An overview of what Highlight knows about you.', view: 'summary' },
-      { title: 'Always remember', desc: '4 rules and 6 items that never expire, like “Write in short paragraphs” and “Checkout beta is Nov 14”.' },
-      { title: 'Profile', desc: 'Senior product manager at Fernwood · 7 years in product · background in analytics.' },
-      { title: 'How you work', desc: 'Prefers written updates over meetings, plans the week on Monday mornings, writes detailed specs before kickoff.' },
-      { title: 'Writing', desc: 'Direct and concise , uses bullet points in updates, more casual with the design team.' },
-      { title: 'Active projects', desc: '3 projects. Checkout redesign, Q1 loyalty pilot, vendor onboarding' },
-      { title: 'People you work with', desc: 'Regular collaborators: Mike DeWolf, Alex Caltieri, Eric Chiang' },
-      { title: 'Learning', desc: 'Building SQL skills, interested in experimentation and pricing strategy.' },
+      { key: 'summary', view: 'summary', title: 'Summary', desc: 'An overview of what Highlight knows about you.' },
+      { key: 'always-remember', view: 'always-remember', title: 'Always remember', desc: '4 rules and 6 items that never expire, like “Write in short paragraphs” and “Checkout beta is Nov 14”.' },
+      { key: 'profile', title: 'Profile', desc: 'Senior product manager at Fernwood · 7 years in product · background in analytics.',
+        summary: 'You’re a senior product manager at Fernwood, a grocery delivery app, with seven years in product. You came up through analytics, so you’re comfortable in the data and tend to back decisions with numbers. You work most closely with design and engineering.' },
+      { key: 'how-you-work', title: 'How you work', desc: 'Prefers written updates over meetings, plans the week on Monday mornings, writes detailed specs before kickoff.',
+        summary: 'You prefer written updates to meetings and plan your week on Monday mornings. Before kickoff you write detailed specs, and you work best in small teams with clear owners. You lean toward scoped, shippable first versions over big launches.' },
+      { key: 'writing', title: 'Writing', desc: 'Direct and concise , uses bullet points in updates, more casual with the design team.',
+        summary: 'Your writing is direct and concise. You use bullet points in updates and keep paragraphs short. You’re more casual with the design team, and in external emails you write out “Fernwood” rather than “FW”.' },
+      { key: 'active-projects', title: 'Active projects', desc: '3 projects. Checkout redesign, Q1 loyalty pilot, vendor onboarding',
+        summary: 'You’re running three projects: the checkout redesign, the Q1 loyalty pilot and vendor onboarding. Cart abandonment is the main success metric for the checkout work, and its beta is scheduled for Nov 14.' },
+      { key: 'people', title: 'People you work with', desc: 'Regular collaborators: Mike DeWolf, Alex Caltieri, Eric Chiang',
+        summary: 'You work most often with Mike DeWolf, Alex Caltieri and Eric Chiang. Most of your day-to-day collaboration is with design and engineering, usually in writing rather than meetings.' },
+      { key: 'health-data', title: 'Health data', desc: 'Physical therapy for a knee injury on Thursday mornings, so you avoid booking meetings before 10am that day.',
+        summary: 'You have physical therapy for a knee injury on Thursday mornings. You keep those mornings clear until 10am, so Highlight avoids suggesting earlier meeting times that day.' },
+      { key: 'learning', title: 'Learning', desc: 'Building SQL skills, interested in experimentation and pricing strategy.',
+        summary: 'You’re building your SQL skills so you can answer more of your own data questions. You’re also interested in experimentation and pricing strategy.' },
     ];
+    const memoryByKey = Object.fromEntries(memories.map(m => [m.key, m]));
+
+    // Two versions of the prototype share this page. "future" swaps in the
+    // bigger delete review (search, source filters, groups) and larger data.
+    let isFuture = new URLSearchParams(location.search).get('release') === 'future'
+      || /\/future\/?$/.test(location.pathname);
+
+    // Moments behind each memory, for the delete dialog. `kept` moments also
+    // support another memory, so deleting this one leaves them in place.
+    // `pool` [source, title] pairs fill out the deleted list (recurring meetings repeat).
+    const moments = {
+      profile: { deleted: 38, kept: [
+        ['zoom', 'Checkout redesign sync', 'Oct 12', 'Active projects'],
+        ['notes', 'Q1 loyalty pilot brief', 'Oct 9', 'Active projects'],
+        ['meet', '1:1 with Mike DeWolf', 'Oct 8', 'People you work with'],
+        ['audio', 'Weekly planning', 'Oct 6', 'How you work'],
+      ], pool: [['meet', 'Intro to the new analytics lead'], ['notes', 'Quarterly goals doc'], ['notes', 'Team offsite agenda'], ['audio', 'Performance review prep'], ['notes', 'Org chart update'], ['zoom', 'Product review'], ['meet', 'Hiring loop debrief'], ['audio', 'Career growth thoughts']] },
+      'how-you-work': { deleted: 24, kept: [
+        ['notes', 'Monday plan: week of Oct 13', 'Oct 13', 'Active projects'],
+        ['meet', 'Spec review: vendor onboarding', 'Oct 10', 'Active projects'],
+        ['audio', 'Thoughts on standups', 'Oct 3', 'Writing'],
+      ], pool: [['notes', 'Monday planning'], ['notes', 'Async update thread'], ['notes', 'Spec draft'], ['audio', 'Weekly reflection'], ['zoom', 'Kickoff: vendor onboarding'], ['notes', 'Kickoff checklist']] },
+      writing: { deleted: 31, kept: [
+        ['notes', 'Checkout beta update', 'Oct 11', 'Active projects'],
+        ['notes', 'Email draft to vendor partners', 'Oct 7', 'People you work with'],
+      ], pool: [['notes', 'Weekly update draft'], ['notes', 'Design team Slack thread'], ['notes', 'Release notes edit'], ['audio', 'Exec summary dictation'], ['notes', 'Email to partners'], ['meet', 'Retro: checkout beta']] },
+      'active-projects': { deleted: 52, kept: [
+        ['zoom', 'Checkout redesign sync', 'Oct 12', 'Profile'],
+        ['meet', 'Loyalty pilot kickoff', 'Oct 10', 'People you work with'],
+        ['notes', 'Cart abandonment dashboard', 'Oct 9', 'Learning'],
+        ['notes', 'Vendor onboarding spec', 'Oct 8', 'How you work'],
+        ['audio', 'Pricing test idea', 'Oct 4', 'Learning'],
+      ], pool: [['zoom', 'Checkout redesign sync'], ['meet', 'Loyalty pilot standup'], ['zoom', 'Vendor onboarding review'], ['notes', 'Checkout beta bug triage'], ['meet', 'Pilot metrics review'], ['notes', 'Roadmap notes'], ['audio', 'Design review takeaways']] },
+      people: { deleted: 19, kept: [
+        ['meet', '1:1 with Mike DeWolf', 'Oct 8', 'Profile'],
+        ['zoom', 'Design crit with Alex Caltieri', 'Oct 7', 'Active projects'],
+        ['notes', 'Eng sync with Eric Chiang', 'Oct 5', 'Active projects'],
+      ], pool: [['meet', '1:1 with Mike DeWolf'], ['zoom', 'Design crit'], ['meet', 'Eng sync'], ['notes', 'Team lunch planning'], ['notes', 'Intro thread']] },
+      'health-data': { deleted: 6, kept: [
+        ['notes', 'Calendar: PT on Thursday 8:30am', 'Oct 9', 'How you work'],
+      ], pool: [['notes', 'PT appointment reminder'], ['notes', 'Calendar hold: physical therapy'], ['audio', 'Knee exercises reminder']] },
+      learning: { deleted: 14, kept: [
+        ['notes', 'SQL practice: cohort retention', 'Oct 11', 'Active projects'],
+        ['audio', 'Pricing strategy podcast notes', 'Oct 2', 'Active projects'],
+      ], pool: [['notes', 'SQL practice'], ['notes', 'Experimentation reading notes'], ['audio', 'Pricing course notes'], ['meet', 'Query help with analytics']] },
+    };
 
     const list = document.getElementById('memoryList');
     list.innerHTML = memories.map(m => `
       <li>
-        <button class="memory" type="button"${m.view ? ` data-open="${m.view}"` : ''}>
+        <button class="memory" type="button" data-open="${m.view || 'memory'}" data-key="${m.key}">
           <span class="memory__text">
             <span class="memory__title">${m.title}</span>
             <span class="memory__desc">${m.desc}</span>
@@ -599,36 +1214,54 @@
     new ResizeObserver(fit).observe(stage);
     fit();
 
-    // ---------- Prompt box ----------
-    const prompt = document.querySelector('.prompt');
-    const promptInput = prompt.querySelector('.prompt__input');
-    prompt.addEventListener('pointerdown', e => {
-      if (e.target === prompt) { e.preventDefault(); promptInput.focus(); }
-    });
-    promptInput.addEventListener('input', () => {
-      prompt.classList.toggle('is-filled', promptInput.value.trim() !== '');
-    });
-    prompt.addEventListener('submit', e => {
-      e.preventDefault();
-      if (!promptInput.value.trim()) { promptInput.focus(); return; }
-      promptInput.value = '';
-      prompt.classList.remove('is-filled');
+    // ---------- Prompt boxes ----------
+    // "rewrite" just clears; "add" appends the text as a new list item.
+    document.querySelectorAll('.prompt').forEach(form => {
+      const input = form.querySelector('.prompt__input');
+      form.addEventListener('pointerdown', e => {
+        if (e.target === form) { e.preventDefault(); input.focus(); }
+      });
+      input.addEventListener('input', () => {
+        form.classList.toggle('is-filled', input.value.trim() !== '');
+      });
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) { input.focus(); return; }
+        if (form.dataset.prompt === 'add') {
+          const li = document.createElement('li');
+          li.textContent = text;
+          form.closest('.view').querySelector('ul.detail__body').appendChild(li);
+          li.animate([
+            { opacity: 0, transform: 'translateY(4px)' },
+            { opacity: 1, transform: 'none' },
+          ], { duration: 240, easing: 'cubic-bezier(.2, 0, 0, 1)' });
+        }
+        input.value = '';
+        form.classList.remove('is-filled');
+      });
     });
 
     // ---------- Navigation + transitions ----------
     const wrap = document.querySelector('.panel-wrap');
-    const views = {
-      list: wrap.querySelector('[data-view="list"]'),
-      summary: wrap.querySelector('[data-view="summary"]'),
-    };
-    const sum = {
-      header: views.summary.querySelector('.page-header'),
-      title: views.summary.querySelector('.summary__title'),
-      body: views.summary.querySelector('.summary__body'),
-      prompt,
-    };
-    const summaryRow = list.querySelector('[data-open="summary"]');
-    const rowTitle = summaryRow.querySelector('.memory__title');
+    const views = Object.fromEntries(
+      [...wrap.querySelectorAll('[data-view]')].map(v => [v.dataset.view, v])
+    );
+
+    // The pieces of a detail page, and the list row that opens it.
+    function partsOf(name) {
+      const v = views[name];
+      return {
+        header: v.querySelector('.page-header'),
+        title: v.querySelector('.detail__title'),
+        body: v.querySelector('.detail__body'),
+        notes: v.querySelector('.note-area'),
+        prompt: v.querySelector('.prompt'),
+      };
+    }
+    // Row for the memory that's open (or was last open).
+    let activeKey = null;
+    const rowFor = () => list.querySelector(`[data-key="${activeKey}"]`);
 
     const EASE_OUT = 'cubic-bezier(.2, 0, 0, 1)';
     const EASE_IN = 'cubic-bezier(.4, 0, 1, 1)';
@@ -672,14 +1305,17 @@
     }
 
     // Each variant gets (from, to) view names and returns a promise.
+    // One side is always 'list'; the other is the detail page.
     const variants = {
       // Row title morphs into the page heading; everything else hands off around it.
       morph: {
         label: 'Morph title',
         async run(from, to) {
-          const forward = to === 'summary';
-          const a = forward ? rowTitle : sum.title;
-          const b = forward ? sum.title : rowTitle;
+          const forward = from === 'list';
+          const d = partsOf(forward ? to : from);
+          const rowTitle = rowFor(forward ? to : from).querySelector('.memory__title');
+          const a = forward ? rowTitle : d.title;
+          const b = forward ? d.title : rowTitle;
           const ra = rect(a), rb = rect(b);
           const s = rb.h / ra.h;
           const dx = rb.x - ra.x, dy = rb.y - ra.y;
@@ -701,13 +1337,13 @@
           if (forward) {
             jobs.push(
               fadeOut(views.list, 180),
-              fadeUp(sum.header, 140, -4, 280),
-              fadeUp(sum.body, 160, 8, 360),
-              fadeUp(sum.prompt, 220, 16, 380),
+              fadeUp(d.header, 140, -4, 280),
+              fadeUp(d.body, 160, 8, 360),
+              fadeUp(d.prompt, 220, 16, 380),
             );
           } else {
             jobs.push(
-              fadeOut(sum.header, 140), fadeOut(sum.body, 140), fadeOut(sum.prompt, 140),
+              fadeOut(d.header, 140), fadeOut(d.body, 140), fadeOut(d.prompt, 140),
               play(views.list, [{ opacity: 0 }, { opacity: 1 }], { delay: 120, duration: 320 }),
             );
           }
@@ -721,7 +1357,7 @@
       push: {
         label: 'Push',
         run(from, to) {
-          const dir = to === 'summary' ? 1 : -1;
+          const dir = from === 'list' ? 1 : -1;
           const D = 340;
           return Promise.all([
             play(views[from], [
@@ -741,16 +1377,18 @@
       fade: {
         label: 'Fade through',
         run(from, to) {
-          if (to === 'summary') {
+          if (from === 'list') {
+            const d = partsOf(to);
             return Promise.all([
               play(views.list, [
                 { opacity: 1, transform: 'none' },
                 { opacity: 0, transform: 'scale(.985)' },
               ], { duration: 150, easing: EASE_IN }),
-              fadeUp(sum.header, 120, 10, 300),
-              fadeUp(sum.title, 170, 10, 300),
-              fadeUp(sum.body, 220, 10, 300),
-              fadeUp(sum.prompt, 270, 10, 300),
+              fadeUp(d.header, 120, 10, 300),
+              fadeUp(d.title, 170, 10, 300),
+              fadeUp(d.body, 220, 10, 300),
+              ...(d.notes ? [fadeUp(d.notes, 245, 10, 300)] : []),
+              fadeUp(d.prompt, 270, 10, 300),
             ]);
           }
           return Promise.all([
@@ -764,14 +1402,16 @@
       expand: {
         label: 'Expand row',
         async run(from, to) {
-          const forward = to === 'summary';
-          const r = rect(summaryRow);
+          const forward = from === 'list';
+          const name = forward ? to : from;
+          const d = partsOf(name);
+          const r = rect(rowFor(name));
           const W = wrap.offsetWidth, H = wrap.offsetHeight;
           const rowClip = `inset(${r.y}px ${W - r.x - r.w}px ${H - r.y - r.h}px ${r.x}px round 8px)`;
           const fullClip = 'inset(0px 0px 0px 0px round 0px)';
           const surface = document.createElement('div');
           Object.assign(surface.style, { position: 'absolute', inset: 0, pointerEvents: 'none' });
-          wrap.insertBefore(surface, views.summary);
+          wrap.insertBefore(surface, views[name]);
           const D = 420;
           const jobs = [];
           if (forward) {
@@ -782,14 +1422,14 @@
                 { backgroundColor: 'var(--hl-row-hover)', offset: .5 },
                 { clipPath: fullClip, backgroundColor: 'var(--hl-panel)' },
               ], { duration: D }),
-              fadeUp(sum.header, 200, -4, 280),
-              fadeUp(sum.title, 200, 8, 320),
-              fadeUp(sum.body, 240, 8, 320),
-              fadeUp(sum.prompt, 280, 16, 340),
+              fadeUp(d.header, 200, -4, 280),
+              fadeUp(d.title, 200, 8, 320),
+              fadeUp(d.body, 240, 8, 320),
+              fadeUp(d.prompt, 280, 16, 340),
             );
           } else {
             jobs.push(
-              fadeOut(sum.header, 140), fadeOut(sum.title, 140), fadeOut(sum.body, 140), fadeOut(sum.prompt, 140),
+              fadeOut(d.header, 140), fadeOut(d.title, 140), fadeOut(d.body, 140), fadeOut(d.prompt, 140),
               play(surface, [
                 { clipPath: fullClip, backgroundColor: 'var(--hl-panel)', opacity: 1 },
                 { backgroundColor: 'var(--hl-row-hover)', opacity: 1, offset: .6 },
@@ -815,36 +1455,561 @@
     const isSandbox = params.has('sandbox') || /\/sandbox\/?$/.test(location.pathname);
     let variant = 'fade';
 
-    async function go(to) {
+    async function go(to, key) {
       if (busy || to === current) return;
       busy = true;
       const from = current;
+      if (key) activeKey = key;
+      if (to === 'memory') fillMemory(memoryByKey[activeKey]);
       views[to].classList.add('is-active');
       views[to].inert = false;
       views[from].inert = true;
 
+      // Never let a stalled animation (e.g. a backgrounded tab that stops
+      // painting) leave the UI locked: give up after 1s and snap to the end.
       try {
-        await (reduceMotion.matches ? reduced : variants[variant]).run(from, to);
+        await Promise.race([
+          (reduceMotion.matches ? reduced : variants[variant]).run(from, to),
+          new Promise(r => setTimeout(r, 1000)),
+        ]);
       } catch (e) { /* animation cancelled */ }
+      wrap.querySelectorAll(':scope > :not([data-view])').forEach(el => el.remove());
+      views[from].querySelectorAll('[style*="opacity"]').forEach(el => { el.style.opacity = ''; });
 
       views[from].classList.remove('is-active');
       running.splice(0).forEach(a => a.cancel());
       current = to;
       busy = false;
 
-      if (to === 'summary') sum.title.focus({ preventScroll: true });
-      else summaryRow.focus({ preventScroll: true });
+      if (to === 'list') rowFor()?.focus({ preventScroll: true });
+      else partsOf(to).title.focus({ preventScroll: true });
     }
+
+
+    // ---------- Memory page: content, notes, delete ----------
+    const memView = views.memory;
+    const noteArea = memView.querySelector('.note-area');
+    const NOTE_ICON = '<img src="/assets/highlight/note.svg" width="20" height="20" alt="" />';
+
+    function fillMemory(m) {
+      memView.querySelector('[data-field="title"]').textContent = m.title;
+      memView.querySelector('[data-field="summary"]').textContent = m.summary;
+      renderNote(m, 'view');
+    }
+
+    const swapIn = el => el.animate(
+      [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 200, easing: EASE_OUT }
+    );
+
+    // mode: 'view' shows the note (or "Add a note"); 'edit' shows the editor.
+    function renderNote(m, mode, animate = false) {
+      noteArea.replaceChildren();
+      if (mode === 'edit') {
+        const editor = document.createElement('div');
+        editor.className = 'note-editor';
+        editor.innerHTML = `
+          <div class="note-editor__field">
+            ${NOTE_ICON}
+            <textarea rows="1" maxlength="280" placeholder="Add a short note..." aria-label="Note"></textarea>
+          </div>
+          <div class="note-editor__actions">
+            ${m.note ? '<button class="hl-btn hl-btn--quiet" type="button" data-note="remove">Remove note</button>' : ''}
+            <button class="hl-btn hl-btn--cancel" type="button" data-note="cancel">Cancel</button>
+            <button class="hl-btn hl-btn--primary hl-btn--accent" type="button" data-note="save">Save</button>
+          </div>`;
+        const field = editor.querySelector('textarea');
+        const save = editor.querySelector('[data-note="save"]');
+        field.value = m.note || '';
+        const sync = () => { save.disabled = !field.value.trim(); };
+        sync();
+        field.addEventListener('input', sync);
+        field.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !save.disabled) { e.preventDefault(); save.click(); }
+          if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish('cancel'); }
+        });
+        editor.addEventListener('click', e => {
+          const action = e.target.closest('[data-note]')?.dataset.note;
+          if (action) finish(action);
+        });
+        function finish(action) {
+          if (action === 'save') m.note = field.value.trim();
+          if (action === 'remove') m.note = null;
+          renderNote(m, 'view', true);
+          noteArea.firstElementChild.focus({ preventScroll: true });
+        }
+        noteArea.append(editor);
+        if (animate) swapIn(editor);
+        field.focus({ preventScroll: true });
+        field.setSelectionRange(field.value.length, field.value.length);
+        return;
+      }
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (m.note) {
+        btn.className = 'note-card';
+        btn.setAttribute('aria-label', `Edit note: ${m.note}`);
+        btn.innerHTML = `${NOTE_ICON}<span></span>`;
+        btn.querySelector('span').textContent = m.note;
+      } else {
+        btn.className = 'note-add';
+        btn.innerHTML = '<img src="/assets/highlight/plus.svg" width="8" height="8" alt="" />Add a note';
+      }
+      btn.addEventListener('click', () => renderNote(m, 'edit', true));
+      noteArea.append(btn);
+      if (animate) swapIn(btn);
+    }
+
+    // Delete: confirm in a dialog, then go back and collapse the row.
+    const dialog = document.querySelector('.dialog');
+    const dialogCard = dialog.querySelector('.dialog__card');
+    const appRegions = [document.querySelector('.nav'), wrap];
+    let dialogReturn = null;
+
+    // Future release: same memories, hundreds of moments.
+    const futureScale = {
+      profile: { deleted: 240, kept: 12 },
+      'how-you-work': { deleted: 156, kept: 8 },
+      writing: { deleted: 198, kept: 6 },
+      'active-projects': { deleted: 312, kept: 15 },
+      people: { deleted: 124, kept: 9 },
+      'health-data': { deleted: 34, kept: 3 },
+      learning: { deleted: 88, kept: 5 },
+    };
+
+    const SOURCE_ICONS = {
+      notes: '<img src="/assets/highlight/note.svg" width="20" height="20" alt="Notes" />',
+      audio: '<img src="/assets/highlight/source-audio.svg" width="20" height="20" alt="Audio note" />',
+      zoom: '<img class="is-logo is-round" src="/assets/highlight/source-zoom.png" width="16" height="16" alt="Zoom" />',
+      meet: '<img class="is-logo" src="/assets/highlight/source-meet.png" width="16" height="16" alt="Google Meet" />',
+    };
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const escapeHtml = t => t.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+    // group: 'kept' rows offer "Delete", 'deleted' rows offer "Keep".
+    const momentRow = ({ id, source, title, date, also }, group) => `
+      <li class="moment" data-id="${id}">
+        <span class="moment__icon">${SOURCE_ICONS[source]}</span>
+        <span class="moment__main">
+          <span class="moment__title">${escapeHtml(title)}</span>
+          ${also ? `<span class="moment__also">Also supports ${escapeHtml(also)}</span>` : ''}
+        </span>
+        <span class="moment__end">
+          <span class="moment__date">${date}</span>
+          <button class="moment__move" type="button" aria-label="${group === 'kept' ? 'Delete' : 'Keep'} ${escapeHtml(title)}, ${date}">${group === 'kept' ? 'Delete' : 'Keep'}</button>
+        </span>
+      </li>`;
+
+    // Deleted moments: cycle through the pool, stepping back from Oct 14.
+    // Spread over ~3 months, so larger sets get several moments a day.
+    function deletedMoments({ deleted, pool }) {
+      const day = new Date(2026, 9, 14);
+      const perDay = Math.max(1, Math.ceil(deleted / 90));
+      return Array.from({ length: deleted }, (_, i) => {
+        if (i && i % perDay === 0) day.setDate(day.getDate() - (perDay === 1 && i % 3 === 0 ? 2 : 1));
+        const [source, title] = pool[(i + Math.floor(i / pool.length)) % pool.length];
+        return { source, title, date: `${MONTHS[day.getMonth()]} ${day.getDate()}`, t: +day };
+      });
+    }
+
+    const dateValue = d => +new Date(`${d}, 2026`);
+
+    // Moments for the open memory, as { kept, deleted } with ids.
+    function buildMoments(key) {
+      const mo = moments[key];
+      let id = 0;
+      let kept = mo.kept.map(([source, title, date, also]) => ({ source, title, date, also, t: dateValue(date) }));
+      let deleted;
+      if (isFuture) {
+        const scale = futureScale[key];
+        const others = memories.filter(m => m.summary && m.key !== key).map(m => m.title);
+        const extra = deletedMoments({ deleted: scale.deleted + scale.kept - kept.length, pool: mo.pool });
+        // Spread the extra kept moments through the timeline.
+        const step = Math.floor(extra.length / (scale.kept - kept.length + 1));
+        for (let n = 1; kept.length < scale.kept; n++) {
+          const [x] = extra.splice(n * step - n, 1);
+          kept.push({ ...x, also: others[n % others.length] });
+        }
+        deleted = extra;
+      } else {
+        deleted = deletedMoments(mo);
+      }
+      return {
+        kept: kept.map(x => ({ id: id++, ...x })),
+        deleted: deleted.map(x => ({ id: id++, ...x })),
+      };
+    }
+
+    // Which moments this delete would keep vs. remove. Reset each time the dialog opens.
+    let momentState = { kept: [], deleted: [] };
+    const momentsScroll = dialog.querySelector('.moments__scroll');
+
+    function describeDelete() {
+      const { kept, deleted } = momentState;
+      const k = kept.length, d = deleted.length;
+      const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+      const allShared = kept.every(x => x.also);
+      let text = d
+        ? `Highlight will stop using this in answers and delete the ${plural(d, 'moment')} it came from.`
+        : 'Highlight will stop using this in answers. No moments will be deleted.';
+      if (k && allShared) {
+        text += k === 1
+          ? ' 1 moment that also supports another memory will be kept.'
+          : ` ${k} moments that also support other memories will be kept.`;
+      } else if (k) {
+        text += ` ${plural(k, 'moment')} will be kept.`;
+      }
+      dialog.querySelector('#deleteText').textContent = `${text} This can’t be undone.`;
+    }
+
+    function renderMoments() {
+      const { kept, deleted } = momentState;
+      momentsScroll.innerHTML = `
+        <section class="moments__group">
+          <h3 class="moments__heading">Kept · ${kept.length}</h3>
+          <ul class="moments__list">${kept.map(x => momentRow(x, 'kept')).join('')}</ul>
+        </section>
+        <section class="moments__group">
+          <h3 class="moments__heading">Deleted · ${deleted.length}</h3>
+          <ul class="moments__list">${deleted.map(x => momentRow(x, 'deleted')).join('')}</ul>
+        </section>`;
+      describeDelete();
+    }
+
+    // Move a moment to the other group (Initial: to the top of it; Future: in place).
+    function onMove(e) {
+      const btn = e.target.closest('.moment__move');
+      if (!btn) return;
+      const id = Number(btn.closest('.moment').dataset.id);
+      const from = momentState.kept.some(x => x.id === id) ? 'kept' : 'deleted';
+      const to = from === 'kept' ? 'deleted' : 'kept';
+      const i = momentState[from].findIndex(x => x.id === id);
+      const [item] = momentState[from].splice(i, 1);
+      momentState[to].unshift(item);
+      const scroller = e.currentTarget;
+      const scrollTop = scroller.scrollTop;
+      rerenderMoments();
+      scroller.scrollTop = scrollTop;
+      const row = scroller.querySelector(`.moment[data-id="${id}"]`);
+      row.animate(
+        [{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 200, easing: EASE_OUT }
+      );
+      if (e.detail === 0) row.querySelector('.moment__move').focus({ preventScroll: false });
+    }
+    momentsScroll.addEventListener('click', onMove);
+
+    const momentsToggle = dialog.querySelector('.moments-toggle');
+    const momentsPanel = dialog.querySelector('.moments');
+    function setMomentsOpen(open) {
+      momentsToggle.setAttribute('aria-expanded', open);
+      momentsToggle.querySelector('span').textContent = open ? 'Hide moments' : 'Show moments';
+      momentsPanel.classList.toggle('is-open', open);
+      momentsPanel.inert = !open;
+    }
+    momentsToggle.addEventListener('click', () => {
+      setMomentsOpen(momentsToggle.getAttribute('aria-expanded') !== 'true');
+    });
+
+    // ---------- Future release: review with search, source chips, groups ----------
+    const review = dialog.querySelector('.review');
+    const reviewList = review.querySelector('.review__list');
+    const reviewSearch = review.querySelector('input');
+    const reviewChips = review.querySelector('.review__chips');
+    const totals = dialog.querySelector('.dialog__totals');
+    const SOURCE_NAMES = { zoom: 'Zoom', meet: 'Google Meet', notes: 'Notes', audio: 'Audio' };
+    const GROUPS = [
+      { key: 'meetings', label: 'Meetings', sources: ['zoom', 'meet'] },
+      { key: 'notes', label: 'Notes', sources: ['notes'] },
+      { key: 'audio', label: 'Audio', sources: ['audio'] },
+    ];
+    let reviewQuery = '';
+    let reviewSource = 'all';
+    let openGroups = new Set();
+
+    const allMoments = () => [
+      ...momentState.kept.map(x => ({ ...x, group: 'kept' })),
+      ...momentState.deleted.map(x => ({ ...x, group: 'deleted' })),
+    ].sort((a, b) => b.t - a.t);
+
+    const matches = x =>
+      (reviewSource === 'all' || x.source === reviewSource) &&
+      (!reviewQuery || x.title.toLowerCase().includes(reviewQuery));
+
+    function resetReview() {
+      reviewQuery = '';
+      reviewSource = 'all';
+      openGroups = new Set();
+      reviewSearch.value = '';
+      reviewClear.hidden = true;
+      renderFuture();
+      reviewList.scrollTop = 0;
+    }
+
+    function renderFuture() {
+      const all = allMoments();
+      // Source chips with counts for the current search.
+      const searched = all.filter(x => !reviewQuery || x.title.toLowerCase().includes(reviewQuery));
+      const chip = (key, label) => {
+        const n = key === 'all' ? searched.length : searched.filter(x => x.source === key).length;
+        return `<button class="chip" type="button" data-source="${key}" aria-pressed="${reviewSource === key}">${label}<span class="chip__count">${n}</span></button>`;
+      };
+      reviewChips.innerHTML = chip('all', 'All') + Object.entries(SOURCE_NAMES).map(([k, v]) => chip(k, v)).join('');
+
+      const visible = all.filter(matches);
+      if (!visible.length) {
+        reviewList.innerHTML = `<p class="review__empty">No moments match${reviewQuery ? ` “${escapeHtml(reviewQuery)}”` : ''}.</p>`;
+      } else {
+        // Keep and Delete subsections for a set of moments.
+        const split = items => ['kept', 'deleted'].map(state => {
+          const list = items.filter(x => x.group === state);
+          if (!list.length) return '';
+          return `
+            <h3 class="moments__heading rgroup__sub">${state === 'kept' ? 'Keep' : 'Delete'} · ${list.length}</h3>
+            <ul class="moments__list">${list.map(x => momentRow(x, x.group)).join('')}</ul>`;
+        }).join('');
+        const bulkButtons = (items, keptN) => `
+          <button class="rgroup__bulk" type="button" data-bulk="kept" ${keptN === items.length ? 'disabled' : ''}>Keep all</button>
+          <button class="rgroup__bulk" type="button" data-bulk="deleted" ${keptN === 0 ? 'disabled' : ''}>Delete all</button>`;
+
+        if (reviewSource === 'all') {
+          // All sources: collapsible Meetings / Notes / Audio groups.
+          reviewList.innerHTML = GROUPS.map(g => {
+            const items = visible.filter(x => g.sources.includes(x.source));
+            if (!items.length) return '';
+            const keptN = items.filter(x => x.group === 'kept').length;
+            // Searching opens every group with results.
+            const open = reviewQuery || openGroups.has(g.key);
+            return `
+              <section class="rgroup" data-group="${g.key}">
+                <div class="rgroup__head">
+                  <button class="rgroup__toggle" type="button" aria-expanded="${!!open}">
+                    <img src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
+                    ${g.label}
+                    <span class="rgroup__meta">${items.length} · ${keptN} kept</span>
+                  </button>
+                  ${bulkButtons(items, keptN)}
+                </div>
+                ${open ? split(items) : ''}
+              </section>`;
+          }).join('');
+        } else {
+          // One source: no toggle, just bulk actions and Keep / Delete.
+          const keptN = visible.filter(x => x.group === 'kept').length;
+          reviewList.innerHTML = `
+            <section class="rgroup" data-group="source">
+              <div class="rgroup__head rgroup__head--static">
+                <p class="rgroup__title">${SOURCE_NAMES[reviewSource]} <span class="rgroup__meta">${visible.length} · ${keptN} kept</span></p>
+                ${bulkButtons(visible, keptN)}
+              </div>
+              ${split(visible)}
+            </section>`;
+        }
+      }
+
+      const k = momentState.kept.length, d = momentState.deleted.length;
+      totals.innerHTML = `Deleting <strong>${d}</strong> · Keeping <strong>${k}</strong>`;
+      describeDelete();
+    }
+
+    const rerenderMoments = () => (isFuture ? renderFuture() : renderMoments());
+
+    // Move every visible moment in a group to kept or deleted.
+    function bulkMove(groupKey, to) {
+      const g = groupKey === 'source'
+        ? { sources: [reviewSource] }
+        : GROUPS.find(x => x.key === groupKey);
+      const from = to === 'kept' ? 'deleted' : 'kept';
+      const moving = momentState[from].filter(x => g.sources.includes(x.source) && matches(x));
+      const ids = new Set(moving.map(x => x.id));
+      momentState[from] = momentState[from].filter(x => !ids.has(x.id));
+      momentState[to].push(...moving);
+    }
+
+    const reviewClear = review.querySelector('.review__clear');
+    reviewClear.addEventListener('click', e => {
+      e.preventDefault();
+      reviewSearch.value = '';
+      reviewSearch.dispatchEvent(new Event('input'));
+      reviewSearch.focus();
+    });
+    reviewSearch.addEventListener('input', () => {
+      reviewClear.hidden = !reviewSearch.value;
+      reviewQuery = reviewSearch.value.trim().toLowerCase();
+      renderFuture();
+      reviewList.scrollTop = 0;
+    });
+    reviewChips.addEventListener('click', e => {
+      const c = e.target.closest('[data-source]');
+      if (!c) return;
+      reviewSource = c.dataset.source;
+      renderFuture();
+      reviewList.scrollTop = 0;
+      reviewChips.querySelector(`[data-source="${reviewSource}"]`).focus();
+    });
+    reviewList.addEventListener('click', e => {
+      const group = e.target.closest('.rgroup')?.dataset.group;
+      const toggle = e.target.closest('.rgroup__toggle');
+      const bulk = e.target.closest('[data-bulk]');
+      if (toggle) {
+        openGroups.has(group) ? openGroups.delete(group) : openGroups.add(group);
+        renderFuture();
+        reviewList.querySelector(`[data-group="${group}"] .rgroup__toggle`).focus({ preventScroll: true });
+      } else if (bulk) {
+        const scrollTop = reviewList.scrollTop;
+        bulkMove(group, bulk.dataset.bulk);
+        renderFuture();
+        reviewList.scrollTop = scrollTop;
+        reviewList.querySelector(`[data-group="${group}"] [data-bulk="${bulk.dataset.bulk === 'kept' ? 'deleted' : 'kept'}"]`)?.focus({ preventScroll: true });
+      } else {
+        onMove(e);
+      }
+    });
+
+    // Show the dialog parts for the current release.
+    function applyReleaseToDialog() {
+      dialog.classList.toggle('dialog--future', isFuture);
+      review.hidden = !isFuture;
+      totals.hidden = !isFuture;
+    }
+    applyReleaseToDialog();
+
+    function openDialog() {
+      const m = memoryByKey[activeKey];
+      momentState = buildMoments(activeKey);
+      dialog.querySelector('#deleteTitle').textContent = `Delete & forget ${m.title}`;
+      if (isFuture) {
+        resetReview();
+      } else {
+        renderMoments();
+        momentsScroll.scrollTop = 0;
+        setMomentsOpen(false);
+      }
+      dialogReturn = document.activeElement;
+      dialog.hidden = false;
+      appRegions.forEach(el => { el.inert = true; });
+      dialog.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease-out' });
+      dialogCard.animate(
+        [{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'none' }],
+        { duration: 180, easing: EASE_OUT }
+      );
+      dialog.querySelector('[data-dialog-cancel]').focus();
+      updateReleaseNote();
+    }
+
+    async function closeDialog() {
+      appRegions.forEach(el => { el.inert = false; });
+      await dialog.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in' }).finished;
+      dialog.hidden = true;
+      updateReleaseNote();
+    }
+
+    memView.querySelector('[data-delete]').addEventListener('click', openDialog);
+    dialog.querySelector('[data-dialog-cancel]').addEventListener('click', async () => {
+      await closeDialog();
+      dialogReturn?.focus({ preventScroll: true });
+    });
+    dialog.addEventListener('click', e => { if (e.target === dialog) dialog.querySelector('[data-dialog-cancel]').click(); });
+    dialog.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && e.target === reviewSearch && reviewSearch.value) {
+        e.stopPropagation();
+        reviewSearch.value = '';
+        reviewSearch.dispatchEvent(new Event('input'));
+        return;
+      }
+      if (e.key === 'Escape') { e.stopPropagation(); dialog.querySelector('[data-dialog-cancel]').click(); }
+      // Keep Tab inside the dialog's two buttons.
+      if (e.key === 'Tab') {
+        const btns = [...dialog.querySelectorAll('button, input')].filter(b => !b.closest('[inert]') && b.getClientRects().length);
+        const i = btns.indexOf(document.activeElement);
+        e.preventDefault();
+        btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
+      }
+    });
+    dialog.querySelector('[data-dialog-confirm]').addEventListener('click', async () => {
+      const row = rowFor();
+      const li = row.closest('li');
+      const divider = li.nextElementSibling;
+      await closeDialog();
+      await go('list');
+      // Fade the row, then close the gap it leaves.
+      await li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out' }).finished;
+      li.style.overflow = 'hidden';
+      divider.style.overflow = 'hidden';
+      await Promise.all([li, divider].map(el => el.animate(
+        [{ height: el.offsetHeight + 'px' }, { height: '0px', marginTop: '-12px' }],
+        { duration: 220, easing: EASE_OUT }
+      ).finished));
+      li.remove();
+      divider.remove();
+      delete memoryByKey[activeKey];
+      activeKey = null;
+    });
 
     list.addEventListener('click', e => {
       const row = e.target.closest('[data-open]');
-      if (row) go(row.dataset.open);
+      if (row) go(row.dataset.open, row.dataset.key);
     });
-    views.summary.querySelector('[data-back]').addEventListener('click', () => go('list'));
+    wrap.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => go('list')));
     document.querySelector('.nav__item[aria-current="page"]').addEventListener('click', () => go('list'));
     addEventListener('keydown', e => {
-      if (e.key === 'Escape' && current === 'summary' && document.activeElement !== promptInput) go('list');
+      if (e.key === 'Escape' && current !== 'list' && dialog.hidden && !e.target.matches('input, textarea')) go('list');
     });
+
+    // ---------- Release switcher ----------
+    // Switches in place, keeping the current screen and any edits, so each
+    // screen can be compared one-to-one. Only the delete dialog differs today;
+    // every other screen is labeled "Remains unchanged" in the Future release.
+    // URLs — deployed: /highlight-takehome/prototype and /highlight-takehome/future;
+    // locally (served as .html): the same file with ?release=future.
+    const releaseLinks = document.querySelectorAll('[data-release]');
+    const releaseNote = document.querySelector('.release-note');
+    const localFile = location.pathname.endsWith('.html');
+    const releaseHrefs = {
+      initial: localFile ? location.pathname : '/highlight-takehome/prototype',
+      future: localFile ? `${location.pathname}?release=future` : '/highlight-takehome/future',
+    };
+
+    function updateReleaseNote() {
+      releaseNote.hidden = !(isFuture && dialog.hidden);
+    }
+
+    function setRelease(future) {
+      isFuture = future;
+      releaseLinks.forEach(a => {
+        if ((a.dataset.release === 'future') === isFuture) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+      document.title = isFuture
+        ? 'Highlight Prototype (Future release) — Nathalia Kasman'
+        : 'Highlight Prototype — Nathalia Kasman';
+      applyReleaseToDialog();
+      // An open delete dialog swaps to the other release's version.
+      if (!dialog.hidden) {
+        momentState = buildMoments(activeKey);
+        if (isFuture) {
+          resetReview();
+        } else {
+          renderMoments();
+          momentsScroll.scrollTop = 0;
+          setMomentsOpen(false);
+        }
+      }
+      updateReleaseNote();
+    }
+
+    releaseLinks.forEach(a => {
+      a.href = releaseHrefs[a.dataset.release];
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const future = a.dataset.release === 'future';
+        if (future === isFuture) return;
+        history.replaceState(null, '', releaseHrefs[a.dataset.release] + location.hash);
+        setRelease(future);
+      });
+    });
+    setRelease(isFuture);
 
     // ---------- Sandbox: compare transition variants ----------
     if (isSandbox) {

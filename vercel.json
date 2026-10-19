@@ -5,6 +5,7 @@
     { "source": "/game", "destination": "/game.html" },
     { "source": "/highlight-takehome", "destination": "/highlight-takehome.html" },
     { "source": "/highlight-takehome/prototype", "destination": "/highlight-takehome-prototype.html" },
-    { "source": "/highlight-takehome/sandbox", "destination": "/highlight-takehome-prototype.html" }
+    { "source": "/highlight-takehome/sandbox", "destination": "/highlight-takehome-prototype.html" },
+    { "source": "/highlight-takehome/future", "destination": "/highlight-takehome-prototype.html" }
   ]
 }
