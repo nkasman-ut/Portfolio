@@ -28,7 +28,7 @@
       --screen-h: 801;
       --gutter: 48px;
       /* Room above the window for the release switcher and the "Remains unchanged" label. */
-      --gutter-top: 100px;
+      --gutter-top: 176px;
 
       /* Highlight app tokens (from Figma) */
       --hl-window: #F7F7F3;
@@ -109,12 +109,21 @@
 
     /* "Remains unchanged" label, just above the prototype window, on Future
        release screens that match Initial. */
-    .release-note {
+    /* Future release notes, left-aligned just above the prototype window:
+       a "What changed" list on changed screens, or a "Remains unchanged"
+       pill on screens that match the Initial release. */
+    .release-notes {
       position: absolute;
-      bottom: calc(100% + 12px);
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 30;
+      bottom: calc(100% + 16px);
+      left: 0;
+      max-width: 100%;
+      margin: 0;
+      color: var(--ink);
+      pointer-events: none;
+    }
+    .release-notes[hidden] { display: none; }
+    .release-notes__pill {
+      display: inline-block;
       margin: 0;
       padding: 4px 12px;
       border-radius: 999px;
@@ -123,9 +132,17 @@
       font: 500 12px/16px var(--font-body);
       color: #2C2C25;
       white-space: nowrap;
-      pointer-events: none;
     }
-    .release-note[hidden] { display: none; }
+    .release-notes__title {
+      margin: 0 0 6px;
+      font: 600 13px/18px var(--font-body);
+      color: #2C2C25;
+    }
+    .release-notes__list {
+      margin: 0;
+      padding-left: 18px;
+      font: 400 13px/20px var(--font-body);
+    }
 
     /* ---------- Sandbox controls (only with ?sandbox) ---------- */
     .sandbox {
@@ -794,6 +811,146 @@
       color: var(--hl-heading);
       overflow-wrap: break-word;
     }
+    /* Memory page content scrolls under the fixed header; the bottom padding
+       keeps the last rows clear of the pinned prompt box. */
+    [data-view="memory"] .detail {
+      top: 98px;
+      bottom: 0;
+      left: 0;
+      width: auto;
+      right: 0;
+      padding: 0 87px 140px 88px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      /* Rows fade out before they reach the prompt box. */
+      mask-image: linear-gradient(to bottom, #000 calc(100% - 150px), transparent calc(100% - 80px));
+      -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 150px), transparent calc(100% - 80px));
+    }
+    [data-view="memory"] .detail::-webkit-scrollbar { display: none; }
+
+    /* Moment page scrolls the same way, without a prompt box below. */
+    [data-view="moment"] .detail {
+      top: 94px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: auto;
+      padding: 0 87px 64px 88px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      gap: 32px;
+    }
+    [data-view="moment"] .detail::-webkit-scrollbar { display: none; }
+
+    /* Future release: moments behind this memory (Figma moment rows). */
+    .page-moments[hidden] { display: none; }
+    .page-moments { display: flex; flex-direction: column; gap: 24px; }
+    .page-moments__title {
+      margin: 0;
+      font: 600 16px/normal var(--hl-font-body);
+      letter-spacing: -0.32px;
+      color: var(--hl-heading);
+    }
+    .page-moments__count { font-weight: 400; margin-left: 4px; }
+    .page-moments__list { list-style: none; margin: -16px 0 0; padding: 0; }
+    .page-moment {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+      padding: 16px;
+      border: 0;
+      border-radius: 16px;
+      background: transparent;
+      font: 16px/normal var(--hl-font-body);
+      color: var(--hl-heading);
+      text-align: left;
+      cursor: pointer;
+      transition: background-color .15s ease;
+    }
+    .page-moment__main { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .page-moment__main .moment__icon { margin: 0; }
+    /* Hover (Figma "State=Hover"): beige fill, medium title, chevron replaces the date. */
+    .page-moment:hover,
+    .page-moment:focus-visible { background: var(--hl-row-hover); outline: none; }
+    .page-moment:hover .page-moment__title,
+    .page-moment:focus-visible .page-moment__title { font-weight: 500; }
+    .page-moment__end { flex-shrink: 0; display: grid; justify-items: end; align-items: center; }
+    .page-moment__end > * { grid-area: 1 / 1; }
+    .page-moment__date { font-size: 14px; color: #6D6D62; white-space: nowrap; transition: opacity .12s ease; }
+    .page-moment__chevron { display: block; opacity: 0; transition: opacity .12s ease; }
+    .page-moment:hover .page-moment__date,
+    .page-moment:focus-visible .page-moment__date { opacity: 0; }
+    .page-moment:hover .page-moment__chevron,
+    .page-moment:focus-visible .page-moment__chevron { opacity: 1; }
+
+    /* ---------- Moment page (Figma "Raw data page") ---------- */
+    .icon-btn {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 1px solid #DEDEDE;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      transition: background-color .15s ease, border-color .15s ease, transform .12s ease;
+    }
+    .icon-btn:hover { background: var(--hl-btn-hover); border-color: var(--hl-btn-hover-border); }
+    .icon-btn:active { transform: scale(.97); }
+    .icon-btn:focus-visible { outline: 2px solid var(--hl-heading); outline-offset: 2px; }
+    .icon-btn img { display: block; }
+
+    .moment-head { display: flex; flex-direction: column; gap: 8px; }
+    .moment-head .detail__title { min-height: 34px; }
+    .moment-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font: 16px/normal var(--hl-font-body);
+      color: var(--hl-heading);
+    }
+    /* A saved note or the editor takes the full width under the date. */
+    .moment-meta .note-area:has(.note-card, .note-editor) { flex-basis: 100%; margin-top: 16px; }
+
+    .transcript { display: flex; flex-direction: column; gap: 24px; margin: 0; padding: 0; list-style: none; }
+    .transcript li { display: flex; flex-direction: column; gap: 4px; font: 16px/normal var(--hl-font-body); }
+    .transcript__meta { display: flex; align-items: center; gap: 8px; color: #72716F; }
+    .transcript__text { color: var(--hl-heading); }
+    .moment-doc { display: flex; flex-direction: column; gap: 16px; font: 16px/26px var(--hl-font-body); color: var(--hl-heading); }
+    .moment-doc p { margin: 0; }
+    .moment-doc ul { margin: 0; padding-left: 24px; }
+
+    /* Toast, centered over the content panel above the prompt box. */
+    .toast {
+      position: absolute;
+      left: calc(230px + 875px / 2);
+      bottom: 124px;
+      transform: translateX(-50%);
+      z-index: 25;
+      margin: 0;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: var(--hl-heading);
+      color: var(--hl-panel);
+      font: 14px/20px var(--hl-font-body);
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(44, 44, 37, .18);
+      pointer-events: none;
+    }
+    .toast[hidden] { display: none; }
+
+    /* Simple confirm (deleting a single moment): no moments review. */
+    .dialog--simple .moments-toggle,
+    .dialog--simple .moments,
+    .dialog--simple .review { display: none !important; }
+    /* Same size as the Initial release delete dialog, even in the Future release. */
+    .dialog--future.dialog--simple .dialog__card { width: 480px; }
+    .dialog--simple .dialog__actions { margin-top: 24px; }
+
     .detail__title {
       margin: 0;
       font-family: var(--hl-font-display);
@@ -879,6 +1036,21 @@
     }
     .memory-list__divider { display: block; height: 1px; }
 
+    /* Future release: Summary + Always remember, then categories. */
+    .memory-list--future { gap: 48px; }
+    .memory-group,
+    .memory-group__body { display: flex; flex-direction: column; gap: 12px; }
+    .memory-group--category { gap: 24px; }
+    .memory-list__rows { list-style: none; margin: 0; padding: 0; }
+    .memory-group__title {
+      margin: 0;
+      font-family: var(--hl-font-display);
+      font-weight: 500;
+      font-size: 18px;
+      line-height: normal;
+      color: var(--hl-title);
+    }
+
     .memory {
       display: flex;
       align-items: center;
@@ -942,7 +1114,7 @@
   </div>
 
   <div class="stage" aria-label="Prototype">
-    <p class="release-note" role="status" hidden>Remains unchanged</p>
+    <div class="release-notes" role="status" hidden></div>
     <div class="app">
       <nav class="nav" aria-label="Settings">
         <img class="nav__window-controls" src="/assets/highlight/window-controls.svg" width="58" height="14" alt="" />
@@ -1052,6 +1224,33 @@
           </form>
         </section>
 
+        <section class="view view--detail" data-view="excluded" inert>
+          <header class="page-header">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              Memory
+            </button>
+            <p class="page-updated">Last updated: 1h</p>
+          </header>
+
+          <article class="detail">
+            <h1 class="detail__title" tabindex="-1">Excluded</h1>
+            <ul class="detail__body">
+              <li>Personal banking and finances</li>
+              <li>Private and incognito browser windows</li>
+              <li>Messages with family</li>
+              <li>Password managers and sign-in screens</li>
+            </ul>
+          </article>
+
+          <form class="prompt" autocomplete="off" data-prompt="add">
+            <input class="prompt__input" type="text" placeholder="Add things Highlight should never record..." aria-label="Add things Highlight should never record" />
+            <button class="prompt__send" type="submit" aria-label="Send">
+              <img src="/assets/highlight/send.svg" width="36" height="36" alt="" />
+            </button>
+          </form>
+        </section>
+
         <section class="view view--detail" data-view="memory" inert>
           <header class="page-header page-header--actions">
             <button class="page-back" type="button" data-back>
@@ -1068,6 +1267,11 @@
             <h1 class="detail__title" tabindex="-1" data-field="title"></h1>
             <p class="detail__body" data-field="summary"></p>
             <div class="note-area"></div>
+            <section class="page-moments" aria-labelledby="pageMomentsTitle" hidden>
+              <img class="memory-list__divider" src="/assets/highlight/divider.svg" width="700" height="1" alt="" />
+              <h2 class="page-moments__title" id="pageMomentsTitle">Moments <span class="page-moments__count"></span></h2>
+              <ul class="page-moments__list"></ul>
+            </section>
           </article>
 
           <form class="prompt" autocomplete="off" data-prompt="rewrite">
@@ -1077,7 +1281,32 @@
             </button>
           </form>
         </section>
+
+        <section class="view view--detail" data-view="moment" inert>
+          <header class="page-header page-header--actions">
+            <button class="page-back" type="button" data-back>
+              <span class="page-back__arrow" aria-hidden="true">←</span>
+              <span data-field="parent"></span>
+            </button>
+            <button class="icon-btn" type="button" data-delete-moment aria-label="Delete this moment">
+              <img src="/assets/highlight/trashcan.svg" width="16" height="16" alt="" />
+            </button>
+          </header>
+
+          <article class="detail">
+            <div class="moment-head">
+              <h1 class="detail__title" tabindex="-1" data-field="title"></h1>
+              <div class="moment-meta">
+                <span data-field="meta"></span>
+                <div class="note-area"></div>
+              </div>
+            </div>
+            <div class="detail__body" data-field="content"></div>
+          </article>
+        </section>
       </div>
+
+      <p class="toast" role="status" hidden></p>
 
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteText" hidden>
         <div class="dialog__card">
@@ -1119,6 +1348,7 @@
     const memories = [
       { key: 'summary', view: 'summary', title: 'Summary', desc: 'An overview of what Highlight knows about you.' },
       { key: 'always-remember', view: 'always-remember', title: 'Always remember', desc: '4 rules and 6 items that never expire, like “Write in short paragraphs” and “Checkout beta is Nov 14”.' },
+      { key: 'excluded', view: 'excluded', title: 'Excluded', desc: 'Things Highlight never records, like personal banking and private browser windows.' },
       { key: 'profile', title: 'Profile', desc: 'Senior product manager at Fernwood · 7 years in product · background in analytics.',
         summary: 'You’re a senior product manager at Fernwood, a grocery delivery app, with seven years in product. You came up through analytics, so you’re comfortable in the data and tend to back decisions with numbers. You work most closely with design and engineering.' },
       { key: 'how-you-work', title: 'How you work', desc: 'Prefers written updates over meetings, plans the week on Monday mornings, writes detailed specs before kickoff.',
@@ -1181,19 +1411,53 @@
       ], pool: [['notes', 'SQL practice'], ['notes', 'Experimentation reading notes'], ['audio', 'Pricing course notes'], ['meet', 'Query help with analytics']] },
     };
 
-    const list = document.getElementById('memoryList');
-    list.innerHTML = memories.map(m => `
+    // Future release groups the memories into categories under Summary and
+    // Always remember (and words Always remember's subtext differently).
+    const categories = [
+      { title: 'About you', keys: ['profile', 'health-data', 'learning'] },
+      { title: 'How you work', keys: ['how-you-work', 'writing'] },
+      { title: 'Your work', keys: ['active-projects', 'people'] },
+    ];
+    const FUTURE_DESC = {
+      'always-remember': 'Rules and preferences that apply across everything you do, plus items that never expire.',
+    };
+    const DIVIDER = '<img class="memory-list__divider" src="/assets/highlight/divider.svg" width="700" height="1" alt="" />';
+
+    const memoryRow = m => `
       <li>
         <button class="memory" type="button" data-open="${m.view || 'memory'}" data-key="${m.key}">
           <span class="memory__text">
             <span class="memory__title">${m.title}</span>
-            <span class="memory__desc">${m.desc}</span>
+            <span class="memory__desc">${(isFuture && FUTURE_DESC[m.key]) || m.desc}</span>
           </span>
           <img class="memory__chevron" src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
         </button>
-      </li>
-      <li aria-hidden="true"><img class="memory-list__divider" src="/assets/highlight/divider.svg" width="700" height="1" alt="" /></li>
-    `).join('');
+      </li>`;
+
+    const list = document.getElementById('memoryList');
+    function renderList() {
+      const live = memories.filter(m => !m.deleted);
+      list.classList.toggle('memory-list--future', isFuture);
+      if (!isFuture) {
+        list.innerHTML = live.map(m => memoryRow(m) +
+          `<li class="memory-list__sep" aria-hidden="true">${DIVIDER}</li>`).join('');
+        return;
+      }
+      const block = rows => `
+        <ul class="memory-list__rows">${rows.map(memoryRow).join('')}</ul>
+        <div class="memory-list__sep" aria-hidden="true">${DIVIDER}</div>`;
+      const top = live.filter(m => m.view);
+      list.innerHTML = `<li class="memory-group">${block(top)}</li>` + categories.map(c => {
+        const rows = c.keys.map(k => live.find(m => m.key === k)).filter(Boolean);
+        if (!rows.length) return '';
+        return `
+          <li class="memory-group memory-group--category">
+            <h2 class="memory-group__title">${c.title}</h2>
+            <div class="memory-group__body">${block(rows)}</div>
+          </li>`;
+      }).join('');
+    }
+    renderList();
 
     // Scale the native-size app to fit the stage.
     const stage = document.querySelector('.stage');
@@ -1248,7 +1512,11 @@
         header: v.querySelector('.page-header'),
         title: v.querySelector('.detail__title'),
         body: v.querySelector('.detail__body'),
-        notes: v.querySelector('.note-area'),
+        // Moment pages keep their note inside the "type · date" line, so that
+        // whole line animates as one piece, right after the title.
+        meta: v.querySelector('.moment-meta'),
+        notes: v.querySelector('.moment-meta') ? null : v.querySelector('.note-area'),
+        moments: v.querySelector('.page-moments:not([hidden])'),
         prompt: v.querySelector('.prompt'),
       };
     }
@@ -1370,18 +1638,18 @@
       fade: {
         label: 'Fade through',
         run(from, to) {
-          if (from === 'list') {
+          if (DEPTH[to] > DEPTH[from]) {
             const d = partsOf(to);
+            const parts = [
+              [d.header, 120], [d.title, 170], [d.meta, 195], [d.body, 220],
+              [d.notes, 245], [d.moments, 260], [d.prompt, 270],
+            ].filter(([el]) => el);
             return Promise.all([
-              play(views.list, [
+              play(views[from], [
                 { opacity: 1, transform: 'none' },
                 { opacity: 0, transform: 'scale(.985)' },
               ], { duration: 150, easing: EASE_IN }),
-              fadeUp(d.header, 120, 10, 300),
-              fadeUp(d.title, 170, 10, 300),
-              fadeUp(d.body, 220, 10, 300),
-              ...(d.notes ? [fadeUp(d.notes, 245, 10, 300)] : []),
-              fadeUp(d.prompt, 270, 10, 300),
+              ...parts.map(([el, delay]) => fadeUp(el, delay, 10, 300)),
             ]);
           }
           return Promise.all([
@@ -1437,6 +1705,10 @@
       },
     };
 
+    // How deep each view sits: deeper views "open", shallower ones "go back".
+    const DEPTH = { list: 0, summary: 1, 'always-remember': 1, excluded: 1, memory: 1, moment: 2 };
+    const parentOf = view => (view === 'moment' ? 'memory' : 'list');
+
     const reduced = {
       run: (from, to) => Promise.all([
         play(views[from], [{ opacity: 1 }, { opacity: 0 }], { duration: 150 }),
@@ -1453,16 +1725,20 @@
       busy = true;
       const from = current;
       if (key) activeKey = key;
-      if (to === 'memory') fillMemory(memoryByKey[activeKey]);
+      // Coming back from a moment keeps the memory page as it was (scroll included).
+      if (to === 'memory' && from !== 'moment') fillMemory(memoryByKey[activeKey]);
       views[to].classList.add('is-active');
       views[to].inert = false;
       views[from].inert = true;
 
       // Never let a stalled animation (e.g. a backgrounded tab that stops
       // painting) leave the UI locked: give up after 1s and snap to the end.
+      // Moment pages only exist in the Fade through flow.
+      const runner = reduceMotion.matches ? reduced
+        : (from === 'moment' || to === 'moment') ? variants.fade : variants[variant];
       try {
         await Promise.race([
-          (reduceMotion.matches ? reduced : variants[variant]).run(from, to),
+          runner.run(from, to),
           new Promise(r => setTimeout(r, 1000)),
         ]);
       } catch (e) { /* animation cancelled */ }
@@ -1473,21 +1749,49 @@
       running.splice(0).forEach(a => a.cancel());
       current = to;
       busy = false;
+      updateReleaseNote();
 
       if (to === 'list') rowFor()?.focus({ preventScroll: true });
+      else if (from === 'moment' && activeMoment) memView.querySelector(`[data-moment="${activeMoment.id}"]`)?.focus({ preventScroll: true });
       else partsOf(to).title.focus({ preventScroll: true });
     }
 
 
     // ---------- Memory page: content, notes, delete ----------
     const memView = views.memory;
-    const noteArea = memView.querySelector('.note-area');
+    const memNoteArea = memView.querySelector('.note-area');
+    let noteArea = memNoteArea;
     const NOTE_ICON = '<img src="/assets/highlight/note.svg" width="20" height="20" alt="" />';
 
     function fillMemory(m) {
       memView.querySelector('[data-field="title"]').textContent = m.title;
       memView.querySelector('[data-field="summary"]').textContent = m.summary;
-      renderNote(m, 'view');
+      renderNote(m, 'view', false, memNoteArea);
+      renderPageMoments(m);
+      memView.querySelector('.detail').scrollTop = 0;
+    }
+
+    // Future release: list every moment this memory came from, newest first.
+    function renderPageMoments(m) {
+      const section = memView.querySelector('.page-moments');
+      section.hidden = !isFuture;
+      if (!isFuture) return;
+      const { kept, deleted } = buildMoments(m.key);
+      const all = [...kept, ...deleted].sort((a, b) => b.t - a.t);
+      section.querySelector('.page-moments__count').textContent = all.length;
+      section.querySelector('.page-moments__list').innerHTML = all.map(x => `
+        <li>
+          <button class="page-moment" type="button" data-moment="${x.id}">
+            <span class="page-moment__main">
+              <span class="moment__icon">${SOURCE_ICONS[x.source]}</span>
+              <span class="page-moment__title">${escapeHtml(x.title)}</span>
+            </span>
+            <span class="page-moment__end">
+              <span class="page-moment__date">${x.date}, 2026</span>
+              <img class="page-moment__chevron" src="/assets/highlight/chevron-right.svg" width="16" height="16" alt="" />
+            </span>
+          </button>
+        </li>`).join('');
     }
 
     const swapIn = el => el.animate(
@@ -1496,8 +1800,10 @@
     );
 
     // mode: 'view' shows the note (or "Add a note"); 'edit' shows the editor.
-    function renderNote(m, mode, animate = false) {
-      noteArea.replaceChildren();
+    // m: anything with a `note` (a memory or a moment). area: where to draw it.
+    function renderNote(m, mode, animate = false, area = noteArea) {
+      noteArea = area;
+      area.replaceChildren();
       if (mode === 'edit') {
         const editor = document.createElement('div');
         editor.className = 'note-editor';
@@ -1528,10 +1834,10 @@
         function finish(action) {
           if (action === 'save') m.note = field.value.trim();
           if (action === 'remove') m.note = null;
-          renderNote(m, 'view', true);
-          noteArea.firstElementChild.focus({ preventScroll: true });
+          renderNote(m, 'view', true, area);
+          area.firstElementChild.focus({ preventScroll: true });
         }
-        noteArea.append(editor);
+        area.append(editor);
         if (animate) swapIn(editor);
         field.focus({ preventScroll: true });
         field.setSelectionRange(field.value.length, field.value.length);
@@ -1549,10 +1855,122 @@
         btn.className = 'note-add';
         btn.innerHTML = '<img src="/assets/highlight/plus.svg" width="8" height="8" alt="" />Add a note';
       }
-      btn.addEventListener('click', () => renderNote(m, 'edit', true));
-      noteArea.append(btn);
+      btn.addEventListener('click', () => renderNote(m, 'edit', true, area));
+      area.append(btn);
       if (animate) swapIn(btn);
     }
+
+    // ---------- Moment page (Future release) ----------
+    const momentView = views.moment;
+    const SOURCE_LABELS = { notes: 'Notes', audio: 'Audio note', zoom: 'Zoom meeting', meet: 'Google Meet meeting' };
+    const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    let activeMoment = null;
+
+    const findMoment = (key, id) => {
+      const { kept, deleted } = buildMoments(key);
+      return [...kept, ...deleted].find(x => x.id === id);
+    };
+
+    // Placeholder content by memory: what a meeting, audio note or typed
+    // note behind it might plausibly say.
+    const CONTENT = {
+      default: {
+        meeting: [
+          ['You', 'Thanks for joining. Let’s go through {title}.'],
+          ['Mike DeWolf', 'Sounds good. I pulled the latest numbers this morning.'],
+          ['Alex Caltieri', 'I have a couple of design updates to share too.'],
+          ['You', 'Great, let’s start with the numbers.'],
+          ['Mike DeWolf', 'Cart abandonment is down a little since the last change.'],
+          ['Eric Chiang', 'Engineering is on track for the checkout beta on Nov 14.'],
+          ['You', 'Nice. Let’s keep the first version scoped and shippable.'],
+          ['Alex Caltieri', 'Agreed. I’ll send the updated flows after this.'],
+          ['You', 'Perfect. I’ll write up the decisions and share them in the doc.'],
+        ],
+        audio: [
+          'Quick note on {title}.',
+          'Main thing: keep the first version small and get it in front of people.',
+          'I need to check the numbers with analytics before Thursday.',
+          'Follow up with Mike on the open questions from last week.',
+          'Write this up as a short update instead of setting up a meeting.',
+        ],
+        notes: ['{title}', ['Decision: keep the first version scoped and shippable', 'Open question: confirm the numbers with analytics', 'Next step: share a written update by Friday']],
+      },
+      'health-data': {
+        meeting: [
+          ['You', 'Hi, just confirming {title}.'],
+          ['Front desk', 'Yes, you’re booked for Thursday at 8:30am.'],
+          ['You', 'Great, I’ll block my calendar until 10.'],
+        ],
+        audio: [
+          'Reminder about {title}.',
+          'Physical therapy is Thursday at 8:30am.',
+          'Keep the morning clear until 10.',
+          'Do the knee exercises every evening this week.',
+        ],
+        notes: ['{title}', ['Physical therapy: Thursdays at 8:30am', 'No meetings before 10am on Thursdays', 'Exercises: 3 sets each evening']],
+      },
+      learning: {
+        meeting: [
+          ['You', 'Thanks for making time for {title}.'],
+          ['Mike DeWolf', 'Happy to. What are you working on?'],
+          ['You', 'A cohort retention query. The joins are tripping me up.'],
+          ['Mike DeWolf', 'Try building it one step at a time with a CTE for each cohort.'],
+          ['You', 'That helps a lot. I’ll try it this afternoon.'],
+        ],
+        audio: [
+          'Notes from {title}.',
+          'Window functions make the retention query much simpler.',
+          'Try a small pricing experiment on delivery fees next quarter.',
+          'Read the chapter on holdout groups before Friday.',
+        ],
+        notes: ['{title}', ['Practice: cohort retention with window functions', 'Read: holdout groups and experiment sizing', 'Idea: test delivery fee pricing in one region']],
+      },
+    };
+
+    function momentContent(key, x) {
+      const set = CONTENT[key] || CONTENT.default;
+      // Mid-sentence titles start lowercase, unless they start with an acronym ("SQL").
+      const inline = /^[A-Z][a-z]/.test(x.title) ? x.title.charAt(0).toLowerCase() + x.title.slice(1) : x.title;
+      const fill = t => escapeHtml(t === '{title}' ? x.title : t.replace('{title}', inline));
+      const time = i => {
+        const base = x.source === 'audio' ? 15 * 60 + 31 : 10 * 60;   // 3:31 PM or 10:00 AM
+        const mins = base + (x.source === 'audio' ? 0 : i * 2);
+        const h = Math.floor(mins / 60), m = mins % 60;
+        return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+      };
+      if (x.source === 'notes') {
+        const [heading, bullets] = set.notes;
+        return `<div class="moment-doc"><p>${fill(heading)}</p><ul>${bullets.map(b => `<li>${fill(b)}</li>`).join('')}</ul></div>`;
+      }
+      const lines = x.source === 'audio' ? set.audio.map(t => ['You', t]) : set.meeting;
+      return `<ul class="transcript">${lines.map(([who, text], i) => `
+        <li>
+          <span class="transcript__meta"><span>${escapeHtml(who)}</span><span aria-hidden="true">•</span><span>${time(i)}</span></span>
+          <span class="transcript__text">${fill(text)}</span>
+        </li>`).join('')}</ul>`;
+    }
+
+    function fillMoment(key, id) {
+      const x = findMoment(key, id);
+      const [mon, day] = x.date.split(' ');
+      const noteKey = `${key}:${id}`;
+      const holder = momentNotes[noteKey] || (momentNotes[noteKey] = { note: null });
+      momentView.querySelector('[data-field="parent"]').textContent = memoryByKey[key].title;
+      momentView.querySelector('[data-field="title"]').textContent = x.title;
+      momentView.querySelector('[data-field="meta"]').textContent =
+        `${SOURCE_LABELS[x.source]} · ${MONTHS_LONG[MONTHS.indexOf(mon)]} ${day}, 2026`;
+      momentView.querySelector('[data-field="content"]').innerHTML = momentContent(key, x);
+      renderNote(holder, 'view', false, momentView.querySelector('.note-area'));
+      momentView.querySelector('.detail').scrollTop = 0;
+      activeMoment = { key, id, title: x.title };
+    }
+
+    memView.querySelector('.page-moments__list').addEventListener('click', e => {
+      const btn = e.target.closest('[data-moment]');
+      if (!btn) return;
+      fillMoment(activeKey, Number(btn.dataset.moment));
+      go('moment');
+    });
 
     // Delete: confirm in a dialog, then go back and collapse the row.
     const dialog = document.querySelector('.dialog');
@@ -1628,11 +2046,17 @@
       } else {
         deleted = deletedMoments(mo);
       }
+      const removed = removedMoments[key] || new Set();
       return {
-        kept: kept.map(x => ({ id: id++, ...x })),
-        deleted: deleted.map(x => ({ id: id++, ...x })),
+        kept: kept.map(x => ({ id: id++, ...x })).filter(x => !removed.has(x.id)),
+        deleted: deleted.map(x => ({ id: id++, ...x })).filter(x => !removed.has(x.id)),
       };
     }
+
+    // Moments the person deleted one by one (Future release), per memory.
+    const removedMoments = {};
+    // Notes added to individual moments, keyed "memoryKey:id".
+    const momentNotes = {};
 
     // Which moments this delete would keep vs. remove. Reset each time the dialog opens.
     let momentState = { kept: [], deleted: [] };
@@ -1864,17 +2288,21 @@
     }
     applyReleaseToDialog();
 
-    function openDialog() {
-      const m = memoryByKey[activeKey];
-      momentState = buildMoments(activeKey);
-      dialog.querySelector('#deleteTitle').textContent = `Delete & forget ${m.title}`;
-      if (isFuture) {
-        resetReview();
-      } else {
-        renderMoments();
-        momentsScroll.scrollTop = 0;
-        setMomentsOpen(false);
-      }
+    // 'memory' deletes a whole memory (with the moments review);
+    // 'moment' deletes one moment (simple confirm).
+    let dialogMode = 'memory';
+    const DIALOG_TEXT = {
+      title: dialog.querySelector('#deleteTitle'),
+      text: dialog.querySelector('#deleteText'),
+      cancel: dialog.querySelector('[data-dialog-cancel]'),
+      confirm: dialog.querySelector('[data-dialog-confirm]'),
+    };
+    const setDialogButtons = (cancel, confirm) => {
+      DIALOG_TEXT.cancel.textContent = cancel;
+      DIALOG_TEXT.confirm.textContent = confirm;
+    };
+
+    function showDialog() {
       dialogReturn = document.activeElement;
       dialog.hidden = false;
       appRegions.forEach(el => { el.inert = true; });
@@ -1887,15 +2315,49 @@
       updateReleaseNote();
     }
 
+    function openMomentDialog() {
+      dialogMode = 'moment';
+      dialog.classList.add('dialog--simple');
+      setDialogButtons('Cancel', 'Delete and forget');
+      DIALOG_TEXT.title.textContent = 'Delete this moment?';
+      DIALOG_TEXT.text.textContent =
+        `Highlight will forget “${activeMoment.title}” and stop using it in answers. This can’t be undone.`;
+      showDialog();
+    }
+    momentView.querySelector('[data-delete-moment]').addEventListener('click', openMomentDialog);
+
+    function openDialog() {
+      dialogMode = 'memory';
+      dialog.classList.remove('dialog--simple');
+      setDialogButtons('Cancel', 'Delete and forget');
+      const m = memoryByKey[activeKey];
+      momentState = buildMoments(activeKey);
+      dialog.querySelector('#deleteTitle').textContent = `Delete & forget ${m.title}`;
+      if (isFuture) {
+        resetReview();
+      } else {
+        renderMoments();
+        momentsScroll.scrollTop = 0;
+        setMomentsOpen(false);
+      }
+      showDialog();
+    }
+
+    // Wait for an animation, but never longer than `ms` (a backgrounded tab
+    // can stop painting, and its animations never finish).
+    const settle = (anim, ms = 600) => Promise.race([anim.finished, new Promise(r => setTimeout(r, ms))]);
+
     async function closeDialog() {
       appRegions.forEach(el => { el.inert = false; });
-      await dialog.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in' }).finished;
+      await settle(dialog.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in' }));
       dialog.hidden = true;
       updateReleaseNote();
     }
 
     memView.querySelector('[data-delete]').addEventListener('click', openDialog);
     dialog.querySelector('[data-dialog-cancel]').addEventListener('click', async () => {
+      // "Not now" on the flag step: the moment is still deleted, just not flagged.
+      if (dialogMode === 'flag') return deleteActiveMoment(false);
       await closeDialog();
       dialogReturn?.focus({ preventScroll: true });
     });
@@ -1916,52 +2378,169 @@
         btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
       }
     });
+    // What "moments like this" means, per memory, for the flag step.
+    const SENSITIVE_TOPICS = {
+      profile: 'your role and career',
+      'how-you-work': 'how you plan your week',
+      writing: 'your drafts and updates',
+      'active-projects': 'your projects',
+      people: 'the people you work with',
+      'health-data': 'physical therapy',
+      learning: 'what you’re learning',
+    };
+
+    // Step 2 after deleting a moment: offer to flag it as sensitive, so
+    // Highlight stops recording moments like it. The delete already happened.
+    function showFlagStep() {
+      dialogMode = 'flag';
+      const swap = () => {
+        DIALOG_TEXT.title.textContent = 'Flag as a sensitive moment?';
+        DIALOG_TEXT.text.textContent =
+          'Highlight will learn not to record moments like this in the future, ' +
+          `such as notes and calls about ${SENSITIVE_TOPICS[activeMoment.key]}.`;
+        setDialogButtons('Not now', 'Flag as sensitive');
+      };
+      settle(dialogCard.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 100, easing: 'ease-in' }), 200)
+        .then(() => {
+          swap();
+          dialogCard.animate(
+            [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 180, easing: EASE_OUT }
+          );
+          DIALOG_TEXT.cancel.focus();
+        });
+    }
+
+    // Flagged moments become an entry on the Excluded page (once per topic).
+    function addExclusion(text) {
+      const ul = views.excluded.querySelector('ul.detail__body');
+      if ([...ul.children].some(li => li.textContent === text)) return;
+      const li = document.createElement('li');
+      li.textContent = text;
+      ul.appendChild(li);
+    }
+
+    // Toast on the memory page (e.g. after flagging).
+    const toast = document.querySelector('.toast');
+    let toastTimer;
+    function showToast(text) {
+      toast.textContent = text;
+      toast.hidden = false;
+      toast.animate([{ opacity: 0, transform: 'translate(-50%, 6px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }],
+        { duration: 200, easing: EASE_OUT });
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(async () => {
+        await settle(toast.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-in' }));
+        toast.hidden = true;
+      }, 3500);
+    }
+
+    async function deleteActiveMoment(flagged) {
+      const { key, id } = activeMoment;
+      await closeDialog();
+      await go('memory');
+      const btn = memView.querySelector(`[data-moment="${id}"]`);
+      const li = btn?.closest('li');
+      if (li) {
+        await settle(li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out', fill: 'forwards' }));
+        li.style.overflow = 'hidden';
+        await settle(li.animate([{ height: li.offsetHeight + 'px' }, { height: '0px' }], { duration: 220, easing: EASE_OUT, fill: 'forwards' }));
+      }
+      (removedMoments[key] || (removedMoments[key] = new Set())).add(id);
+      const scroller = memView.querySelector('.detail');
+      const top = scroller.scrollTop;
+      renderPageMoments(memoryByKey[key]);
+      scroller.scrollTop = top;
+      activeMoment = null;
+      if (flagged) {
+        addExclusion(`Notes and calls about ${SENSITIVE_TOPICS[key]}`);
+        showToast('Flagged as sensitive and added to Excluded.');
+      }
+    }
+
     dialog.querySelector('[data-dialog-confirm]').addEventListener('click', async () => {
+      if (dialogMode === 'moment') return showFlagStep();
+      if (dialogMode === 'flag') return deleteActiveMoment(true);
       const row = rowFor();
-      const li = row.closest('li');
-      const divider = li.nextElementSibling;
+      const m = memoryByKey[activeKey];
+      // The row's own divider (Initial) or, if it's the last row in its
+      // category, the whole category (Future).
+      let li = row.closest('li');
+      const group = li.closest('.memory-group--category');
+      if (group && group.querySelectorAll('.memory').length === 1) li = group;
+      const els = [li];
+      if (li.nextElementSibling?.matches('.memory-list__sep')) els.push(li.nextElementSibling);
+      const gap = parseFloat(getComputedStyle(li.parentElement).rowGap) || 0;
       await closeDialog();
       await go('list');
       // Fade the row, then close the gap it leaves.
-      await li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out' }).finished;
-      li.style.overflow = 'hidden';
-      divider.style.overflow = 'hidden';
-      await Promise.all([li, divider].map(el => el.animate(
-        [{ height: el.offsetHeight + 'px' }, { height: '0px', marginTop: '-12px' }],
-        { duration: 220, easing: EASE_OUT }
-      ).finished));
-      li.remove();
-      divider.remove();
-      delete memoryByKey[activeKey];
+      await settle(li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease-out', fill: 'forwards' }));
+      await Promise.all(els.map(el => {
+        el.style.overflow = 'hidden';
+        return settle(el.animate(
+          [{ height: el.offsetHeight + 'px' }, { height: '0px', marginTop: `-${gap}px` }],
+          { duration: 220, easing: EASE_OUT, fill: 'forwards' }
+        ));
+      }));
+      m.deleted = true;
       activeKey = null;
+      renderList();
     });
 
     list.addEventListener('click', e => {
       const row = e.target.closest('[data-open]');
       if (row) go(row.dataset.open, row.dataset.key);
     });
-    wrap.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => go('list')));
+    wrap.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => go(parentOf(current))));
     document.querySelector('.nav__item[aria-current="page"]').addEventListener('click', () => go('list'));
     addEventListener('keydown', e => {
-      if (e.key === 'Escape' && current !== 'list' && dialog.hidden && !e.target.matches('input, textarea')) go('list');
+      if (e.key === 'Escape' && current !== 'list' && dialog.hidden && !e.target.matches('input, textarea')) go(parentOf(current));
     });
 
     // ---------- Release switcher ----------
     // Switches in place, keeping the current screen and any edits, so each
-    // screen can be compared one-to-one. Only the delete dialog differs today;
+    // screen can be compared one-to-one. See CHANGES for the screens that differ;
     // every other screen is labeled "Remains unchanged" in the Future release.
     // URLs — deployed: /highlight-takehome/prototype and /highlight-takehome/future;
     // locally (served as .html): the same file with ?release=future.
     const releaseLinks = document.querySelectorAll('[data-release]');
-    const releaseNote = document.querySelector('.release-note');
+    const releaseNotes = document.querySelector('.release-notes');
+    const CHANGES = {
+      moment: [
+        'New page: open any moment to read its transcript or note',
+        'Add a note to a single moment, or delete just that moment',
+        'After deleting a moment, you can flag it as sensitive so Highlight stops recording moments like it; flagged topics are added to Excluded',
+      ],
+      memory: [
+        'Lists every moment this memory came from (meetings, notes and audio), newest first',
+      ],
+      list: [
+        'Memories are grouped into categories: About you, How you work and Your work',
+      ],
+      dialog: [
+        'Built for hundreds of moments instead of dozens',
+        'Search moments by title',
+        'Filter by source: Zoom, Google Meet, Notes or Audio',
+        'Moments grouped by source and split into Keep and Delete, with Keep all / Delete all',
+      ],
+    };
     const localFile = location.pathname.endsWith('.html');
     const releaseHrefs = {
       initial: localFile ? location.pathname : '/highlight-takehome/prototype',
       future: localFile ? `${location.pathname}?release=future` : '/highlight-takehome/future',
     };
 
+    // Screens that differ in the Future release: the Memory list (categories),
+    // memory pages (moments) and the delete dialog. Everything else is labeled
+    // unchanged.
     function updateReleaseNote() {
-      releaseNote.hidden = !(isFuture && dialog.hidden);
+      releaseNotes.hidden = !isFuture;
+      if (!isFuture) return;
+      const changes = !dialog.hidden && dialogMode === 'memory' ? CHANGES.dialog : CHANGES[current] || null;
+      releaseNotes.innerHTML = changes
+        ? `<p class="release-notes__title">What changed</p>
+           <ul class="release-notes__list">${changes.map(c => `<li>${c}</li>`).join('')}</ul>`
+        : '<p class="release-notes__pill">Remains unchanged</p>';
     }
 
     function setRelease(future) {
@@ -1974,8 +2553,21 @@
         ? 'Highlight Prototype (Future release) — Nathalia Kasman'
         : 'Highlight Prototype — Nathalia Kasman';
       applyReleaseToDialog();
+      // Moment pages don't exist in the Initial release: fall back to the memory page.
+      if (!isFuture && current === 'moment') {
+        if (!dialog.hidden) { dialog.hidden = true; appRegions.forEach(el => { el.inert = false; }); }
+        views.moment.classList.remove('is-active');
+        views.moment.inert = true;
+        views.memory.classList.add('is-active');
+        views.memory.inert = false;
+        current = 'memory';
+      }
+      if (current === 'memory') renderPageMoments(memoryByKey[activeKey]);
+      const scrollTop = document.querySelector('.panel').scrollTop;
+      renderList();
+      document.querySelector('.panel').scrollTop = scrollTop;
       // An open delete dialog swaps to the other release's version.
-      if (!dialog.hidden) {
+      if (!dialog.hidden && dialogMode === 'memory') {
         momentState = buildMoments(activeKey);
         if (isFuture) {
           resetReview();
