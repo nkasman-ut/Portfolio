@@ -146,6 +146,28 @@
       font: 400 13px/20px var(--font-body);
     }
 
+    /* "Best viewed on a desktop": only on small screens, or on touch devices
+       without a mouse (phones and tablets), under the release switcher. */
+    .device-note {
+      display: none;
+      position: fixed;
+      top: 58px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      margin: 0;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #FFF4C2;
+      border: 1px solid #EEDF9E;
+      font: 500 12px/16px var(--font-body);
+      color: #2C2C25;
+      white-space: nowrap;
+    }
+    @media (max-width: 900px), (hover: none) and (pointer: coarse) {
+      .device-note { display: block; }
+    }
+
     /* ---------- Sandbox controls (only with ?sandbox) ---------- */
     .sandbox {
       position: fixed;
@@ -1159,6 +1181,8 @@
 </head>
 <body>
   <a class="back" href="/highlight-takehome">← Back</a>
+
+  <p class="device-note" role="note">Best viewed on a desktop</p>
 
   <nav class="release" aria-label="Prototype version">
     <a data-release="initial">Initial release</a>
