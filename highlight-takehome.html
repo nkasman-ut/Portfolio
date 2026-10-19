@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Highlight Take-home — Nathalia Kasman</title>
+  <link rel="icon" href="/assets/favicon/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/favicon/site.webmanifest" />
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #F2F0EC;
+      --ink: #413D38;
+      --ink-body: #423D38;
+
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink-body);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+    }
+
+    .takehome__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .btn {
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 10px;
+      padding: 13px 22px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      border: 1px solid var(--ink);
+      transition: transform .12s ease, opacity .18s ease, background .18s ease, color .18s ease;
+      white-space: nowrap;
+    }
+
+    .btn--primary { background: var(--ink); color: #fff; }
+    .btn--secondary { background: transparent; color: var(--ink); }
+
+    .btn:hover { opacity: .9; }
+    .btn--secondary:hover { background: var(--ink); color: #fff; opacity: 1; }
+    .btn:active { transform: translateY(1px); }
+  </style>
+</head>
+<body>
+  <main class="takehome">
+    <div class="takehome__actions">
+      <!-- TODO: point the slides button at the deck once it is ready -->
+      <a class="btn btn--primary" href="#">View the slides</a>
+      <a class="btn btn--secondary" href="/highlight-takehome/prototype">View the prototype</a>
+    </div>
+  </main>
+</body>
+</html>
