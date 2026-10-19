@@ -924,10 +924,32 @@
     .moment-doc p { margin: 0; }
     .moment-doc ul { margin: 0; padding-left: 24px; }
 
+    /* Toast, centered over the content panel above the prompt box. */
+    .toast {
+      position: absolute;
+      left: calc(230px + 875px / 2);
+      bottom: 124px;
+      transform: translateX(-50%);
+      z-index: 25;
+      margin: 0;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: var(--hl-heading);
+      color: var(--hl-panel);
+      font: 14px/20px var(--hl-font-body);
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(44, 44, 37, .18);
+      pointer-events: none;
+    }
+    .toast[hidden] { display: none; }
+
     /* Simple confirm (deleting a single moment): no moments review. */
     .dialog--simple .moments-toggle,
     .dialog--simple .moments,
     .dialog--simple .review { display: none !important; }
+    /* Same size as the Initial release delete dialog, even in the Future release. */
+    .dialog--future.dialog--simple .dialog__card { width: 480px; }
+    .dialog--simple .dialog__actions { margin-top: 24px; }
 
     .detail__title {
       margin: 0;
@@ -1256,6 +1278,8 @@
           </article>
         </section>
       </div>
+
+      <p class="toast" role="status" hidden></p>
 
       <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteText" hidden>
         <div class="dialog__card">
@@ -2239,6 +2263,12 @@
     const DIALOG_TEXT = {
       title: dialog.querySelector('#deleteTitle'),
       text: dialog.querySelector('#deleteText'),
+      cancel: dialog.querySelector('[data-dialog-cancel]'),
+      confirm: dialog.querySelector('[data-dialog-confirm]'),
+    };
+    const setDialogButtons = (cancel, confirm) => {
+      DIALOG_TEXT.cancel.textContent = cancel;
+      DIALOG_TEXT.confirm.textContent = confirm;
     };
 
     function showDialog() {
@@ -2257,6 +2287,7 @@
     function openMomentDialog() {
       dialogMode = 'moment';
       dialog.classList.add('dialog--simple');
+      setDialogButtons('Cancel', 'Delete and forget');
       DIALOG_TEXT.title.textContent = 'Delete this moment?';
       DIALOG_TEXT.text.textContent =
         `Highlight will forget “${activeMoment.title}” and stop using it in answers. This can’t be undone.`;
@@ -2267,6 +2298,7 @@
     function openDialog() {
       dialogMode = 'memory';
       dialog.classList.remove('dialog--simple');
+      setDialogButtons('Cancel', 'Delete and forget');
       const m = memoryByKey[activeKey];
       momentState = buildMoments(activeKey);
       dialog.querySelector('#deleteTitle').textContent = `Delete & forget ${m.title}`;
@@ -2293,6 +2325,8 @@
 
     memView.querySelector('[data-delete]').addEventListener('click', openDialog);
     dialog.querySelector('[data-dialog-cancel]').addEventListener('click', async () => {
+      // "Not now" on the flag step: the moment is still deleted, just not flagged.
+      if (dialogMode === 'flag') return deleteActiveMoment(false);
       await closeDialog();
       dialogReturn?.focus({ preventScroll: true });
     });
@@ -2313,7 +2347,55 @@
         btns[(i + (e.shiftKey ? -1 : 1) + btns.length) % btns.length].focus();
       }
     });
-    async function deleteActiveMoment() {
+    // What "moments like this" means, per memory, for the flag step.
+    const SENSITIVE_TOPICS = {
+      profile: 'your role and career',
+      'how-you-work': 'how you plan your week',
+      writing: 'your drafts and updates',
+      'active-projects': 'your projects',
+      people: 'the people you work with',
+      'health-data': 'physical therapy',
+      learning: 'what you’re learning',
+    };
+
+    // Step 2 after deleting a moment: offer to flag it as sensitive, so
+    // Highlight stops recording moments like it. The delete already happened.
+    function showFlagStep() {
+      dialogMode = 'flag';
+      const swap = () => {
+        DIALOG_TEXT.title.textContent = 'Flag as a sensitive moment?';
+        DIALOG_TEXT.text.textContent =
+          'Highlight will learn not to record moments like this in the future, ' +
+          `such as notes and calls about ${SENSITIVE_TOPICS[activeMoment.key]}.`;
+        setDialogButtons('Not now', 'Flag as sensitive');
+      };
+      settle(dialogCard.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 100, easing: 'ease-in' }), 200)
+        .then(() => {
+          swap();
+          dialogCard.animate(
+            [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 180, easing: EASE_OUT }
+          );
+          DIALOG_TEXT.cancel.focus();
+        });
+    }
+
+    // Toast on the memory page (e.g. after flagging).
+    const toast = document.querySelector('.toast');
+    let toastTimer;
+    function showToast(text) {
+      toast.textContent = text;
+      toast.hidden = false;
+      toast.animate([{ opacity: 0, transform: 'translate(-50%, 6px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }],
+        { duration: 200, easing: EASE_OUT });
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(async () => {
+        await settle(toast.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-in' }));
+        toast.hidden = true;
+      }, 3500);
+    }
+
+    async function deleteActiveMoment(flagged) {
       const { key, id } = activeMoment;
       await closeDialog();
       await go('memory');
@@ -2330,10 +2412,12 @@
       renderPageMoments(memoryByKey[key]);
       scroller.scrollTop = top;
       activeMoment = null;
+      if (flagged) showToast('Flagged as sensitive. Highlight won’t record moments like this.');
     }
 
     dialog.querySelector('[data-dialog-confirm]').addEventListener('click', async () => {
-      if (dialogMode === 'moment') return deleteActiveMoment();
+      if (dialogMode === 'moment') return showFlagStep();
+      if (dialogMode === 'flag') return deleteActiveMoment(true);
       const row = rowFor();
       const m = memoryByKey[activeKey];
       // The row's own divider (Initial) or, if it's the last row in its
@@ -2382,6 +2466,7 @@
       moment: [
         'New page: open any moment to read its transcript or note',
         'Add a note to a single moment, or delete just that moment',
+        'After deleting a moment, you can flag it as sensitive so Highlight stops recording moments like it',
       ],
       memory: [
         'Lists every moment this memory came from (meetings, notes and audio), newest first',
