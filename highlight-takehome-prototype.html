@@ -28,7 +28,7 @@
       --screen-h: 801;
       --gutter: 48px;
       /* Room above the window for the release switcher and the "Remains unchanged" label. */
-      --gutter-top: 100px;
+      --gutter-top: 176px;
 
       /* Highlight app tokens (from Figma) */
       --hl-window: #F7F7F3;
@@ -109,12 +109,21 @@
 
     /* "Remains unchanged" label, just above the prototype window, on Future
        release screens that match Initial. */
-    .release-note {
+    /* Future release notes, left-aligned just above the prototype window:
+       a "What changed" list on changed screens, or a "Remains unchanged"
+       pill on screens that match the Initial release. */
+    .release-notes {
       position: absolute;
-      bottom: calc(100% + 12px);
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 30;
+      bottom: calc(100% + 16px);
+      left: 0;
+      max-width: 100%;
+      margin: 0;
+      color: var(--ink);
+      pointer-events: none;
+    }
+    .release-notes[hidden] { display: none; }
+    .release-notes__pill {
+      display: inline-block;
       margin: 0;
       padding: 4px 12px;
       border-radius: 999px;
@@ -123,9 +132,17 @@
       font: 500 12px/16px var(--font-body);
       color: #2C2C25;
       white-space: nowrap;
-      pointer-events: none;
     }
-    .release-note[hidden] { display: none; }
+    .release-notes__title {
+      margin: 0 0 6px;
+      font: 600 13px/18px var(--font-body);
+      color: #2C2C25;
+    }
+    .release-notes__list {
+      margin: 0;
+      padding-left: 18px;
+      font: 400 13px/20px var(--font-body);
+    }
 
     /* ---------- Sandbox controls (only with ?sandbox) ---------- */
     .sandbox {
@@ -957,7 +974,7 @@
   </div>
 
   <div class="stage" aria-label="Prototype">
-    <p class="release-note" role="status" hidden>Remains unchanged</p>
+    <div class="release-notes" role="status" hidden></div>
     <div class="app">
       <nav class="nav" aria-label="Settings">
         <img class="nav__window-controls" src="/assets/highlight/window-controls.svg" width="58" height="14" alt="" />
@@ -2014,7 +2031,19 @@
     // URLs — deployed: /highlight-takehome/prototype and /highlight-takehome/future;
     // locally (served as .html): the same file with ?release=future.
     const releaseLinks = document.querySelectorAll('[data-release]');
-    const releaseNote = document.querySelector('.release-note');
+    const releaseNotes = document.querySelector('.release-notes');
+    const CHANGES = {
+      list: [
+        'Memories are grouped into categories: About you, How you work and Your work',
+        'Always remember has a clearer description',
+      ],
+      dialog: [
+        'Built for hundreds of moments instead of dozens',
+        'Search moments by title',
+        'Filter by source: Zoom, Google Meet, Notes or Audio',
+        'Moments grouped by source and split into Keep and Delete, with Keep all / Delete all',
+      ],
+    };
     const localFile = location.pathname.endsWith('.html');
     const releaseHrefs = {
       initial: localFile ? location.pathname : '/highlight-takehome/prototype',
@@ -2024,7 +2053,13 @@
     // Screens that differ in the Future release: the Memory list (categories)
     // and the delete dialog. Everything else is labeled unchanged.
     function updateReleaseNote() {
-      releaseNote.hidden = !(isFuture && dialog.hidden && current !== 'list');
+      releaseNotes.hidden = !isFuture;
+      if (!isFuture) return;
+      const changes = !dialog.hidden ? CHANGES.dialog : current === 'list' ? CHANGES.list : null;
+      releaseNotes.innerHTML = changes
+        ? `<p class="release-notes__title">What changed</p>
+           <ul class="release-notes__list">${changes.map(c => `<li>${c}</li>`).join('')}</ul>`
+        : '<p class="release-notes__pill">Remains unchanged</p>';
     }
 
     function setRelease(future) {
