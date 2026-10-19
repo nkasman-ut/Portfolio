@@ -16,11 +16,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <style>
+    @font-face {
+      font-family: "Tagada";
+      src: url("/assets/Tagada-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
       --bg: #F2F0EC;
       --ink: #413D38;
       --ink-body: #423D38;
 
+      --font-accent: "Tagada", Georgia, serif;
       --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
@@ -40,11 +49,135 @@
       padding: 48px 24px;
     }
 
+    /* Back to the portfolio, top-left (same as the prototype's back link) */
+    .back {
+      position: fixed;
+      top: 20px;
+      left: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink);
+      text-decoration: none;
+      opacity: .7;
+      transition: opacity .18s ease;
+    }
+    .back:hover { opacity: 1; }
+    .back:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 4px; opacity: 1; }
+
+    /* Header in the portfolio's hero style: Tagada title with the wave-in,
+       body copy at the hero bio size. */
+    .takehome__intro { align-self: stretch; }
+    .takehome__title {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      font-size: clamp(56px, 8vw, 112px);
+      line-height: 1.0;
+      letter-spacing: -0.05em;
+      color: var(--ink);
+      margin: 0;
+    }
+    .takehome__title .ch {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(0.44em);
+      animation: hero-wave-in 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: calc(var(--i) * 55ms);
+    }
+    .takehome__title .space { display: inline-block; width: 0.28em; }
+    @keyframes hero-wave-in {
+      from { opacity: 0; transform: translateY(0.44em); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .takehome__title .ch { animation: none; opacity: 1; transform: none; }
+    }
+    .takehome__text {
+      font-size: clamp(18px, 1.7vw, 24px);
+      line-height: 1.46;
+      color: var(--ink-body);
+      margin: 24px 0 0;
+      max-width: 647px;
+    }
+
+    .takehome {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 40px;
+      padding-top: 24px;
+    }
+
+    /* Walkthrough video, styled like the portfolio's bare videos: a muted
+       preview loops; the button restarts it in place with sound and controls. */
+    .vid-bare-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .vid-bare {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      background: #E8E5DE;
+    }
+
+    /* Matches the portfolio's "Behind the scenes" button */
+    .vid__cta {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, calc(-50% + 8px));
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border: 1px solid var(--ink);
+      border-radius: 10px;
+      background: var(--ink);
+      color: #fff;
+      font-family: var(--font-accent);
+      font-size: 26px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .28s ease, transform .28s ease;
+    }
+    .vid__cta svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .vid--walkthrough:hover .vid__cta,
+    .vid--walkthrough:focus-within .vid__cta {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+      pointer-events: auto;
+    }
+    .vid--walkthrough .vid__cta:hover { opacity: .9; }
+    .vid__cta:active { transform: translate(-50%, calc(-50% + 1px)); }
+    .vid__cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    /* Once the full walkthrough is playing, the button goes away. */
+    .vid--walkthrough.is-playing .vid__cta { display: none; }
+    /* Touch devices have no hover: keep the button visible. */
+    @media (hover: none) {
+      .vid__cta { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
+    }
+    @media (max-width: 600px) {
+      .vid__cta { font-size: 20px; padding: 10px 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .vid__cta { transition: none; }
+    }
+
     .takehome__actions {
+      align-self: stretch;
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      justify-content: center;
+      justify-content: flex-start;
+      margin-top: -8px;
     }
 
     .btn {
@@ -70,12 +203,50 @@
   </style>
 </head>
 <body>
+  <a class="back" href="/">← Back to portfolio</a>
+
   <main class="takehome">
+    <header class="takehome__intro">
+      <h1 class="takehome__title" aria-label="Hey Highlight!"><span class="ch" style="--i:0">H</span><span class="ch" style="--i:1">e</span><span class="ch" style="--i:2">y</span><span class="space" aria-hidden="true"> </span><span class="ch" style="--i:3">H</span><span class="ch" style="--i:4">i</span><span class="ch" style="--i:5">g</span><span class="ch" style="--i:6">h</span><span class="ch" style="--i:7">l</span><span class="ch" style="--i:8">i</span><span class="ch" style="--i:9">g</span><span class="ch" style="--i:10">h</span><span class="ch" style="--i:11">t</span><span class="ch" style="--i:12">!</span></h1>
+      <p class="takehome__text">Here’s my submission for the take home exercise. Let me know if you have any questions or feedback!</p>
+    </header>
+
+    <div class="vid-bare-wrap vid--walkthrough">
+      <video class="vid-bare" src="/assets/img/highlight-walkthru.mp4" autoplay loop muted playsinline preload="metadata" aria-label="Highlight take-home walkthrough"></video>
+      <button type="button" class="vid__cta">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Watch the walkthrough: 4min
+      </button>
+    </div>
+
     <div class="takehome__actions">
-      <a class="btn btn--primary" href="https://www.figma.com/deck/V4LQYrxUnszixFx3O48Dwb" target="_blank" rel="noopener">View the slides</a>
-      <a class="btn btn--secondary" href="/highlight-takehome/prototype">View the prototype</a>
+      <a class="btn btn--primary" href="/highlight-takehome/prototype">View the prototype</a>
+      <a class="btn btn--secondary" href="https://www.figma.com/deck/V4LQYrxUnszixFx3O48Dwb" target="_blank" rel="noopener">View the slides</a>
       <a class="btn btn--secondary" href="https://www.figma.com/design/iNEt15j5NdowXaKI9pLLDG/Highlight-Take-Home---Nathalia?node-id=0-1&amp;t=tJ16jczHohxQq9fM-1" target="_blank" rel="noopener">View Figma file</a>
     </div>
   </main>
+
+  <script>
+    // Play the full walkthrough in place: restart it with sound and controls.
+    (function () {
+      var wrap = document.querySelector('.vid--walkthrough');
+      var video = wrap.querySelector('video');
+      var cta = wrap.querySelector('.vid__cta');
+      // Respect reduced motion: no autoplaying preview.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        video.removeAttribute('autoplay');
+        video.pause();
+      }
+      cta.addEventListener('click', function () {
+        wrap.classList.add('is-playing');
+        video.loop = false;
+        video.muted = false;
+        video.controls = true;
+        video.currentTime = 0;
+        video.play();
+        video.focus();
+      });
+    })();
+  </script>
 </body>
 </html>
