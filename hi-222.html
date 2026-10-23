@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hi, 222 — Nathalia Kasman</title>
+  <link rel="icon" href="/assets/favicon/favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="/assets/favicon/site.webmanifest" />
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    @font-face {
+      font-family: "Tagada";
+      src: url("/assets/Tagada-Regular.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --ink: #413D38;
+      --ink-body: #423D38;
+
+      /* Paper: a neutral off-white, plus a 300px tile of lit noise multiplied
+         over it. The SVG treats fractal noise as a height map and shines a
+         light across it (feDiffuseLighting), which gives the embossed fibre
+         look of a paper scan for under 1KB instead of an image.
+         Knobs to tune it:
+           baseFrequency  fibre size; first number is x, second y, so a
+                          lower x stretches the fibres horizontally
+           surfaceScale   relief depth (higher = rougher)
+           elevation      light angle (lower = stronger shadows, darker) */
+      --paper: #F9F9F9;
+      --paper-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.06 .1' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='.8'%3E%3CfeDistantLight azimuth='225' elevation='70'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+
+      --font-accent: "Tagada", Georgia, serif;
+      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--paper);
+      background-image: var(--paper-texture);
+      background-blend-mode: multiply;
+      color: var(--ink-body);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+    }
+
+    /* Back to the portfolio, top-left (same as the take-home page) */
+    .back {
+      position: fixed;
+      top: 20px;
+      left: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink);
+      text-decoration: none;
+      opacity: .7;
+      transition: opacity .18s ease;
+    }
+    .back:hover { opacity: 1; }
+    .back:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 4px; opacity: 1; }
+
+    .hi {
+      width: 100%;
+      max-width: 960px;
+    }
+    .hi__title {
+      font-family: var(--font-accent);
+      font-weight: 400;
+      font-size: clamp(56px, 8vw, 112px);
+      line-height: 1.0;
+      letter-spacing: -0.05em;
+      color: var(--ink);
+      margin: 0;
+    }
+    .hi__text {
+      font-size: clamp(18px, 1.7vw, 24px);
+      line-height: 1.46;
+      margin: 24px 0 0;
+      max-width: 647px;
+    }
+  </style>
+</head>
+<body>
+  <a class="back" href="/">← Back to portfolio</a>
+
+  <main class="hi">
+    <h1 class="hi__title">Hi, 222</h1>
+    <p class="hi__text">Placeholder copy.</p>
+  </main>
+</body>
+</html>

@@ -6,6 +6,7 @@
     { "source": "/highlight-takehome", "destination": "/highlight-takehome.html" },
     { "source": "/highlight-takehome/prototype", "destination": "/highlight-takehome-prototype.html" },
     { "source": "/highlight-takehome/sandbox", "destination": "/highlight-takehome-prototype.html" },
-    { "source": "/highlight-takehome/future", "destination": "/highlight-takehome-prototype.html" }
+    { "source": "/highlight-takehome/future", "destination": "/highlight-takehome-prototype.html" },
+    { "source": "/hi-222", "destination": "/hi-222.html" }
   ]
 }
