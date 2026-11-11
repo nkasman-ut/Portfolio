@@ -13,97 +13,1576 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
 
   <style>
-    @font-face {
-      font-family: "Tagada";
-      src: url("/assets/Tagada-Regular.woff2") format("woff2");
-      font-weight: 400;
-      font-style: normal;
-      font-display: swap;
-    }
-
     :root {
-      --ink: #413D38;
-      --ink-body: #423D38;
-
-      /* Paper: a neutral off-white, plus a 300px tile of lit noise multiplied
-         over it. The SVG treats fractal noise as a height map and shines a
-         light across it (feDiffuseLighting), which gives the embossed fibre
-         look of a paper scan for under 1KB instead of an image.
-         Knobs to tune it:
-           baseFrequency  fibre size; first number is x, second y, so a
-                          lower x stretches the fibres horizontally
-           surfaceScale   relief depth (higher = rougher)
-           elevation      light angle (lower = stronger shadows, darker) */
-      --paper: #F9F9F9;
-      --paper-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.06 .1' numOctaves='4' seed='3' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='.8'%3E%3CfeDistantLight azimuth='225' elevation='70'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
-
-      --font-accent: "Tagada", Georgia, serif;
-      --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      --bg: #15191D;
+      --ink: #D1D6D9;
+      --font: "Newsreader", Georgia, serif;
     }
 
     * { box-sizing: border-box; }
 
+    html { background: var(--bg); }
+    @media (prefers-reduced-motion: no-preference) {
+      html { scroll-behavior: smooth; }
+    }
+
     body {
       margin: 0;
-      min-height: 100vh;
-      background-color: var(--paper);
-      background-image: var(--paper-texture);
-      background-blend-mode: multiply;
-      color: var(--ink-body);
-      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      font-weight: 500;
+      font-size: clamp(26px, 2.8vw, 40px);
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       text-rendering: optimizeLegibility;
+    }
+
+    /* Each section is one screen tall in the design (1024px on a 1440 frame),
+       separated by a full-width 1px rule. */
+    .section {
+      min-height: max(100vh, 640px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 96px 24px;
+      position: relative;
+    }
+    /* The 1px rule under each section; drawn as a pseudo-element so it can
+       animate in (scaleX) when the "rule" setting is on. */
+    .section::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: var(--ink);
+      transform-origin: var(--rule-origin, left);
+      transition: transform 1400ms cubic-bezier(.16, 1, .3, 1);
+    }
+    .section.rules-anim:not(.rule-in)::after { transform: scaleX(0); }
+    .section > * {
+      width: 100%;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .section p { margin-top: 0; margin-bottom: 0; text-wrap: pretty; }  /* avoid one-word last lines */
+    .section p + p { margin-top: 1.5em; }
+    .section p + .lead { margin-top: 1.1em; }
+
+    /* The thesis question: italic, regular weight, indented under the lead-in */
+    .section .question {
+      max-width: 800px;
+      padding-left: 77px;
+      font-style: italic;
+      font-weight: 400;
+      margin-top: 1.55em;
+      margin-bottom: 1.55em;
+    }
+    .section .question + p { margin-top: 0; }
+
+    .tail { min-height: max(100vh, 640px); }
+
+    @media (max-width: 640px) {
+      .section .question { padding-left: 24px; }
+    }
+
+    /* ---------- Text transitions ----------
+       Each paragraph is split into pieces (lines, words or characters). In
+       "enter" mode a piece sits in its "from" state while the paragraph has
+       .is-pre, and transitions to rest when it is revealed. In "scrub" mode
+       JS writes each piece's style directly from scroll position. */
+    .t-line { display: block; }
+    .t-mask { overflow: hidden; padding-bottom: .08em; margin-bottom: -.08em; }
+    .t-word { display: inline-block; white-space: nowrap; }
+    .t-piece {
+      display: inline-block;
+      transform-origin: 50% 100%;
+      transition-property: opacity, transform, filter;
+      transition-duration: var(--dur, 900ms);
+      transition-timing-function: var(--ease, ease);
+      transition-delay: var(--d, 0ms);
+    }
+    .t-block > .t-piece { display: block; }
+    .is-pre .t-piece {
+      opacity: var(--from-o, 0);
+      transform: perspective(600px) translateY(var(--y, 0)) rotateX(var(--rx, 0deg)) scale(var(--sc, 1));
+      filter: blur(var(--blur, 0px));
+    }
+    .is-pre .t-piece { transition-delay: 0ms; }
+    .t-scrub .t-piece { transition: none; }
+
+    /* Pencil underline under a word (see addMark). Drawn left to right with
+       stroke-dashoffset; --mark-d is set from JS to land just after the
+       paragraph finishes typing. The #pencil filter gives it graphite grain. */
+    .mark-host { position: relative; }
+    .mark {
+      position: absolute;
+      overflow: visible;
+      pointer-events: none;
+      filter: url(#pencil);
+    }
+    .mark path {
+      fill: none;
+      stroke: var(--ink);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+    }
+    .mark__a {
+      stroke-width: var(--ul-w, 2.6);
+      opacity: var(--ul-o, .9);
+      transition: stroke-dashoffset var(--ul-draw, 700ms) cubic-bezier(.55, .1, .35, 1) var(--mark-d, 0ms);
+    }
+    .mark__b {
+      stroke-width: calc(var(--ul-w, 2.6) * .75);
+      opacity: calc(var(--ul-o, .9) * .6);
+      transition: stroke-dashoffset calc(var(--ul-draw, 700ms) * .7) cubic-bezier(.55, .1, .35, 1) calc(var(--mark-d, 0ms) + var(--ul-draw, 700ms) * .85);
+    }
+    .is-pre .mark path,
+    .mark.is-off path,
+    .t-scrub .mark:not(.is-drawn) path { stroke-dashoffset: 1; transition: none; }
+
+    /* Ripple on a phrase (see addRipple): each letter hops up and settles,
+       one after another, once the paragraph has finished arriving. */
+    .rip-word { white-space: nowrap; }
+    .rip-ch { display: inline-block; }
+    [data-ripple]:not(.is-pre):not(.t-scrub) .rip-ch {
+      animation: ripple 900ms cubic-bezier(.3, .7, .3, 1) calc(var(--rip-d, 0ms) + var(--ri) * 28ms) both;
+    }
+    @keyframes ripple {
+      0%, 100% { transform: translateY(0); }
+      25% { transform: translateY(-0.22em); }
+      55% { transform: translateY(0.05em); }
+      80% { transform: translateY(-0.02em); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      [data-ripple] .rip-ch { animation: none !important; }
+    }
+
+    /* Hand-drawn "keep scrolling" arrow at the bottom of section 1. It draws
+       on (shaft, then each side of the head) once the section's text and
+       underline are done (--cue-d from JS), then bobs gently. */
+    .scroll-cue {
+      position: absolute;
+      bottom: 48px;
+      left: max(24px, calc(50% - 400px));
+      width: 44px !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 6px;
+      display: block;
+      color: var(--ink);
+      border-radius: 8px;
+    }
+    .scroll-cue:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+    .scroll-cue svg { display: block; width: 32px; height: 76px; overflow: visible; filter: url(#pencil); }
+    .scroll-cue path {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+      opacity: .9;
+    }
+    .cue__shaft { transition: stroke-dashoffset 800ms cubic-bezier(.55, .1, .35, 1) var(--cue-d, 0ms); }
+    .cue__l { transition: stroke-dashoffset 260ms cubic-bezier(.4, 0, .3, 1) calc(var(--cue-d, 0ms) + 820ms); }
+    .cue__r { transition: stroke-dashoffset 260ms cubic-bezier(.4, 0, .3, 1) calc(var(--cue-d, 0ms) + 1000ms); }
+    .section:not(.is-revealed) .scroll-cue path { stroke-dashoffset: 1; transition: none; }
+    .section.is-revealed .scroll-cue svg { animation: cue-bob 2.6s ease-in-out calc(var(--cue-d, 0ms) + 1500ms) infinite; }
+    @keyframes cue-bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .section.is-revealed .scroll-cue svg { animation: none; }
+    }
+    @media (max-width: 640px) {
+      .scroll-cue { bottom: 24px; }
+    }
+
+    /* ---------- Section 3: scrollytelling ----------
+       The section is tall; its stage sticks to the viewport and JS sets
+       data-step from scroll position:
+         1 lead-in  2 question (centred)  3 installation paragraph (left)
+         4–7 one concept at a time on the right.
+       Everything below is plain CSS transitions keyed off data-step, so
+       scrolling back up reverses it. */
+    .scrolly {
+      --glow: #9FE3B4;                 /* mint, from the tug-o-war sketch */
+      --ease-out: cubic-bezier(.16, 1, .3, 1);
+      height: calc(100vh + 7 * 75vh);
+      min-height: 0;
+      padding: 0;
+      display: block;
+    }
+    .scrolly > .scrolly__stage { max-width: none; margin: 0; }
+    .scrolly__stage {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .scrolly .scrolly__stage p { margin: 0; }
+
+    .s3-lead, .s3-question {
+      position: absolute;
+      top: 50%;
+      opacity: 0;
+      transition: opacity 700ms ease, transform 1100ms var(--ease-out), filter 900ms ease;
+    }
+    .s3-lead {
+      left: max(24px, calc(50% - 400px));
+      width: min(800px, calc(100% - 48px));
+      transform: translateY(calc(-50% + .6em));
+      transform-origin: left bottom;
+    }
+    .scrolly .s3-lead { text-wrap: balance; }   /* two even lines, no lone "question:" */
+    .s3-question {
+      left: max(24px, calc(50% - 400px));
+      width: min(800px, calc(100% - 48px));
+      /* 2x the body size, same 800px column. Also capped by viewport height
+         so the ~6 lines plus the lead-in still fit on shorter screens. */
+      font-size: clamp(34px, min(5.6vw, 8.8vh), 80px);
+      line-height: 1.2;
+      letter-spacing: -.01em;
+      font-style: italic;
+      font-weight: 400;
+      transform: translateY(-50%);
+      transition: opacity 500ms ease, transform 1100ms var(--ease-out);
+    }
+    /* Line rise: JS wraps each rendered line in a mask; the inner line slides
+       up from below it, one line after another (--ld). */
+    .q-line { display: block; overflow: hidden; padding: 0 .3em .12em 0; margin: 0 -.3em -.12em 0; }
+    .q-line > span {
+      display: block;
+      transform: translateY(110%);
+      transition: transform 1100ms var(--ease-out) var(--ld, 0ms);
+    }
+    :is([data-step="2"], [data-step="3"], [data-step="4"], [data-step="5"], [data-step="6"], [data-step="7"]) .q-line > span { transform: none; }
+    [data-step="1"] .s3-lead { opacity: 1; transform: translateY(-50%); }
+    /* Step 2: the lead shrinks to a label and its bottom sits 28px above the question's top (--q-h is the question's height, set from JS). */
+    [data-step="2"] .s3-lead { opacity: .4; transform: translateY(calc(-100% - var(--q-h, 300px) / 2 - 28px)) scale(.55); }
+    :is([data-step="3"], [data-step="4"], [data-step="5"], [data-step="6"], [data-step="7"]) .s3-lead { opacity: 0; transform: translateY(calc(-100% - var(--q-h, 300px) / 2 - 28px - 1.5em)) scale(.55); }
+    [data-step="2"] .s3-question { opacity: 1; transition: opacity 1ms; }
+    :is([data-step="3"], [data-step="4"], [data-step="5"], [data-step="6"], [data-step="7"]) .s3-question { opacity: 0; transform: translateY(calc(-50% - .6em)); }
+
+    .s3-split {
+      position: absolute;
+      inset: 0;
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+      gap: clamp(32px, 5vw, 88px);
+      align-items: center;
+      pointer-events: none;
+    }
+    .s3-install {
+      font-size: clamp(22px, 2.1vw, 30px);
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(.8em);
+      transition: opacity 700ms ease, transform 1100ms var(--ease-out);
+    }
+    .scrolly .scrolly__stage .s3-install + .s3-install { margin-top: 1em; transition-delay: 120ms; }
+    .s3-count {
+      margin-top: 1.6em !important;
+      display: flex;
+      align-items: baseline;
+      gap: 28px;
+      font-size: 18px;
+      font-weight: 400;
+      opacity: 0;
+      visibility: hidden;                /* not clickable or focusable until shown */
+      transition: opacity 600ms ease, visibility 0s 600ms;
+    }
+    .s3-count__num { opacity: .6; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+    .s3-thesis {
+      color: var(--ink);
+      pointer-events: auto;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+      text-decoration-color: rgba(209, 214, 217, .45);
+      transition: text-decoration-color .2s ease;
+    }
+    .s3-thesis:hover { text-decoration-color: var(--ink); }
+    .s3-thesis:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 2px; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    :is([data-step="3"], [data-step="4"], [data-step="5"], [data-step="6"], [data-step="7"]) .s3-install { opacity: 1; transform: none; }
+    :is([data-step="4"], [data-step="5"], [data-step="6"], [data-step="7"]) .s3-count { opacity: 1; visibility: visible; transition: opacity 600ms ease, visibility 0s; }
+
+    .s3-right { position: relative; aspect-ratio: 3 / 2.25; }
+    .concept {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 600ms ease, transform 900ms var(--ease-out);
+    }
+    .concept.is-active { opacity: 1; transform: none; }
+    .concept.is-past { transform: translateY(-32px); }
+    .concept svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+      filter: url(#pencil);
+    }
+    .concept svg * {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .concept figcaption {
+      margin-top: 14px;
+      font-size: clamp(17px, 1.4vw, 20px);
+      font-style: italic;
+      font-weight: 400;
+      opacity: .75;
+    }
+    /* Draw-on: JS gives each stroke pathLength=1, data-draw and an order --k. */
+    .concept [data-draw] {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      transition: stroke-dashoffset 0s 650ms;   /* reset only once faded out */
+    }
+    .concept.is-active [data-draw] {
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 650ms cubic-bezier(.55, .1, .35, 1) calc(150ms + var(--k) * 60ms);
+    }
+    .concept .f { fill: var(--ink); stroke: none; opacity: 0; transition: opacity 0s 650ms; }
+    .concept rect.f { fill-opacity: .25; }
+    .concept .glyph { font: 400 18px var(--font); }
+    .concept .glyph--irl { fill: var(--glow); }
+    .concept .star { fill: var(--glow); }
+    .concept .glow--thin { stroke-width: 1.6; }
+    .concept .guide { opacity: .45; transition: opacity 600ms ease; }
+    .concept .guide * { stroke-width: 5; transition: stroke 600ms ease, fill 600ms ease; }
+    /* Concept 4 plays as a little story: drawn standing, then (JS) they move
+       into the pose, then their joints light up as stars, then the guide in
+       the corner turns mint: they've matched it. */
+    .concept.is-active .after { transition-delay: calc(var(--after, 2500ms) + var(--i2, 0) * 70ms); }
+    .concept.is-matched .guide { opacity: 1; }
+    .concept.is-matched .guide path { stroke: var(--glow); }
+    .concept.is-matched .guide circle { fill: var(--glow); }
+    .concept.is-active .f { opacity: 1; transition: opacity 500ms ease calc(150ms + var(--k) * 60ms); }
+    .concept .glow { stroke: var(--glow); stroke-width: 2.6; }
+    .concept .glow--bar { stroke-width: 10; opacity: .55; }
+    .concept .glow--x { stroke-width: 4; }
+    .concept.is-active .glow { animation: glow-pulse 2.4s ease-in-out calc(1.4s + var(--k) * 60ms) infinite; }
+    @keyframes glow-pulse { 50% { opacity: .35; } }
+
+    @media (max-width: 800px) {
+      .s3-split {
+        grid-template-columns: 1fr;
+        align-content: center;
+        gap: 28px;
+      }
+      .s3-install { font-size: 20px; }
+      .s3-count { margin-top: .8em !important; font-size: 15px; gap: 20px; }
+      .s3-right { width: min(100%, 460px); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .scrolly *, .scrolly *::before { transition-duration: 1ms !important; transition-delay: 0s !important; animation: none !important; }
+    }
+
+    /* ---------- Section 4: photo wall ----------
+       Photos are taped up all around the paragraph (absolutely positioned
+       in the section). Sequence (JS adds classes): .lead-in shows the first
+       sentence, .wall-in fades every photo in at once (each settles from a
+       bigger tilt), .rest-in shows the rest of the paragraph. */
+    .s4 {
+      --paper-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42  0 0 0 0 .36  0 0 0 0 .28  0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      --paper-fibre: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012 .35' numOctaves='2' seed='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .4  0 0 0 0 .35  0 0 0 0 .25  0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+      --film-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+      min-height: max(100vh, 880px);
+      overflow: hidden;
+    }
+    .section.s4 > .s4-text { position: relative; z-index: 1; max-width: min(800px, 56vw); }
+    .s4-a, .s4-b {
+      opacity: 0;
+      filter: blur(6px);
+      transition: opacity 900ms ease, filter 900ms ease;
+    }
+    .s4.lead-in .s4-a, .s4.rest-in .s4-b { opacity: 1; filter: none; }
+
+    .section.s4 > .wall { position: absolute; inset: 0; max-width: none; width: auto; margin: 0; pointer-events: none; }
+    .photo {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      margin: 0;
+      padding: clamp(5px, .65vw, 10px) clamp(5px, .65vw, 10px) clamp(16px, 1.9vw, 28px);   /* print border, deeper at the bottom */
+      /* Paper: fine grain + faint fibres over a warm off-white, a touch
+         yellowed toward the edges like an old print. */
+      background:
+        var(--paper-noise),
+        var(--paper-fibre),
+        radial-gradient(140% 120% at 50% 40%, #F1ECE1 55%, #DED5C3 100%);
+      background-blend-mode: multiply, multiply, normal;
+      box-shadow:
+        inset 0 0 0 1px rgba(120, 100, 70, .12),
+        inset 0 0 14px rgba(140, 110, 70, .18),
+        0 1px 1px rgba(0, 0, 0, .4),
+        0 12px 26px rgba(0, 0, 0, .32);
+      border-radius: 1px;
+      opacity: 0;
+      transform: rotate(calc(var(--r) * 1.8)) scale(1.06) translateY(10px);
+      transition:
+        opacity 700ms ease var(--j),
+        transform 1100ms cubic-bezier(.16, 1, .3, 1) var(--j);
+    }
+    .s4.wall-in .photo { opacity: 1; transform: rotate(var(--r)); }
+    .photo__img {
+      position: relative;
+      aspect-ratio: var(--ar);
+      display: grid;
+      place-items: end start;
+      padding: 8px 10px;
+      font: 500 11px/1 ui-monospace, "SF Mono", Menlo, monospace;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, .5);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25), inset 0 0 18px rgba(0, 0, 0, .35);
+    }
+    /* Film grain + a soft sheen across the print. */
+    .photo__img::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(125deg, rgba(255, 255, 255, .10), transparent 35%, transparent 70%, rgba(255, 255, 255, .05)),
+        var(--film-grain);
+      mix-blend-mode: overlay;
+      opacity: .55;
+    }
+    /* Placeholder tones: candlelit dinner colours. */
+    .tone-1 { background: radial-gradient(120% 90% at 30% 25%, #C98A4B, #5A3320 70%); }
+    .tone-2 { background: radial-gradient(120% 90% at 70% 30%, #8E3B3B, #2E1A1C 75%); }
+    .tone-3 { background: radial-gradient(120% 90% at 40% 60%, #7C7A4A, #2B2C1E 75%); }
+    .tone-4 { background: radial-gradient(120% 90% at 50% 20%, #D9A066, #6B3A22 70%); }
+    .tone-5 { background: radial-gradient(120% 90% at 60% 40%, #4E5C78, #1C2230 75%); }
+    .tone-6 { background: radial-gradient(120% 90% at 30% 70%, #B5653F, #3A2218 72%); }
+
+    /* Tape: crinkly, slightly see-through masking tape with torn ends. */
+    .tape {
+      position: absolute;
+      z-index: 1;
+      width: clamp(44px, 5.2vw, 74px);
+      height: clamp(15px, 1.6vw, 22px);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, .06)),
+        repeating-linear-gradient(97deg, rgba(255, 255, 255, .07) 0 1px, transparent 1px 6px, rgba(0, 0, 0, .04) 6px 7px, transparent 7px 11px),
+        var(--paper-noise),
+        rgba(222, 208, 176, .78);
+      background-blend-mode: normal, normal, multiply, normal;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .28));
+      opacity: .92;
+      clip-path: polygon(0 8%, 5% 0, 11% 9%, 17% 2%, 23% 8%, 29% 0, 100% 0, 96% 16%, 100% 31%, 95% 50%, 100% 68%, 96% 86%, 100% 100%, 89% 93%, 82% 100%, 74% 92%, 67% 100%, 0 100%, 4% 82%, 0 64%, 5% 45%, 0 27%);
+    }
+    .tape--top { top: -9px; left: 50%; transform: translateX(-50%) rotate(-3deg); }
+    .tape--tl { top: -6px; left: -16px; transform: rotate(-38deg); }
+    .tape--tr { top: -6px; right: -16px; transform: rotate(40deg); }
+    .tape--l { top: 42%; left: -22px; transform: rotate(-84deg); }
+    .tape--r { top: 38%; right: -22px; transform: rotate(92deg); }
+
+    @media (max-width: 700px) {
+      .s4 { min-height: 1180px; }
+      .section.s4 > .s4-text { max-width: none; }
+      .photo { left: var(--mx); top: var(--my); width: var(--mw); }
+      .photo--desk { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .s4-a, .s4-b, .photo { transition-duration: 1ms !important; transition-delay: 0s !important; }
+    }
+
+    /* ---------- Controls panel ---------- */
+    .tp {
+      --tp-bg: rgba(21, 25, 29, .88);
+      --tp-line: rgba(209, 214, 217, .16);
+      --tp-dim: rgba(209, 214, 217, .62);
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 10;
+      width: 300px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 32px);
+      display: flex;
+      flex-direction: column;
+      background: var(--tp-bg);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--tp-line);
+      border-radius: 12px;
+      font: 500 12px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--ink);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+    }
+    .tp__head {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 48px 24px;
+      gap: 8px;
+      padding: 10px 10px 10px 14px;
     }
-
-    /* Back to the portfolio, top-left (same as the take-home page) */
-    .back {
-      position: fixed;
-      top: 20px;
-      left: 24px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--ink);
-      text-decoration: none;
-      opacity: .7;
-      transition: opacity .18s ease;
+    .tp__title { flex: 1; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+    .tp__title kbd { font: inherit; color: var(--tp-dim); text-transform: none; letter-spacing: 0; margin-left: 4px; }
+    .tp button, .tp select, .tp input { font: inherit; color: inherit; }
+    .tp__btn {
+      background: transparent;
+      border: 1px solid var(--tp-line);
+      border-radius: 6px;
+      padding: 5px 9px;
+      cursor: pointer;
+      transition: background-color .15s ease, border-color .15s ease;
     }
-    .back:hover { opacity: 1; }
-    .back:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 4px; opacity: 1; }
-
-    .hi {
+    .tp__btn:hover { background: rgba(209, 214, 217, .08); border-color: rgba(209, 214, 217, .3); }
+    .tp__btn:active { transform: scale(.97); }
+    .tp__btn:focus-visible, .tp select:focus-visible, .tp input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+    .tp__body {
+      overflow-y: auto;
+      padding: 4px 14px 12px;
+      border-top: 1px solid var(--tp-line);
+    }
+    .tp.is-closed .tp__body, .tp.is-closed .tp__foot { display: none; }
+    .tp__note { margin: 10px 0 2px; color: var(--tp-dim); }
+    .tp__group { padding: 10px 0 4px; color: var(--tp-dim); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .tp__row { display: grid; grid-template-columns: 88px 1fr 44px; align-items: center; gap: 8px; min-height: 30px; }
+    .tp__row label { color: var(--tp-dim); }
+    .tp__row output { text-align: right; font-variant-numeric: tabular-nums; color: var(--tp-dim); }
+    .tp__row--wide { grid-template-columns: 88px 1fr; }
+    .tp select {
       width: 100%;
-      max-width: 960px;
+      background: rgba(209, 214, 217, .06);
+      border: 1px solid var(--tp-line);
+      border-radius: 6px;
+      padding: 5px 6px;
     }
-    .hi__title {
-      font-family: var(--font-accent);
-      font-weight: 400;
-      font-size: clamp(56px, 8vw, 112px);
-      line-height: 1.0;
-      letter-spacing: -0.05em;
-      color: var(--ink);
-      margin: 0;
+    .tp select option { background: #15191D; }
+    .tp input[type="range"] { width: 100%; accent-color: var(--ink); }
+    .tp input[type="checkbox"] { accent-color: var(--ink); width: 15px; height: 15px; margin: 0; justify-self: start; }
+    .tp .is-hidden { display: none; }
+    .tp__foot {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 10px 14px 12px;
+      border-top: 1px solid var(--tp-line);
     }
-    .hi__text {
-      font-size: clamp(18px, 1.7vw, 24px);
-      line-height: 1.46;
-      margin: 24px 0 0;
-      max-width: 647px;
+    .tp__foot .tp__btn { flex: 1; }
+    .tp__toast { color: var(--tp-dim); font-size: 11px; min-height: 0; padding: 0 14px 10px; }
+    .tp__toast:empty { display: none; }
+
+    @media (max-width: 640px) {
+      .tp { right: 8px; left: 8px; bottom: 8px; width: auto; max-width: none; max-height: 60vh; }
     }
   </style>
 </head>
 <body>
-  <a class="back" href="/">← Back to portfolio</a>
+  <!-- Graphite texture for the pencil underline: displacement roughens the
+       edge, the second noise punches small gaps so the stroke looks grainy.
+       Both strengths are set from the panel (wobble, grain). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="pencil" x="-20%" y="-50%" width="140%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="wobble" />
+      <feDisplacementMap in="SourceGraphic" in2="wobble" scale="2" xChannelSelector="R" yChannelSelector="G" result="rough" />
+      <feTurbulence type="fractalNoise" baseFrequency="2.2" numOctaves="1" seed="3" result="grain" />
+      <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.2 1.9" result="grainAlpha" />
+      <feComposite in="rough" in2="grainAlpha" operator="in" />
+    </filter>
+  </svg>
 
-  <main class="hi">
-    <h1 class="hi__title">Hi, 222</h1>
-    <p class="hi__text">Placeholder copy.</p>
+  <main>
+    <section class="section">
+      <p>hi 222</p>
+      <p class="lead" data-mark="dream">the product designer role that you're hiring for is my dream job</p>
+      <p>here's why</p>
+      <a class="scroll-cue" href="#helping" aria-label="Scroll to the next section">
+        <svg viewBox="0 0 32 76" aria-hidden="true">
+          <path class="cue__shaft" pathLength="1" d="M 15 3 C 12 16, 19 27, 16 40 C 14 50, 17 60, 16.5 70" />
+          <path class="cue__l" pathLength="1" d="M 5 57 C 9 61, 13 66, 16.5 71" />
+          <path class="cue__r" pathLength="1" d="M 28 55.5 C 24 60, 20 65.5, 16.8 71" />
+        </svg>
+      </a>
+    </section>
+
+    <section class="section" id="helping">
+      <p data-ripple="almost everything">helping people form, deepen, and maintain meaningful relationships has been at the heart of almost everything I do personally and professionally</p>
+    </section>
+
+    <!-- Section 3: a scrollytelling stage. The section is tall; the stage
+         inside it sticks to the viewport while the scroll position steps
+         through: 1 lead-in, 2 the question (centred), 3 the installation
+         paragraph (pinned left), 4–6 the concepts on the right. -->
+    <section class="section scrolly" data-scrolly data-step="0" aria-label="My undergrad thesis">
+      <div class="scrolly__stage">
+        <p class="s3-lead">for my undergrad thesis, i spent six months on one question:</p>
+        <p class="s3-question">will strangers exchange playful or kind interactions with one another if we provide them the opportunity to?</p>
+
+        <div class="s3-split">
+          <div class="s3-left">
+            <p class="s3-install">i made an interactive installation so serendipitous moments can be organically created.</p>
+            <p class="s3-install">these are some whimsical concepts i explored.</p>
+            <p class="s3-count">
+              <span class="s3-count__num" aria-hidden="true"><span class="s3-count__n">01</span> / 04</span>
+              <a class="s3-thesis" href="https://natkasman.wordpress.com/2019/09/26/amplifying-social-connectedness-in-our-physical-and-digital-spaces-communities/" target="_blank" rel="noopener">read thesis here<span aria-hidden="true"> ↗</span><span class="visually-hidden"> (opens in a new tab)</span></a>
+            </p>
+          </div>
+
+          <div class="s3-right">
+            <!-- 1: crossword at a bus stop -->
+            <figure class="concept" data-concept="1">
+              <svg viewBox="0 0 480 320" role="img" aria-label="Two strangers at a bus stop filling in a shared crossword on the shelter wall from their phones; it spells an IRL future">
+                <path d="M 58 98 C 64 74, 104 64, 150 62 L 398 68 C 422 72, 436 86, 432 104" />
+                <path d="M 64 104 L 432 112" />
+                <path d="M 118 108 C 119 160, 121 220, 122 288" />
+                <path d="M 420 114 C 418 170, 418 220, 416 280" />
+                <rect class="f" x="220" y="148" width="25" height="24" />
+                <rect class="f" x="320" y="148" width="25" height="24" />
+                <rect class="f" x="320" y="172" width="25" height="24" />
+                <rect class="f" x="170" y="196" width="25" height="24" />
+                <rect class="f" x="220" y="196" width="25" height="24" />
+                <rect class="f" x="320" y="196" width="25" height="24" />
+                <rect class="f" x="195" y="220" width="25" height="24" />
+                <rect class="f" x="270" y="220" width="25" height="24" />
+                <rect class="f" x="345" y="220" width="25" height="24" />
+                <path d="M 170 148 L 370 146 L 372 244 L 170 246 Z" />
+                <path d="M 195 147 L 196 245 M 220 147 L 221 245 M 245 147 L 246 245 M 270 147 L 270 245 M 295 147 L 296 245 M 320 146 L 321 244 M 345 146 L 346 244" />
+                <path d="M 170 172 L 371 170 M 170 196 L 371 194 M 170 220 L 372 219" />
+                <!-- "an IRL future": AN across, FUTURE across (second U still blank), IRL down through the R -->
+                <text class="f glyph" x="176" y="166">A</text>
+                <text class="f glyph" x="201" y="166">N</text>
+                <text class="f glyph glyph--irl" x="276" y="166">I</text>
+                <text class="f glyph" x="176" y="190">F</text>
+                <text class="f glyph" x="201" y="190">U</text>
+                <text class="f glyph" x="226" y="190">T</text>
+                <text class="f glyph glyph--irl" x="276" y="190">R</text>
+                <text class="f glyph" x="301" y="190">E</text>
+                <text class="f glyph glyph--irl" x="276" y="214">L</text>
+                <circle cx="70" cy="214" r="11" />
+                <path d="M 66 216 C 68 219, 72 219, 74 216" />
+                <path d="M 70 225 L 70 266 M 70 266 L 60 290 M 70 266 L 81 290 M 70 238 L 90 240" />
+                <rect x="90" y="228" width="9" height="15" rx="2" />
+                <path class="glow" d="M 104 226 C 107 229, 107 233, 104 236 M 109 222 C 113 228, 113 234, 109 240" />
+                <circle cx="452" cy="204" r="12" />
+                <path d="M 448 207 C 450 210, 454 210, 456 207" />
+                <path d="M 452 216 L 452 258 M 452 258 L 442 284 M 452 258 L 463 284 M 452 228 L 434 232" />
+                <rect x="425" y="222" width="9" height="15" rx="2" />
+                <path class="glow" d="M 420 220 C 417 223, 417 227, 420 230 M 415 216 C 411 222, 411 228, 415 234" />
+              </svg>
+              <figcaption>play crossword with someone else who’s waiting at the bus stop</figcaption>
+            </figure>
+
+            <!-- 2: seats that light up together -->
+            <figure class="concept" data-concept="2">
+              <svg viewBox="0 0 480 320" role="img" aria-label="Two people on separate subway seats; both seats glow because they sat down at the same time">
+                <path d="M 62 150 C 62 140, 70 136, 80 136 L 226 134 C 236 134, 242 140, 242 150 L 242 168" />
+                <path d="M 48 176 C 48 168, 54 164, 62 164 L 238 162 C 248 162, 254 168, 254 176 L 254 196 C 254 204, 248 208, 240 208 L 62 210 C 54 210, 48 204, 48 196 Z" />
+                <path d="M 66 210 L 66 262 M 110 210 L 110 248 M 196 209 L 196 248 M 236 208 L 236 262" />
+                <circle cx="212" cy="112" r="13" />
+                <path d="M 207 114 C 210 118, 214 118, 217 114" />
+                <path d="M 214 125 L 222 160 L 246 166 L 252 182" />
+                <path d="M 336 262 L 338 168 C 338 150, 352 142, 372 142 C 392 142, 406 150, 406 168 L 408 262" />
+                <path d="M 326 252 C 326 244, 332 240, 342 240 L 404 240 C 414 240, 420 244, 420 252 L 420 262 C 420 268, 414 272, 404 272 L 342 272 C 332 272, 326 268, 326 262 Z" />
+                <path d="M 340 272 L 338 302 M 406 272 L 408 302" />
+                <circle cx="372" cy="124" r="13" />
+                <path d="M 367 126 C 370 130, 374 130, 377 126" />
+                <path d="M 372 137 L 372 238 M 352 176 L 372 196 L 392 176 M 360 240 L 360 252 M 384 240 L 384 252" />
+                <path class="glow" d="M 186 98 L 178 90 M 212 84 L 212 74 M 238 98 L 246 90 M 262 160 L 274 156 M 260 188 L 272 194 M 34 186 L 22 184 M 40 150 L 30 142" />
+                <path class="glow" d="M 346 110 L 338 102 M 372 96 L 372 86 M 398 110 L 406 102 M 424 176 L 436 172 M 430 230 L 442 234 M 318 230 L 306 234 M 320 176 L 308 172" />
+              </svg>
+              <figcaption>seats light up when 2 people sit down at the same time in the subway</figcaption>
+            </figure>
+
+            <!-- 3: digital tug-o-war -->
+            <figure class="concept" data-concept="3">
+              <svg viewBox="0 0 480 320" role="img" aria-label="Two people each holding a pole under a shelter, playing tug-o-war with a glowing line on the floor between them">
+                <path d="M 40 118 C 160 92, 300 62, 446 34" />
+                <path d="M 150 96 L 148 262 M 160 94 L 158 262" />
+                <path d="M 340 58 L 338 244 M 350 56 L 348 244" />
+                <circle cx="112" cy="168" r="12" />
+                <path d="M 107 171 C 110 174, 114 174, 117 171" />
+                <path d="M 112 180 L 112 232 M 112 232 L 100 260 M 112 232 L 126 256 M 112 194 L 148 200 M 112 204 L 96 220" />
+                <circle cx="394" cy="132" r="15" />
+                <path d="M 388 135 C 391 139, 397 139, 400 135" />
+                <path d="M 394 147 L 394 210 M 394 210 L 380 240 M 394 210 L 410 236 M 394 164 L 350 182 M 394 172 L 414 192" />
+                <path class="glow glow--bar" d="M 172 284 C 220 278, 280 270, 330 262" />
+                <path class="glow glow--x" d="M 242 262 L 254 290 M 236 284 L 262 268" />
+              </svg>
+              <figcaption>digital tug-o-war between two strangers</figcaption>
+            </figure>
+            <!-- 4: make a constellation with your bodies (Gemini, the twins) -->
+            <figure class="concept" data-concept="4">
+              <svg viewBox="0 0 480 320" role="img" aria-label="Two people standing side by side raise their arms until their hands touch and step their feet apart; their hands, elbows, shoulders, hips, knees and feet light up as stars and join into the Gemini constellation, matching a small guide drawn in the corner">
+                <circle class="f" cx="58" cy="150" r="1.6" />
+                <circle class="f" cx="112" cy="196" r="1.6" />
+                <circle class="f" cx="392" cy="40" r="1.6" />
+                <circle class="f" cx="436" cy="96" r="1.6" />
+                <circle class="f" cx="352" cy="72" r="1.6" />
+                <circle class="f" cx="420" cy="170" r="1.6" />
+                <circle class="f" cx="150" cy="40" r="1.6" />
+                <circle class="f" cx="330" cy="30" r="1.6" />
+                <g class="guide" transform="translate(30 26) scale(.4) translate(-172 -66)">
+                  <path d="M 240 66 L 212 98 M 212 98 L 204 148 M 204 148 L 200 204 M 200 204 L 186 238 M 186 238 L 172 270 M 240 66 L 268 98 M 268 98 L 276 148 M 276 148 L 280 204 M 280 204 L 296 238 M 296 238 L 308 270 M 204 148 L 276 148" />
+                  <circle class="f" cx="240" cy="66" r="7" /><circle class="f" cx="212" cy="98" r="7" /><circle class="f" cx="268" cy="98" r="7" /><circle class="f" cx="204" cy="148" r="7" /><circle class="f" cx="276" cy="148" r="7" /><circle class="f" cx="200" cy="204" r="7" /><circle class="f" cx="280" cy="204" r="7" /><circle class="f" cx="186" cy="238" r="7" /><circle class="f" cx="296" cy="238" r="7" /><circle class="f" cx="172" cy="270" r="7" /><circle class="f" cx="308" cy="270" r="7" />
+                </g>
+                <circle cx="204" cy="124" r="12" />
+                <path d="M 199 126 C 202 130, 206 130, 209 126" />
+                <path d="M 204 136 L 200 204 M 204 150 L 196 178 L 192 206 M 200 204 L 198 238 L 196 272" data-to="M 204 136 L 200 204 M 204 150 L 212 98 L 238 68 M 200 204 L 186 238 L 172 270" />
+                <circle cx="276" cy="124" r="12" />
+                <path d="M 271 126 C 274 130, 278 130, 281 126" />
+                <path d="M 276 136 L 280 204 M 276 150 L 284 178 L 288 206 M 280 204 L 282 238 L 284 272" data-to="M 276 136 L 280 204 M 276 150 L 268 98 L 242 68 M 280 204 L 296 238 L 308 270" />
+                <path d="M 120 286 C 200 281, 300 281, 380 286" />
+                <path class="glow glow--thin after" d="M 204 148 L 276 148" />
+                <circle class="f star after" cx="240" cy="66" r="3.6" />
+                <circle class="f star after" cx="212" cy="98" r="3.6" />
+                <circle class="f star after" cx="268" cy="98" r="3.6" />
+                <circle class="f star after" cx="204" cy="148" r="3.6" />
+                <circle class="f star after" cx="276" cy="148" r="3.6" />
+                <circle class="f star after" cx="200" cy="204" r="3.6" />
+                <circle class="f star after" cx="280" cy="204" r="3.6" />
+                <circle class="f star after" cx="186" cy="238" r="3.6" />
+                <circle class="f star after" cx="296" cy="238" r="3.6" />
+                <circle class="f star after" cx="172" cy="270" r="3.6" />
+                <circle class="f star after" cx="308" cy="270" r="3.6" />
+              </svg>
+              <figcaption>2 people use their bodies to make the shape of a constellation</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section s4" data-wall aria-label="Hosting dinners">
+      <!-- Placeholder photos taped up around the paragraph; swap each .photo__img for an <img> later. -->
+      <div class="wall" aria-hidden="true">
+        <figure class="photo" style="--x:3%;--y:6%;--w:14%;--mx:4%;--my:3%;--mw:34%;--ar:4 / 5;--r:-5deg;--j:0ms">
+          <div class="photo__img tone-1"><span>photo 01</span></div>
+          <span class="tape tape--top"></span>
+        </figure>
+        <figure class="photo photo--desk" style="--x:30%;--y:4%;--w:13%;--ar:4 / 3;--r:2deg;--j:37ms">
+          <div class="photo__img tone-6"><span>photo 02</span></div>
+          <span class="tape tape--tl"></span><span class="tape tape--tr"></span>
+        </figure>
+        <figure class="photo photo--desk" style="--x:52%;--y:6%;--w:11%;--ar:1 / 1;--r:-3deg;--j:74ms">
+          <div class="photo__img tone-1"><span>photo 03</span></div>
+          <span class="tape tape--tl"></span><span class="tape tape--tr"></span>
+        </figure>
+        <figure class="photo" style="--x:82%;--y:4%;--w:14%;--mx:54%;--my:2%;--mw:36%;--ar:3 / 4;--r:4deg;--j:21ms">
+          <div class="photo__img tone-4"><span>photo 04</span></div>
+          <span class="tape tape--tl"></span><span class="tape tape--tr"></span>
+        </figure>
+        <figure class="photo" style="--x:6%;--y:40%;--w:12%;--mx:6%;--my:72%;--mw:30%;--ar:1 / 1;--r:4deg;--j:58ms">
+          <div class="photo__img tone-3"><span>photo 05</span></div>
+          <span class="tape tape--l"></span><span class="tape tape--r"></span>
+        </figure>
+        <figure class="photo" style="--x:86%;--y:38%;--w:11%;--mx:58%;--my:82%;--mw:30%;--ar:4 / 5;--r:-4deg;--j:5ms">
+          <div class="photo__img tone-5"><span>photo 06</span></div>
+          <span class="tape tape--top"></span>
+        </figure>
+        <figure class="photo" style="--x:2%;--y:68%;--w:15%;--mx:28%;--my:16%;--mw:32%;--ar:4 / 3;--r:-2deg;--j:42ms">
+          <div class="photo__img tone-2"><span>photo 07</span></div>
+          <span class="tape tape--tl"></span><span class="tape tape--tr"></span>
+        </figure>
+        <figure class="photo" style="--x:80%;--y:66%;--w:16%;--mx:50%;--my:70%;--mw:40%;--ar:4 / 3;--r:3deg;--j:79ms">
+          <div class="photo__img tone-6"><span>photo 08</span></div>
+          <span class="tape tape--tl"></span>
+        </figure>
+        <figure class="photo photo--desk" style="--x:36%;--y:74%;--w:12%;--ar:4 / 5;--r:-3deg;--j:26ms">
+          <div class="photo__img tone-2"><span>photo 09</span></div>
+          <span class="tape tape--l"></span><span class="tape tape--r"></span>
+        </figure>
+        <figure class="photo" style="--x:58%;--y:78%;--w:14%;--mx:10%;--my:85%;--mw:36%;--ar:3 / 2;--r:2deg;--j:63ms">
+          <div class="photo__img tone-3"><span>photo 10</span></div>
+          <span class="tape tape--top"></span>
+        </figure>
+      </div>
+      <p class="s4-text"><span class="s4-a">i host dinners for friends, a lot.</span> <span class="s4-b">i think of hosting as designing, except you see the design experience come to life irl. i’ve learned to sit through the awkward silences and play the icebreaker for people who don't know each other well.</span></p>
+    </section>
+
+    <section class="section">
+      <p>many years ago, i (along with some friends) founded galavant magazine, an arts and literature publication that pairs visual artists with writers to collaborate together</p>
+    </section>
+
+    <div class="tail"></div>
   </main>
+
+  <!-- Transition explorer: an internal tool for trying motion on this page.
+       Toggle with T. Settings persist in this browser only. -->
+  <aside class="tp" id="tp" aria-label="Transition controls">
+    <div class="tp__head">
+      <span class="tp__title">Transitions <kbd>T</kbd></span>
+      <button class="tp__btn" type="button" data-act="replay">Replay</button>
+      <button class="tp__btn" type="button" data-act="toggle" aria-expanded="true" aria-controls="tp-body">Hide</button>
+    </div>
+    <div class="tp__body" id="tp-body"><p class="tp__note">Sections 1–4 are set. These controls drive section 5 onward.</p></div>
+    <div class="tp__foot">
+      <button class="tp__btn" type="button" data-act="shuffle">Shuffle</button>
+      <button class="tp__btn" type="button" data-act="copy">Copy settings</button>
+      <button class="tp__btn" type="button" data-act="reset">Reset</button>
+    </div>
+    <div class="tp__toast" role="status" aria-live="polite"></div>
+  </aside>
+
+  <script>
+  (() => {
+    const EASES = {
+      "Expo out": "cubic-bezier(.16, 1, .3, 1)",
+      "Quint out": "cubic-bezier(.22, 1, .36, 1)",
+      "Quart out": "cubic-bezier(.25, 1, .5, 1)",
+      "Cubic out": "cubic-bezier(.33, 1, .68, 1)",
+      "Sine in-out": "cubic-bezier(.37, 0, .63, 1)",
+      "Back out": "cubic-bezier(.34, 1.56, .64, 1)",
+      "Ease": "ease",
+      "Linear": "linear",
+    };
+
+    const BASE = {
+      trigger: "enter",   // enter | scrub | none
+      unit: "word",       // block | line | word | char
+      mask: false,
+      fromOpacity: 0,
+      y: 0.6,             // em
+      rotate: 0,          // deg, rotateX
+      scale: 1,
+      blur: 0,            // px
+      duration: 900,      // ms
+      stagger: 30,        // ms between pieces
+      paraGap: 150,       // ms extra before each following paragraph in a section
+      chain: false,       // true: each paragraph waits until the previous one has finished
+      ease: "Expo out",
+      replay: "once",     // once | every | reverse
+      triggerPoint: 85,   // % down the viewport where things start
+      soft: 8,            // scrub: how many pieces fade at once
+      span: 0.5,          // scrub: extra scroll distance (in viewports) to finish
+      rule: "left",       // off | left | center
+      focus: false,       // dim sections away from the viewport center
+      focusMin: 0.25,
+    };
+
+    const PRESETS = {
+      "222 scroll reveal": { trigger: "scrub", unit: "char", fromOpacity: 0.1, y: 0.5, soft: 6, span: 0.55, triggerPoint: 80 },
+      "Line rise": { unit: "line", mask: true, fromOpacity: 1, y: 1.6, duration: 1100, stagger: 90, paraGap: 120 },
+      "Soft word fade": { unit: "word", y: 0.35, duration: 800, stagger: 28, ease: "Quart out" },
+      "Blur focus": { unit: "word", y: 0, blur: 12, duration: 1000, stagger: 35, ease: "Sine in-out" },
+      "Masked letters": { unit: "char", mask: true, fromOpacity: 1, y: 1.6, duration: 800, stagger: 9, paraGap: 80 },
+      "Typewriter": { unit: "char", y: 0, duration: 1, stagger: 22, ease: "Linear", paraGap: 350 },
+      "Flip up": { unit: "word", y: 0.3, rotate: 80, duration: 900, stagger: 40 },
+      "Pop": { unit: "word", y: 0, scale: 0.6, duration: 650, stagger: 30, ease: "Back out" },
+      "Word scrub + blur": { trigger: "scrub", unit: "word", fromOpacity: 0.12, y: 0.2, blur: 6, soft: 3, span: 0.5 },
+      "Quiet fade": { unit: "block", y: 0.4, duration: 1400, ease: "Sine in-out", paraGap: 250 },
+      "Off": { trigger: "none", rule: "off" },
+    };
+
+    // Panel schema. `show` hides rows that don't apply to the current mode.
+    const isEnter = s => s.trigger === "enter";
+    const isScrub = s => s.trigger === "scrub";
+    const isOn = s => s.trigger !== "none";
+    const CONTROLS = [
+      { group: "Preset" },
+      { key: "preset", label: "Preset", type: "select", options: ["Custom", ...Object.keys(PRESETS)], wide: true },
+      { group: "Text" },
+      { key: "trigger", label: "Trigger", type: "select", options: { enter: "On enter", scrub: "Scroll scrub", none: "None" }, wide: true },
+      { key: "unit", label: "Split by", type: "select", options: { block: "Paragraph", line: "Line", word: "Word", char: "Letter" }, wide: true, show: isOn },
+      { key: "mask", label: "Mask lines", type: "check", show: isOn },
+      { key: "fromOpacity", label: "From opacity", type: "range", min: 0, max: 1, step: 0.01, show: isOn },
+      { key: "y", label: "Rise", type: "range", min: -2, max: 2, step: 0.05, unit: "em", show: isOn },
+      { key: "rotate", label: "Tilt", type: "range", min: -90, max: 90, step: 1, unit: "°", show: isOn },
+      { key: "scale", label: "Scale", type: "range", min: 0.3, max: 1.5, step: 0.01, show: isOn },
+      { key: "blur", label: "Blur", type: "range", min: 0, max: 24, step: 0.5, unit: "px", show: isOn },
+      { group: "Timing", show: isEnter },
+      { key: "duration", label: "Duration", type: "range", min: 1, max: 2500, step: 10, unit: "ms", show: isEnter },
+      { key: "stagger", label: "Stagger", type: "range", min: 0, max: 200, step: 1, unit: "ms", show: isEnter },
+      { key: "chain", label: "One by one", type: "check", show: isEnter },
+      { key: "paraGap", label: "Para delay", type: "range", min: 0, max: 1000, step: 10, unit: "ms", show: isEnter },
+      { key: "ease", label: "Easing", type: "select", options: Object.keys(EASES), wide: true, show: isEnter },
+      { key: "replay", label: "Repeat", type: "select", options: { once: "Once", every: "Every time it enters", reverse: "Reverse on leave" }, wide: true, show: isEnter },
+      { group: "Scroll", show: isOn },
+      { key: "triggerPoint", label: "Start at", type: "range", min: 40, max: 100, step: 1, unit: "%", show: isOn },
+      { key: "soft", label: "Softness", type: "range", min: 1, max: 40, step: 1, show: isScrub },
+      { key: "span", label: "Scrub length", type: "range", min: 0.1, max: 1.5, step: 0.05, unit: "vh", show: isScrub },
+      { group: "Extras" },
+      { key: "rule", label: "Rule lines", type: "select", options: { off: "Static", left: "Draw from left", center: "Draw from center" }, wide: true },
+      { key: "focus", label: "Focus dim", type: "check" },
+      { key: "focusMin", label: "Dim to", type: "range", min: 0, max: 1, step: 0.01, show: s => s.focus },
+    ];
+
+    const STORE = "hi222-transitions";
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const defaults = () => ({ ...BASE, ...PRESETS[reduced ? "Off" : "222 scroll reveal"], preset: reduced ? "Off" : "222 scroll reveal" });
+
+    let state = defaults();
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || "null");
+      if (saved) state = { ...state, ...saved };
+    } catch (e) {}
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} };
+
+    const root = document.documentElement;
+    const sections = [...document.querySelectorAll(".section")];
+    const paras = sections.flatMap((sec, si) =>
+      ("scrolly" in sec.dataset || "wall" in sec.dataset ? [] : [...sec.querySelectorAll("p")]).map((el, pi) => ({ el, sec, si, pi, text: el.textContent.replace(/\s+/g, " ").trim(), pieces: [] }))
+    );
+
+    // Sections with settings of their own. The panel only drives the rest.
+    // (Indexes are 0-based: 0 is "hi 222".)
+    const LOCKED = {
+      0: {
+        trigger: "enter", unit: "char", mask: false, fromOpacity: 0, y: 0, rotate: 0, scale: 1, blur: 0,
+        duration: 1, stagger: 22, paraGap: 350, ease: "Linear", replay: "once", triggerPoint: 77,
+        soft: 8, span: 0.5, rule: "left", focus: true, focusMin: 0.25,
+        chain: true,                  // each paragraph waits for the previous one to finish
+      },
+      1: {
+        trigger: "enter", unit: "block", mask: true, fromOpacity: 1, y: 1.6, rotate: 0, scale: 1, blur: 0,
+        duration: 1100, stagger: 90, paraGap: 120, chain: false, ease: "Expo out", replay: "once",
+        triggerPoint: 85, soft: 8, span: 0.5, rule: "left", focus: false, focusMin: 0.25,
+      },
+    };
+    const conf = si => (LOCKED[si] && !reduced ? { ...BASE, ...LOCKED[si] } : state);
+    const secParas = si => paras.filter(p => p.si === si);
+
+    /* ---------- Splitting ---------- */
+    function split(p) {
+      const c = conf(p.si);
+      const { el, text } = p;
+      const unit = c.trigger === "none" ? "block" : c.unit;
+      el.textContent = "";
+      el.classList.toggle("t-block", unit === "block");
+      el.setAttribute("aria-label", text);
+      if (unit === "block") {
+        const s = document.createElement("span");
+        s.className = "t-piece";
+        s.textContent = text;
+        s.setAttribute("aria-hidden", "true");
+        el.append(s);
+        p.pieces = [s];
+        addMark(p);
+        addRipple(p);
+        return;
+      }
+      // Words first; characters live inside a nowrap word so words never break.
+      const words = text.split(" ").map(w => {
+        const ws = document.createElement("span");
+        ws.className = "t-word";
+        ws.setAttribute("aria-hidden", "true");
+        if (unit === "char") {
+          for (const ch of w) {
+            const s = document.createElement("span");
+            s.className = "t-piece";
+            s.textContent = ch;
+            ws.append(s);
+          }
+        } else {
+          ws.textContent = w;
+          if (unit === "word") ws.classList.add("t-piece");
+        }
+        return ws;
+      });
+      words.forEach((w, i) => { if (i) el.append(" "); el.append(w); });
+
+      if (unit === "line" || c.mask) {
+        // Group words by their rendered line, then wrap each line.
+        const lines = [];
+        let top = null;
+        for (const w of words) {
+          const t = w.offsetTop;
+          if (top === null || Math.abs(t - top) > 2) { lines.push([]); top = t; }
+          lines[lines.length - 1].push(w);
+        }
+        el.textContent = "";
+        for (const ws of lines) {
+          const line = document.createElement("span");
+          line.className = "t-line" + (c.mask ? " t-mask" : "");
+          const inner = document.createElement("span");
+          inner.className = unit === "line" ? "t-piece" : "";
+          ws.forEach((w, i) => { if (i) inner.append(" "); inner.append(w); });
+          line.append(inner);
+          el.append(line);
+        }
+      }
+      p.pieces = [...el.querySelectorAll(".t-piece")];
+      addMark(p);
+      addRipple(p);
+    }
+
+    /* ---------- Pencil underline ----------
+       A paragraph with data-mark="word" gets a hand-drawn underline under
+       that word, laid out in pixels from the word's measured size and
+       baseline (re-run on resize). The wobble in the line is seeded, so it
+       draws the same underline every time. */
+    const ul = {
+      strokes: 2,      // 1 = single pass, 2 = second fainter pass back underneath
+      offset: 7,       // px below the baseline (at 40px type)
+      overshoot: 6,    // px the line runs past each end of the word
+      wave: 3,         // px of up/down wander along the line
+      tilt: -3,        // px the right end sits above (-) or below (+) the left
+      hook: 4,         // px the end flicks up, like lifting the pencil
+      gap: 5,          // px between the two passes
+      width: 2.6,      // stroke width
+      opacity: 0.9,
+      grain: 0.7,      // 0 = solid line, 1 = very broken graphite
+      wobble: 2,       // edge roughness (filter displacement)
+      draw: 700,       // ms to draw the first pass
+      pause: 250,      // ms after the word is typed before drawing starts
+      seed: 4,
+    };
+
+    // Time from the end of typing until the underline is fully drawn.
+    const markTime = () => ul.pause + (+ul.strokes === 2 ? ul.draw * 1.55 : ul.draw);
+
+    function seeded(n) {
+      let t = n * 2654435761 >>> 0;
+      return () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
+    }
+    // Smooth path through points (Catmull-Rom converted to cubic Béziers).
+    function smooth(pts) {
+      let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+        const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+        const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+        d += ` C ${c1[0].toFixed(1)} ${c1[1].toFixed(1)}, ${c2[0].toFixed(1)} ${c2[1].toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+      }
+      return d;
+    }
+
+    function addMark(p) {
+      const word = p.el.dataset.mark;
+      if (!word) return;
+      const host = [...p.el.querySelectorAll(".t-word, .t-piece")].find(w => w.textContent === word);
+      if (!host) return;
+      host.classList.add("mark-host");
+      host.querySelector(".mark")?.remove();
+      host.querySelector(".mark-base")?.remove();
+      const fs = parseFloat(getComputedStyle(p.el).fontSize);
+      const k = fs / 40;                                   // scale with the type
+      // Find the baseline: a zero-height inline-block sits on it.
+      const probe = document.createElement("span");
+      probe.className = "mark-base";
+      probe.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+      host.append(probe);
+      const base = probe.offsetTop;
+      probe.remove();
+
+      const w = host.offsetWidth;
+      const r = seeded(ul.seed);
+      const pad = 40 * k;
+      const line = (x0, x1, y, flick, dir) => {
+        const n = 5, pts = [];
+        for (let i = 0; i <= n; i++) {
+          const t = i / n;
+          const x = x0 + (x1 - x0) * t;
+          const wander = i === 0 || i === n ? (r() - 0.5) * ul.wave * 0.5 : (r() - 0.5) * ul.wave;
+          pts.push([x, y + ul.tilt * k * (dir > 0 ? t - 0.5 : 0.5 - t) + wander * k]);
+        }
+        // Flick: the last point lifts, like the pencil leaving the paper.
+        const last = pts[pts.length - 1];
+        if (flick) pts.push([last[0] + dir * flick * 0.9 * k, last[1] - flick * k]);
+        return pts.map(([x, yy]) => [x + pad, yy + pad]);
+      };
+      const y = base + ul.offset * k;
+      const o = ul.overshoot * k;
+      const a = smooth(line(-o, w + o, y, ul.hook, 1));
+      // Second pass comes back right to left, a little lower and shorter.
+      const b = +ul.strokes === 2 ? smooth(line(w + o * 0.6, w * 0.12, y + ul.gap * k, 0, -1)) : "";
+
+      const W = w + pad * 2, H = host.offsetHeight + pad * 2;
+      const vars = `--ul-w:${ul.width};--ul-o:${ul.opacity};--ul-draw:${ul.draw}ms`;
+      host.insertAdjacentHTML("beforeend",
+        `<svg class="mark" aria-hidden="true" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="left:${-pad}px;top:${-pad}px;${vars}">` +
+        `<path class="mark__a" pathLength="1" d="${a}"/>` + (b ? `<path class="mark__b" pathLength="1" d="${b}"/>` : "") + `</svg>`);
+      const f = document.getElementById("pencil");
+      f?.querySelector("feDisplacementMap")?.setAttribute("scale", ul.wobble);
+      f?.querySelector("feColorMatrix")?.setAttribute("values", `0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 ${(-3 * ul.grain).toFixed(2)} ${(1 + 1.3 * ul.grain).toFixed(2)}`);
+      p.mark = host.querySelector(".mark");
+    }
+
+
+    /* ---------- Ripple ----------
+       A paragraph with data-ripple="phrase" gets that phrase's letters
+       wrapped so they can do a quick wave once the paragraph has landed
+       (--rip-d from setDelays, --ri per letter). Works on any split unit:
+       it walks the paragraph's text nodes and wraps only the phrase. */
+    function addRipple(p) {
+      const phrase = p.el.dataset.ripple;
+      const a = phrase ? p.text.indexOf(phrase) : -1;
+      if (a < 0) return;
+      const b = a + phrase.length;
+      const walker = document.createTreeWalker(p.el, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      let off = 0;
+      for (const n of nodes) {
+        const t = n.nodeValue, start = off;
+        off += t.length;
+        if (off <= a || start >= b) continue;
+        const frag = document.createDocumentFragment();
+        let word = null;                        // keep each word unbreakable
+        for (let j = 0; j < t.length; j++) {
+          const g = start + j, ch = t[j];
+          if (g < a || g >= b || ch === " ") { word = null; frag.append(ch); continue; }
+          if (!word) { word = document.createElement("span"); word.className = "rip-word"; frag.append(word); }
+          const c = document.createElement("span");
+          c.className = "rip-ch";
+          c.textContent = ch;
+          c.style.setProperty("--ri", g - a);
+          word.append(c);
+        }
+        n.replaceWith(frag);
+      }
+    }
+
+    /* ---------- Enter mode ---------- */
+    let ios = [];
+    function reveal(p, on) {
+      p.sec.classList.toggle("is-revealed", on);
+      p.el.classList.toggle("is-pre", !on);
+      p.shown = on;
+    }
+    // How long a paragraph takes to fully appear once it starts.
+    const runTime = (p, c) => (p.pieces.length - 1) * c.stagger + c.duration;
+    function setDelays(p) {
+      const c = conf(p.si);
+      let base = p.pi * c.paraGap;
+      if (c.chain) {
+        base = 0;
+        for (const q of secParas(p.si)) {
+          if (q.pi >= p.pi) break;
+          base += runTime(q, c) + (q.mark ? markTime() : 0) + c.paraGap;
+        }
+      }
+      p.pieces.forEach((s, i) => s.style.setProperty("--d", base + i * c.stagger + "ms"));
+      p.end = base + runTime(p, c) + (p.mark ? markTime() : 0);
+      // Ripple starts data-ripple-at ms after the paragraph starts, or just after it lands.
+      const ripAt = p.el.dataset.rippleAt;
+      p.el.style.setProperty("--rip-d", base + (ripAt ? +ripAt : runTime(p, c) + 80) + "ms");
+      if (p.mark) p.mark.style.setProperty("--mark-d", base + runTime(p, c) + ul.pause + "ms");
+    }
+    function startEnter(si) {
+      const c = conf(si);
+      const group = secParas(si);
+      // Chained sections reveal as one unit so the sequence stays in order.
+      const targets = c.chain ? group.slice(0, 1) : group;
+      const io = new IntersectionObserver(entries => {
+        for (const e of entries) {
+          const hit = paras.find(x => x.el === e.target);
+          const ps = c.chain ? group : [hit];
+          if (e.isIntersecting) ps.forEach(p => reveal(p, true));
+          else if (e.boundingClientRect.top < 0) ps.forEach(p => { if (!p.shown) reveal(p, true); });
+          else if (hit.shown && c.replay !== "once") ps.forEach(p => reveal(p, false));
+        }
+      }, { rootMargin: `0px 0px -${100 - c.triggerPoint}% 0px` });
+      targets.forEach(p => io.observe(p.el));
+      ios.push(io);
+    }
+
+    /* ---------- Scrub mode + focus dim (scroll-driven) ---------- */
+    const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { ticking = false; frame(); });
+    }
+    function frame() {
+      const vh = innerHeight;
+      for (const p of paras) {
+        const c = conf(p.si);
+        if (c.trigger !== "scrub") continue;
+        const r = p.el.getBoundingClientRect();
+        const prog = clamp((vh * c.triggerPoint / 100 - r.top) / (r.height + vh * c.span));
+        const n = p.pieces.length, w = c.soft;
+        p.pieces.forEach((s, i) => {
+          const t = clamp((prog * (n + w) - i) / w);
+          const k = 1 - t;
+          s.style.opacity = c.fromOpacity + (1 - c.fromOpacity) * t;
+          s.style.transform = k ? `perspective(600px) translateY(${c.y * k}em) rotateX(${c.rotate * k}deg) scale(${1 + (c.scale - 1) * k})` : "none";
+          s.style.filter = k && c.blur ? `blur(${c.blur * k}px)` : "none";
+        });
+        if (p.mark) p.mark.classList.toggle("is-drawn", prog >= 1);
+      }
+      sections.forEach((sec, si) => {
+        const c = conf(si);
+        if (!c.focus || "scrolly" in sec.dataset || "wall" in sec.dataset) return;
+        const r = sec.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - vh / 2) / vh;
+        const o = 1 - clamp(d * 1.6 - 0.15) * (1 - c.focusMin);
+        for (const el of sec.children) el.style.opacity = o.toFixed(3);
+      });
+    }
+
+    /* ---------- Rule lines ---------- */
+    let ruleIO = null;
+    function startRules() {
+      ruleIO = new IntersectionObserver(entries => {
+        for (const e of entries) if (e.isIntersecting || e.boundingClientRect.top < 0) e.target.classList.add("rule-in");
+      }, { rootMargin: "0px 0px -10% 0px" });
+      sections.forEach((sec, si) => {
+        const c = conf(si);
+        sec.classList.remove("rule-in");
+        sec.classList.toggle("rules-anim", c.rule !== "off");
+        sec.style.setProperty("--rule-origin", c.rule === "center" ? "center" : "left");
+        if (c.rule !== "off") ruleIO.observe(sec);
+      });
+    }
+
+    /* ---------- Apply ---------- */
+    function apply() {
+      ios.forEach(io => io.disconnect()); ios = [];
+      ruleIO?.disconnect(); ruleIO = null;
+      sections.forEach((sec, si) => {
+        const c = conf(si);
+        sec.style.setProperty("--dur", c.duration + "ms");
+        sec.style.setProperty("--ease", EASES[c.ease]);
+        sec.style.setProperty("--from-o", c.fromOpacity);
+        sec.style.setProperty("--y", c.y + "em");
+        sec.style.setProperty("--rx", c.rotate + "deg");
+        sec.style.setProperty("--sc", c.scale);
+        sec.style.setProperty("--blur", c.blur + "px");
+        for (const el of sec.children) el.style.opacity = "";
+      });
+
+      for (const p of paras) {
+        const c = conf(p.si);
+        p.mark = null;
+        split(p);
+        p.el.classList.toggle("t-scrub", c.trigger === "scrub");
+        p.shown = false;
+        if (c.trigger === "enter") {
+          // Snap to the "from" state without animating, then let the observer reveal.
+          p.el.classList.add("t-scrub", "is-pre");
+        } else {
+          p.el.classList.remove("is-pre");
+        }
+      }
+      // Delays need every paragraph split first (chained ones count earlier pieces).
+      paras.forEach(p => { if (conf(p.si).trigger === "enter") setDelays(p); });
+      // The scroll arrow waits for everything else in its section to finish.
+      sections.forEach((sec, si) => {
+        const enter = conf(si).trigger === "enter";
+        sec.classList.toggle("is-revealed", !enter);
+        const end = enter ? Math.max(0, ...secParas(si).map(p => p.end || 0)) : 0;
+        sec.style.setProperty("--cue-d", (enter ? end + 300 : 0) + "ms");
+      });
+      document.body.offsetWidth; // flush the snapped state
+      sections.forEach((sec, si) => {
+        if (conf(si).trigger !== "enter") return;
+        secParas(si).forEach(p => p.el.classList.remove("t-scrub"));
+        startEnter(si);
+      });
+      startRules();
+      frame();
+    }
+
+    addEventListener("scroll", onScroll, { passive: true });
+    let lastW = innerWidth, rt;
+    addEventListener("resize", () => {
+      onScroll();
+      if (innerWidth === lastW) return;
+      lastW = innerWidth;
+      clearTimeout(rt);
+      rt = setTimeout(apply, 200); // re-split: line breaks moved
+    });
+
+    /* ---------- Panel ---------- */
+    const panel = document.getElementById("tp");
+    const body = document.getElementById("tp-body");
+    const toast = panel.querySelector(".tp__toast");
+    const rows = [];
+    const fmt = (c, v) => {
+      if (c.type !== "range") return "";
+      const dec = c.step < 0.1 ? 2 : c.step < 1 ? 1 : 0;
+      return (+v).toFixed(dec) + (c.unit || "");
+    };
+
+    CONTROLS.forEach((c, i) => {
+      if (c.group) {
+        const g = document.createElement("div");
+        g.className = "tp__group";
+        g.textContent = c.group;
+        rows.push({ c, row: g });
+        body.append(g);
+        return;
+      }
+      const id = "tp-" + c.key;
+      const row = document.createElement("div");
+      row.className = "tp__row" + (c.wide ? " tp__row--wide" : "");
+      const label = document.createElement("label");
+      label.htmlFor = id;
+      label.textContent = c.label;
+      row.append(label);
+      let input;
+      if (c.type === "select") {
+        input = document.createElement("select");
+        const opts = Array.isArray(c.options) ? Object.fromEntries(c.options.map(o => [o, o])) : c.options;
+        for (const [v, t] of Object.entries(opts)) input.add(new Option(t, v));
+      } else {
+        input = document.createElement("input");
+        input.type = c.type === "check" ? "checkbox" : "range";
+        if (c.type === "range") Object.assign(input, { min: c.min, max: c.max, step: c.step });
+      }
+      input.id = id;
+      row.append(input);
+      const out = document.createElement("output");
+      out.htmlFor = id;
+      if (!c.wide) row.append(out);
+      body.append(row);
+      rows.push({ c, row, input, out });
+
+      const ev = c.type === "range" ? "input" : "change";
+      input.addEventListener(ev, () => {
+        if (c.key === "preset") {
+          if (input.value !== "Custom") state = { ...BASE, ...PRESETS[input.value], preset: input.value };
+        } else {
+          state[c.key] = c.type === "check" ? input.checked : c.type === "range" ? +input.value : input.value;
+          state.preset = "Custom";
+        }
+        save();
+        sync();
+        // Sliders apply live but only re-run the full reveal when released.
+        if (c.type === "range" && state.trigger === "scrub") frame();
+        else if (c.type !== "range") apply();
+      });
+      if (c.type === "range") input.addEventListener("change", apply);
+    });
+
+    function sync() {
+      for (const { c, row, input, out } of rows) {
+        const vis = !c.show || c.show(state);
+        row.classList.toggle("is-hidden", !vis);
+        if (!input) continue;
+        const v = state[c.key];
+        if (c.type === "check") input.checked = !!v;
+        else input.value = v;
+        if (out) out.textContent = fmt(c, v);
+      }
+    }
+
+    function say(msg) {
+      toast.textContent = msg;
+      clearTimeout(say.t);
+      say.t = setTimeout(() => (toast.textContent = ""), 2000);
+    }
+
+    function setOpen(open) {
+      panel.classList.toggle("is-closed", !open);
+      const b = panel.querySelector('[data-act="toggle"]');
+      b.textContent = open ? "Hide" : "Show";
+      b.setAttribute("aria-expanded", open);
+      try { localStorage.setItem(STORE + "-open", open ? "1" : "0"); } catch (e) {}
+    }
+
+    const rand = (a, b, step = 1) => Math.round((a + Math.random() * (b - a)) / step) * step;
+    const pick = a => a[Math.floor(Math.random() * a.length)];
+
+    panel.addEventListener("click", e => {
+      const act = e.target.closest("[data-act]")?.dataset.act;
+      if (!act) return;
+      if (act === "replay") apply();
+      if (act === "toggle") setOpen(panel.classList.contains("is-closed"));
+      if (act === "reset") { state = defaults(); save(); sync(); apply(); say("Back to defaults"); }
+      if (act === "copy") {
+        const { preset, ...rest } = state;
+        navigator.clipboard?.writeText(JSON.stringify(rest, null, 2)).then(() => say("Settings copied"), () => say("Couldn't copy"));
+      }
+      if (act === "shuffle") {
+        const unit = pick(["line", "word", "word", "char", "char", "block"]);
+        state = {
+          ...state,
+          preset: "Custom",
+          trigger: Math.random() < 0.25 ? "scrub" : "enter",
+          unit,
+          mask: unit !== "block" && Math.random() < 0.35,
+          fromOpacity: Math.random() < 0.6 ? 0 : rand(0, 0.3, 0.01),
+          y: rand(-0.4, 1.6, 0.05),
+          rotate: Math.random() < 0.25 ? rand(-60, 80) : 0,
+          scale: Math.random() < 0.25 ? rand(0.6, 1.2, 0.01) : 1,
+          blur: Math.random() < 0.4 ? rand(2, 14, 0.5) : 0,
+          duration: rand(500, 1600, 10),
+          stagger: unit === "char" ? rand(4, 24) : unit === "block" ? 0 : rand(20, 110),
+          ease: pick(Object.keys(EASES).slice(0, 6)),
+          soft: rand(2, 16),
+        };
+        save(); sync(); apply(); say("Shuffled");
+      }
+    });
+
+    addEventListener("keydown", e => {
+      if (e.key.toLowerCase() !== "t" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;
+      setOpen(panel.classList.contains("is-closed"));
+    });
+
+    let open = innerWidth > 640;
+    try { const o = localStorage.getItem(STORE + "-open"); if (o !== null) open = o === "1"; } catch (e) {}
+    setOpen(open);
+    sync();
+    // Wait for the web font so line splitting measures the real line breaks.
+    (document.fonts?.ready || Promise.resolve()).then(apply);
+  })();
+  </script>
+  <script>
+  // Section 3 scrollytelling: map scroll position inside the tall section to
+  // a step, and let CSS do the transitions.
+  (() => {
+    const sec = document.querySelector("[data-scrolly]");
+    if (!sec) return;
+    const STEPS = 7;
+    const figs = [...sec.querySelectorAll(".concept")];
+    const count = sec.querySelector(".s3-count__n");
+
+    // Prep the drawings: every stroke draws on in document order.
+    for (const fig of figs) {
+      let k = 0;
+      for (const el of fig.querySelectorAll("svg path, svg circle, svg rect, svg text")) {
+        el.style.setProperty("--k", k++);
+        if (el.classList.contains("f")) continue;
+        el.setAttribute("pathLength", "1");
+        el.setAttribute("data-draw", "");
+      }
+    }
+
+
+    // Pose changes (concept 4): paths with data-to morph from their drawn
+    // shape into data-to once the figure has been drawn. Both shapes use the
+    // same commands, so it's a straight number-by-number blend.
+    const NUM = /-?\d+(?:\.\d+)?/g;
+    const blend = (a, b, t) => { const nb = b.match(NUM); let i = 0; return a.replace(NUM, n => (+n + (nb[i++] - n) * t).toFixed(1)); };
+    const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const POSE_AT = 1300, POSE_DUR = 1000, MATCH_AT = 3500;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (const fig of figs) {
+      const els = [...fig.querySelectorAll("[data-to]")];
+      if (!els.length) continue;
+      fig._poses = els.map(el => ({ el, from: el.getAttribute("d"), to: el.dataset.to }));
+      fig.style.setProperty("--after", POSE_AT + POSE_DUR + 150 + "ms");
+      fig.querySelectorAll(".after").forEach((el, i) => el.style.setProperty("--i2", i));
+    }
+    function setPose(fig, t) { for (const p of fig._poses) p.el.setAttribute("d", blend(p.from, p.to, t)); }
+    function playPose(fig) {
+      resetPose(fig, true);
+      if (still) { setPose(fig, 1); fig.classList.add("is-matched"); return; }
+      fig._timers = [
+        setTimeout(() => {
+          const t0 = performance.now();
+          const tick = now => {
+            const t = Math.min(1, (now - t0) / POSE_DUR);
+            setPose(fig, ease(t));
+            if (t < 1) fig._raf = requestAnimationFrame(tick);
+          };
+          fig._raf = requestAnimationFrame(tick);
+        }, POSE_AT),
+        setTimeout(() => fig.classList.add("is-matched"), MATCH_AT),
+      ];
+    }
+    function resetPose(fig, now) {
+      (fig._timers || []).forEach(clearTimeout);
+      cancelAnimationFrame(fig._raf);
+      fig.classList.remove("is-matched");
+      // Snap back to standing once it has faded out.
+      fig._timers = [setTimeout(() => setPose(fig, 0), now ? 0 : 650)];
+    }
+
+    let current = -1;
+    function update() {
+      const r = sec.getBoundingClientRect();
+      const vh = innerHeight;
+      const prog = Math.min(1, Math.max(0, -r.top / (sec.offsetHeight - vh)));
+      const step = r.top > vh * 0.4 ? 0 : 1 + Math.min(STEPS - 1, Math.floor(prog * STEPS));
+      if (step === current) return;
+      current = step;
+      sec.dataset.step = step;
+      const active = step - 3;                   // concept number, 1–4
+      figs.forEach((f, i) => {
+        const was = f.classList.contains("is-active"), now = i + 1 === active;
+        f.classList.toggle("is-active", now);
+        if (f._poses && now && !was) playPose(f);
+        if (f._poses && was && !now) resetPose(f);
+        f.classList.toggle("is-past", i + 1 < active);
+        f.setAttribute("aria-hidden", i + 1 === active ? "false" : "true");
+      });
+      if (active >= 1) count.textContent = String(active).padStart(2, "0");
+    }
+    let ticking = false;
+    addEventListener("scroll", () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { ticking = false; update(); });
+    }, { passive: true });
+    const q = sec.querySelector(".s3-question");
+    const qText = q.textContent.trim();
+    q.setAttribute("aria-label", qText);
+    function splitQ() {
+      q.textContent = "";
+      const words = qText.split(" ").map(w => {
+        const sp = document.createElement("span");
+        sp.textContent = w;
+        sp.setAttribute("aria-hidden", "true");
+        return sp;
+      });
+      words.forEach((w, i) => { if (i) q.append(" "); q.append(w); });
+      const lines = [];
+      let top = null;
+      for (const w of words) {
+        if (top === null || Math.abs(w.offsetTop - top) > 2) { lines.push([]); top = w.offsetTop; }
+        lines[lines.length - 1].push(w);
+      }
+      q.textContent = "";
+      lines.forEach((ws, i) => {
+        const mask = document.createElement("span");
+        mask.className = "q-line";
+        const inner = document.createElement("span");
+        inner.style.setProperty("--ld", 120 + i * 90 + "ms");
+        ws.forEach((w, j) => { if (j) inner.append(" "); inner.append(w); });
+        mask.append(inner);
+        q.append(mask);
+      });
+    }
+    const measure = () => { splitQ(); sec.style.setProperty("--q-h", q.offsetHeight + "px"); };
+    let lastW = innerWidth;
+    addEventListener("resize", () => {
+      if (innerWidth !== lastW) { lastW = innerWidth; measure(); }
+      update();
+    });
+    measure();
+    document.fonts?.ready.then(measure);
+    update();
+  })();
+  </script>
+  <script>
+  // Section 4: first sentence, then the photos all at once, then the rest.
+  (() => {
+    const sec = document.querySelector("[data-wall]");
+    if (!sec) return;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const LEAD_TO_WALL = still ? 0 : 900, WALL_TO_REST = still ? 0 : 1200;
+    const text = sec.querySelector(".s4-text");
+    const io = new IntersectionObserver(entries => {
+      if (!entries.some(e => e.isIntersecting || e.boundingClientRect.top < 0)) return;
+      io.disconnect();
+      sec.classList.add("lead-in");
+      setTimeout(() => sec.classList.add("wall-in"), LEAD_TO_WALL);
+      setTimeout(() => sec.classList.add("rest-in"), LEAD_TO_WALL + WALL_TO_REST);
+    }, { rootMargin: "0px 0px -25% 0px" });
+    io.observe(text);
+  })();
+  </script>
 </body>
 </html>
