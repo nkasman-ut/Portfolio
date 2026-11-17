@@ -1,6 +1,6 @@
 const defaultQuestions = [
   {
-    text: "Think of a memory you wish you had a photograph of. Where were you?",
+    text: "Describe a fond memory. Where were you? Who were you with?",
     helper: "Name the place in your own way: a room, a street, a season, a kind of light."
   },
   {
@@ -20,17 +20,12 @@ const state = {
   answers: questions.map((question) => question.type === "multi" ? [] : "")
 };
 
-const stepLabel = document.querySelector("#stepLabel");
-const modeLabel = document.querySelector("#modeLabel");
 const questionText = document.querySelector("#questionText");
-const helperText = document.querySelector("#helperText");
 const answerForm = document.querySelector("#answerForm");
 const answerInput = document.querySelector("#answerInput");
 const feelingOptions = document.querySelector("#feelingOptions");
 const backButton = document.querySelector("#backButton");
 const nextButton = document.querySelector("#nextButton");
-const introPanel = document.querySelector("#introPanel");
-const startButton = document.querySelector("#startButton");
 const resultPanel = document.querySelector("#resultPanel");
 const generationState = document.querySelector("#generationState");
 const instructionKicker = document.querySelector("#instructionKicker");
@@ -40,6 +35,9 @@ const einkPreview = document.querySelector("#einkPreview");
 const einkImage = document.querySelector("#einkImage");
 const saveLink = document.querySelector("#saveLink");
 
+const memoryProgress = document.querySelector("#memoryProgress");
+const progressFill = document.querySelector("#progressFill");
+const progressLabel = document.querySelector("#progressLabel");
 const resetButton = document.querySelector("#resetButton");
 const interview = document.querySelector(".interview");
 const voiceInput = document.querySelector("#voiceInput");
@@ -50,7 +48,8 @@ const typeToggle = document.querySelector("#typeToggle");
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-let isTypingMode = false;
+let isTypingMode = true;
+let savedTranscript = "";
 
 if (recognition) {
   recognition.continuous = true;
@@ -59,7 +58,6 @@ if (recognition) {
 
   let isListening = false;
   let isHeld = false;
-  let savedTranscript = "";
 
   const setIdle = () => {
     isListening = false;
@@ -115,42 +113,40 @@ if (recognition) {
 } else {
   micButton.hidden = true;
   typeToggle.hidden = true;
-  isTypingMode = true;
 }
+
+renderQuestion();
 
 typeToggle.addEventListener("click", () => {
   isTypingMode = !isTypingMode;
   if (recognition && micButton.classList.contains("listening")) recognition.stop();
   voiceInput.hidden = isTypingMode;
   answerInput.hidden = !isTypingMode;
-  typeToggle.textContent = isTypingMode ? "Use voice instead" : "Type instead";
+  typeToggle.textContent = isTypingMode ? "speak instead" : "type instead";
   if (!isTypingMode) answerInput.value = transcript.textContent;
-  if (isTypingMode) answerInput.focus();
+  if (isTypingMode) { answerInput.value = transcript.textContent; answerInput.focus(); }
 });
 
 function resetVoiceState() {
   if (recognition && micButton.classList.contains("listening")) recognition.stop();
   transcript.textContent = "";
-  if (recognition) savedTranscript = "";
-  isTypingMode = false;
-  voiceInput.hidden = false;
+  savedTranscript = "";
+  isTypingMode = true;
+  voiceInput.hidden = true;
+  answerInput.hidden = false;
   typeToggle.hidden = false;
-  answerInput.hidden = true;
-  typeToggle.textContent = "Type instead";
-  micLabel.textContent = "Hold to speak";
+  typeToggle.textContent = "speak instead";
+  micLabel.textContent = "hold to speak";
   micButton.classList.remove("listening");
 }
 
 function renderQuestion() {
   const question = questions[state.step];
   const isMulti = question.type === "multi";
-  stepLabel.textContent = `Question ${state.step + 1} of ${questions.length}`;
-  modeLabel.textContent = "Interview";
   questionText.textContent = question.text;
-  helperText.textContent = question.helper;
   feelingOptions.hidden = !isMulti;
   backButton.disabled = state.step === 0;
-  nextButton.textContent = state.step === questions.length - 1 ? "Make the memory" : "Continue";
+  nextButton.textContent = state.step === questions.length - 1 ? "make it →" : "next →";
 
   if (isMulti) {
     voiceInput.hidden = true;
@@ -196,15 +192,55 @@ function collectPayload() {
   };
 }
 
+const POETIC_LABELS = [
+  "gathering light...",
+  "finding the edges...",
+  "developing...",
+  "surfacing...",
+  "almost there...",
+  "one more moment...",
+];
+
+function startProgressBar(durationMs) {
+  memoryProgress.hidden = false;
+  progressFill.style.width = "0%";
+  progressLabel.textContent = POETIC_LABELS[0];
+
+  const start = Date.now();
+  const labelInterval = durationMs / POETIC_LABELS.length;
+  let labelIndex = 0;
+  let raf;
+
+  function tick() {
+    const elapsed = Date.now() - start;
+    const pct = Math.min(100, (elapsed / durationMs) * 100);
+    progressFill.style.width = pct + "%";
+
+    const newIndex = Math.min(POETIC_LABELS.length - 1, Math.floor(elapsed / labelInterval));
+    if (newIndex !== labelIndex) {
+      labelIndex = newIndex;
+      progressLabel.textContent = POETIC_LABELS[labelIndex];
+    }
+
+    if (elapsed < durationMs) {
+      raf = requestAnimationFrame(tick);
+    }
+  }
+  raf = requestAnimationFrame(tick);
+  return () => { cancelAnimationFrame(raf); memoryProgress.hidden = true; };
+}
+
 async function generateMemory() {
   interview.hidden = true;
   resultPanel.hidden = false;
   generationState.textContent = "Creating your memory";
   instructionKicker.textContent = "one moment";
   instructionText.innerHTML = "Creating<br>your memory...";
-  instructionHelper.textContent = "This takes a little while. Your image is being drawn.";
+  instructionHelper.textContent = "";
   saveLink.hidden = true;
   einkPreview.hidden = true;
+
+  const stopProgress = startProgressBar(35000);
 
   try {
     const response = await fetch("/api/memory-printer/memories", {
@@ -219,10 +255,12 @@ async function generateMemory() {
       throw new Error(result?.detail || result?.error || "The memory could not be made yet.");
     }
 
-    generationState.textContent = "Ready";
-    instructionKicker.textContent = "Your memory is ready";
+    stopProgress();
+
+    generationState.textContent = "ready";
+    instructionKicker.textContent = "your memory is ready";
     instructionText.innerHTML = "Here it is.";
-    instructionHelper.textContent = "Hold on to it for a moment.";
+    instructionHelper.textContent = "";
     if (result.imageUrl) {
       einkImage.src = result.imageUrl;
       einkPreview.hidden = false;
@@ -230,6 +268,7 @@ async function generateMemory() {
       saveLink.hidden = false;
     }
   } catch (error) {
+    stopProgress();
     generationState.textContent = "Something went wrong";
     instructionKicker.textContent = "";
     instructionText.innerHTML = "";
@@ -243,10 +282,7 @@ answerForm.addEventListener("submit", async (event) => {
 
   if (question.type === "multi") {
     const selected = Array.from(feelingOptions.querySelectorAll("input:checked")).map((input) => input.value);
-    if (selected.length === 0) {
-      helperText.textContent = "Choose one to three feelings before making the memory.";
-      return;
-    }
+    if (selected.length === 0) return;
     state.answers[state.step] = selected;
   } else {
     state.answers[state.step] = answerInput.value.trim();
@@ -300,12 +336,6 @@ backButton.addEventListener("click", () => {
   renderQuestion();
 });
 
-startButton.addEventListener("click", () => {
-  introPanel.hidden = true;
-  interview.hidden = false;
-  renderQuestion();
-});
-
 resetButton.addEventListener("click", () => {
   state.step = 0;
   state.answers = questions.map((question) => question.type === "multi" ? [] : "");
@@ -315,7 +345,8 @@ resetButton.addEventListener("click", () => {
   einkImage.removeAttribute("src");
   saveLink.hidden = true;
   saveLink.removeAttribute("href");
-  introPanel.hidden = false;
+  interview.hidden = false;
+  renderQuestion();
 });
 
 feelingOptions.addEventListener("change", () => {
@@ -325,3 +356,110 @@ feelingOptions.addEventListener("change", () => {
   renderFeelingOptions(question);
 });
 
+
+// Animated mesh gradient background
+(function () {
+  const blobs = [
+    { color: '95,100%,74%', ox: 0.40, oy: 0.20, fx: 0.00028, fy: 0.00021, phase: 0.0, amp: 0.38 },
+    { color: '120,36%,43%', ox: 0.80, oy: 0.05, fx: 0.00019, fy: 0.00030, phase: 1.3, amp: 0.40 },
+    { color: '193,100%,74%',ox: 0.05, oy: 0.50, fx: 0.00035, fy: 0.00017, phase: 2.6, amp: 0.36 },
+    { color: '127,64%,71%', ox: 0.75, oy: 0.55, fx: 0.00024, fy: 0.00027, phase: 0.8, amp: 0.38 },
+    { color: '130,0%,100%', ox: 0.05, oy: 0.90, fx: 0.00015, fy: 0.00023, phase: 4.1, amp: 0.42 },
+    { color: '128,87%,85%', ox: 0.75, oy: 0.90, fx: 0.00029, fy: 0.00020, phase: 3.5, amp: 0.37 },
+    { color: '95,59%,83%',  ox: 0.05, oy: 0.05, fx: 0.00022, fy: 0.00028, phase: 5.2, amp: 0.39 },
+  ];
+
+  let t = 0;
+
+  function tick() {
+    t++;
+    const stops = blobs.map(b => {
+      const x = ((b.ox + Math.sin(t * b.fx * 60 + b.phase) * b.amp) * 100).toFixed(1);
+      const y = ((b.oy + Math.cos(t * b.fy * 47 + b.phase + 1) * b.amp) * 100).toFixed(1);
+      return `radial-gradient(at ${x}% ${y}%, hsla(${b.color},1) 0px, transparent 50%)`;
+    });
+    document.body.style.backgroundImage = stops.join(',');
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+// Cursor sparkle effect
+(function () {
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:9999;";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  // Glow palette: warm cream, sage, pale gold, soft white, light green
+  const palette = [
+    [240, 235, 200],
+    [180, 220, 150],
+    [255, 248, 220],
+    [200, 230, 175],
+    [220, 240, 200],
+  ];
+
+  const sparkles = [];
+  let prevX = -999, prevY = -999;
+
+  window.addEventListener("mousemove", (e) => {
+    const dx = e.clientX - prevX, dy = e.clientY - prevY;
+    if (dx * dx + dy * dy < 64) return;
+    prevX = e.clientX;
+    prevY = e.clientY;
+
+    const n = Math.random() < 0.35 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const c = palette[Math.floor(Math.random() * palette.length)];
+      sparkles.push({
+        x: e.clientX + (Math.random() - 0.5) * 28,
+        y: e.clientY + (Math.random() - 0.5) * 28,
+        r: 7 + Math.random() * 10,
+        life: 0.75 + Math.random() * 0.25,
+        decay: 0.014 + Math.random() * 0.014,
+        vx: (Math.random() - 0.5) * 0.7,
+        vy: -0.5 - Math.random() * 0.7,
+        color: c,
+      });
+    }
+  });
+
+  function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = sparkles.length - 1; i >= 0; i--) {
+      const s = sparkles[i];
+      s.life -= s.decay;
+      if (s.life <= 0) { sparkles.splice(i, 1); continue; }
+      s.x += s.vx;
+      s.y += s.vy;
+      s.vy += 0.012;
+
+      const [r, g, b] = s.color;
+      ctx.save();
+      ctx.globalAlpha = s.life * 0.4;
+      ctx.shadowBlur = s.r * 14;
+      ctx.shadowColor = `rgb(${r},${g},${b})`;
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r * 0.18, 0, Math.PI * 2);
+      ctx.fill();
+      // second pass for extra spread
+      ctx.globalAlpha = s.life * 0.15;
+      ctx.shadowBlur = s.r * 28;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
