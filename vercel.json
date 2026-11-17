@@ -7,6 +7,10 @@
     { "source": "/highlight-takehome/prototype", "destination": "/highlight-takehome-prototype.html" },
     { "source": "/highlight-takehome/sandbox", "destination": "/highlight-takehome-prototype.html" },
     { "source": "/highlight-takehome/future", "destination": "/highlight-takehome-prototype.html" },
-    { "source": "/hi-222", "destination": "/hi-222.html" }
-  ]
+    { "source": "/hi-222", "destination": "/hi-222.html" },
+    { "source": "/memory-printer", "destination": "/memory-printer.html" }
+  ],
+  "functions": {
+    "api/memory-printer/memories.js": { "maxDuration": 120 }
+  }
 }

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Memory Printer · Nathalia Kasman</title>
+    <meta name="description" content="Describe a fond memory and receive a dithered black-and-white image of it.">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon/favicon-16x16.png">
+    <link rel="apple-touch-icon" href="/assets/favicon/apple-touch-icon.png">
+    <link rel="preload" href="/assets/memory-printer/fonts/gothic_pixel.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/assets/memory-printer/styles.css">
+  </head>
+  <body>
+    <a class="home-link" href="/">&larr; nathalia kasman</a>
+
+    <main class="shell">
+      <section class="interview" aria-live="polite">
+        <div class="prompt-stack">
+          <h1 id="questionText">Describe a fond memory. Where were you? Who were you with?</h1>
+        </div>
+
+        <form id="answerForm" class="answer-form">
+          <textarea id="answerInput" name="answer" rows="5" autocomplete="off" maxlength="500" aria-labelledby="questionText"></textarea>
+          <div id="voiceInput" class="voice-input" hidden>
+            <button id="micButton" type="button" class="mic-button" aria-label="Speak your answer">
+              <span class="mic-icon">&#9679;</span>
+              <span id="micLabel">hold to speak</span>
+            </button>
+            <p id="transcript" class="transcript"></p>
+          </div>
+          <button id="typeToggle" type="button" class="type-toggle">speak instead</button>
+          <fieldset id="feelingOptions" class="feeling-options" hidden>
+            <legend>Choose up to three</legend>
+          </fieldset>
+          <div class="actions">
+            <button id="backButton" type="button" class="secondary" disabled>&larr; back</button>
+            <button id="nextButton" type="submit">next &rarr;</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="resultPanel" class="result-panel" aria-live="polite" hidden>
+        <div class="status">
+          <span id="generationState">finding your memory</span>
+        </div>
+
+        <div class="peephole-instruction">
+          <p class="kicker" id="instructionKicker">your memory is being made</p>
+          <h1 id="instructionText">Creating<br>your memory...</h1>
+          <p class="instruction-helper" id="instructionHelper"></p>
+        </div>
+
+        <div id="memoryProgress" class="memory-progress" hidden>
+          <div class="progress-bar-track">
+            <div id="progressFill" class="progress-bar-fill"></div>
+          </div>
+          <p id="progressLabel" class="progress-label"></p>
+        </div>
+
+        <div id="einkPreview" class="eink-preview" hidden>
+          <img id="einkImage" alt="Your memory, drawn as a two-panel dithered black-and-white image" />
+        </div>
+
+        <div class="actions">
+          <a id="saveLink" class="button-link secondary" download="memory.webp" hidden>keep it</a>
+          <button id="resetButton" type="button">begin again</button>
+        </div>
+      </section>
+
+      <p class="about">
+        A web version of a small installation. In person, your memory appears on an e-ink
+        screen inside a peephole box, and prints as a thermal keepsake.
+      </p>
+    </main>
+
+    <script src="/assets/memory-printer/app.js" type="module"></script>
+  </body>
+</html>
