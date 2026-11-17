@@ -370,9 +370,10 @@ feelingOptions.addEventListener("change", () => {
   ];
 
   let t = 0;
+  const SPEED = 0.8; // 1 = original drift speed; 0.8 = 20% slower
 
   function tick() {
-    t++;
+    t += SPEED;
     const stops = blobs.map(b => {
       const x = ((b.ox + Math.sin(t * b.fx * 60 + b.phase) * b.amp) * 100).toFixed(1);
       const y = ((b.oy + Math.cos(t * b.fy * 47 + b.phase + 1) * b.amp) * 100).toFixed(1);
