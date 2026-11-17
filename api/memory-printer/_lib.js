@@ -5,6 +5,7 @@
 //   OPENAI_API_KEY                         required
 //   UPSTASH_REDIS_REST_URL / _TOKEN        already set for /api/stamps; used for rate limits
 //   MEMORY_PRINTER_DAILY_CAP               optional, total images per day across everyone (default 40)
+//   MEMORY_PRINTER_IMAGE_MODEL             optional, OpenAI image model (default gpt-image-2.6-flare)
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;

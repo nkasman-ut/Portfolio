@@ -1,7 +1,7 @@
 // POST /api/memory-printer/memories   body { answers: [{ question, answer }, ...] }
 //   -> { imageUrl: "data:image/webp;base64,..." }
 //
-// Generates the two-panel dithered memory image with gpt-image-1.
+// Generates the two-panel dithered memory image (model set by IMAGE_MODEL below).
 // Rate limited per IP and with a global daily cap, because every call costs money.
 // Fails closed: no Redis means no generation.
 
@@ -13,6 +13,8 @@ const {
 const PER_IP_LIMIT = 3;              // images per visitor...
 const PER_IP_WINDOW = 60 * 60 * 24;  // ...per 24 hours
 const DAILY_CAP = Number(process.env.MEMORY_PRINTER_DAILY_CAP) || 40;
+// gpt-image-1 was shut down on 2026-10-23. Override in Vercel if this one is retired too.
+const IMAGE_MODEL = process.env.MEMORY_PRINTER_IMAGE_MODEL || 'gpt-image-2.6-flare';
 
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -43,7 +45,7 @@ module.exports = async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` },
       body: JSON.stringify({
-        model: 'gpt-image-1',
+        model: IMAGE_MODEL,
         prompt: buildGenerationPrompt(answers),
         n: 1,
         size: '1536x1024',
